@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+appsettings.Development.json
+appsettings.Local.json
+.env
+.env.local
+
+# Docker
+docker-compose.override.yml
+
+# Node / React
+node_modules/
+dist/
+build/
+.expo/
+*.expo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

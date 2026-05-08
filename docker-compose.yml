@@ -1,0 +1,127 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════
+#  Sistema de Seguridad UTA — Sprint 1
+#  Uso: docker-compose up --build
+#  Puertos expuestos:
+#    8080 → API Gateway (entrada única para la app)
+#    8081 → MicroservicioA (usuarios/auth) — acceso directo en dev
+#    8082 → MicroservicioB (alertas/WebSocket)
+#    8083 → MicroservicioC (zonas/geo)
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Bases de datos SQL Server ─────────────────────────────────────
+  sqlserver-a:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Uta2026!Strong"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata-a:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost",
+             "-U", "sa", "-P", "Uta2026!Strong", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  sqlserver-b:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Uta2026!Strong"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1434:1433"
+    volumes:
+      - sqldata-b:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost",
+             "-U", "sa", "-P", "Uta2026!Strong", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  sqlserver-c:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Uta2026!Strong"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    ports:
+      - "1435:1433"
+    volumes:
+      - sqldata-c:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost",
+             "-U", "sa", "-P", "Uta2026!Strong", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── Microservicio A — Usuarios, Roles, Auth JWT ───────────────────
+  microservicio-a:
+    build:
+      context: ./src/MicroservicioA
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      sqlserver-a:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── Microservicio B — Alertas + WebSocket ─────────────────────────
+  microservicio-b:
+    build:
+      context: ./src/MicroservicioB
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      sqlserver-b:
+        condition: service_healthy
+      microservicio-c:
+        condition: service_started
+    restart: on-failure
+
+  # ── Microservicio C — Zonas GeoJSON + Geolocalización ────────────
+  microservicio-c:
+    build:
+      context: ./src/MicroservicioC
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      sqlserver-c:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── API Gateway — punto de entrada único (YARP) ───────────────────
+  api-gateway:
+    build:
+      context: ./src/ApiGateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - microservicio-a
+      - microservicio-b
+      - microservicio-c
+    restart: on-failure
+
+volumes:
+  sqldata-a:
+  sqldata-b:
+  sqldata-c:
