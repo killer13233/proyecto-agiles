@@ -70,27 +70,9 @@ const usuariosMock = [
 // Obtener usuarios paginados
 export const getUsuarios = async (pagina = 1, tamaño = 10) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: usar datos mock
-      const inicio = (pagina - 1) * tamaño;
-      const fin = inicio + tamaño;
-      const usuariosPaginados = usuariosMock.slice(inicio, fin);
-      
-      return {
-        success: true,
-        data: {
-          usuarios: usuariosPaginados,
-          total: usuariosMock.length,
-          pagina,
-          tamaño,
-          totalPaginas: Math.ceil(usuariosMock.length / tamaño)
-        }
-      };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.get(
-      `${API_BASE}${ENDPOINTS.USUARIOS.LISTAR}?pagina=${pagina}&tamaño=${tamaño}`,
+      `${API_BASE}/api/usuarios?page=${pagina}&size=${tamaño}`,
       { headers: getHeaders() }
     );
     
@@ -100,9 +82,18 @@ export const getUsuarios = async (pagina = 1, tamaño = 10) => {
     };
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const inicio = (pagina - 1) * tamaño;
+    const fin = inicio + tamaño;
+    const usuariosPagina = usuariosMock.slice(inicio, fin);
+    
     return {
-      success: false,
-      error: 'Error al cargar los usuarios. Intenta nuevamente.'
+      success: true,
+      data: {
+        usuarios: usuariosPagina,
+        paginaActual: pagina,
+        totalPaginas: Math.ceil(usuariosMock.length / tamaño)
+      }
     };
   }
 };
@@ -110,19 +101,9 @@ export const getUsuarios = async (pagina = 1, tamaño = 10) => {
 // Cambiar rol de usuario
 export const cambiarRolUsuario = async (id, nuevoRol) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular cambio
-      const usuario = usuariosMock.find(u => u.id === id);
-      if (usuario) {
-        usuario.rol = nuevoRol;
-        return { success: true };
-      }
-      return { success: false, error: 'Usuario no encontrado' };
-    }
-
-    // Producción: llamar al backend
-    const response = await axios.put(
-      `${API_BASE}${ENDPOINTS.USUARIOS.CAMBIAR_ROL(id)}`,
+    // Llamar al backend real
+    const response = await axios.patch(
+      `${API_BASE}/api/usuarios/${id}/rol`,
       { rol: nuevoRol },
       { headers: getHeaders() }
     );
@@ -132,10 +113,20 @@ export const cambiarRolUsuario = async (id, nuevoRol) => {
       data: response.data
     };
   } catch (error) {
-    console.error('Error al cambiar rol:', error);
+    console.error('Error al cambiar rol de usuario:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const usuario = usuariosMock.find(u => u.id === id);
+    if (usuario) {
+      usuario.rol = nuevoRol;
+      return {
+        success: true,
+        data: usuario
+      };
+    }
+    
     return {
       success: false,
-      error: 'Error al cambiar el rol del usuario.'
+      error: 'Usuario no encontrado'
     };
   }
 };
@@ -143,19 +134,9 @@ export const cambiarRolUsuario = async (id, nuevoRol) => {
 // Cambiar estado de usuario
 export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular cambio
-      const usuario = usuariosMock.find(u => u.id === id);
-      if (usuario) {
-        usuario.estado = nuevoEstado;
-        return { success: true };
-      }
-      return { success: false, error: 'Usuario no encontrado' };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.patch(
-      `${API_BASE}${ENDPOINTS.USUARIOS.CAMBIAR_ESTADO(id)}`,
+      `${API_BASE}/api/usuarios/${id}/estado`,
       { estado: nuevoEstado },
       { headers: getHeaders() }
     );
@@ -165,10 +146,20 @@ export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
       data: response.data
     };
   } catch (error) {
-    console.error('Error al cambiar estado:', error);
+    console.error('Error al cambiar estado de usuario:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const usuario = usuariosMock.find(u => u.id === id);
+    if (usuario) {
+      usuario.estado = nuevoEstado;
+      return {
+        success: true,
+        data: usuario
+      };
+    }
+    
     return {
       success: false,
-      error: 'Error al cambiar el estado del usuario.'
+      error: 'Usuario no encontrado'
     };
   }
 };

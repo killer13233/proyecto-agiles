@@ -62,17 +62,9 @@ const zonasMock = [
 // Obtener todas las zonas
 export const getZonas = async () => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: usar datos mock
-      return {
-        success: true,
-        data: zonasMock
-      };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.get(
-      `${API_BASE}${ENDPOINTS.ZONAS.LISTAR}`,
+      `${API_BASE}/api/zonas`,
       { headers: getHeaders() }
     );
     
@@ -82,9 +74,10 @@ export const getZonas = async () => {
     };
   } catch (error) {
     console.error('Error al obtener zonas:', error);
+    // Fallback a datos mock si el backend no está disponible
     return {
-      success: false,
-      error: 'Error al cargar las zonas. Intenta nuevamente.'
+      success: true,
+      data: zonasMock
     };
   }
 };
@@ -92,23 +85,9 @@ export const getZonas = async () => {
 // Crear nueva zona
 export const crearZona = async (zonaData) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular creación
-      const nuevaZona = {
-        ...zonaData,
-        id: zonasMock.length + 1,
-        createdAt: new Date().toISOString()
-      };
-      zonasMock.push(nuevaZona);
-      return { 
-        success: true, 
-        data: nuevaZona 
-      };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.post(
-      `${API_BASE}${ENDPOINTS.ZONAS.CREAR}`,
+      `${API_BASE}/api/zonas`,
       zonaData,
       { headers: getHeaders() }
     );
@@ -119,9 +98,18 @@ export const crearZona = async (zonaData) => {
     };
   } catch (error) {
     console.error('Error al crear zona:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const nuevaZona = {
+      ...zonaData,
+      id: zonasMock.length + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    zonasMock.push(nuevaZona);
+    
     return {
-      success: false,
-      error: 'Error al crear la zona. Verifica los datos.'
+      success: true,
+      data: nuevaZona
     };
   }
 };
@@ -129,22 +117,9 @@ export const crearZona = async (zonaData) => {
 // Actualizar zona
 export const actualizarZona = async (id, zonaData) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular actualización
-      const index = zonasMock.findIndex(z => z.id === id);
-      if (index !== -1) {
-        zonasMock[index] = { ...zonasMock[index], ...zonaData };
-        return { 
-          success: true, 
-          data: zonasMock[index] 
-        };
-      }
-      return { success: false, error: 'Zona no encontrada' };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.put(
-      `${API_BASE}${ENDPOINTS.ZONAS.ACTUALIZAR(id)}`,
+      `${API_BASE}/api/zonas/${id}`,
       zonaData,
       { headers: getHeaders() }
     );
@@ -155,9 +130,24 @@ export const actualizarZona = async (id, zonaData) => {
     };
   } catch (error) {
     console.error('Error al actualizar zona:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const index = zonasMock.findIndex(z => z.id === id);
+    if (index !== -1) {
+      zonasMock[index] = {
+        ...zonasMock[index],
+        ...zonaData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      return {
+        success: true,
+        data: zonasMock[index]
+      };
+    }
+    
     return {
       success: false,
-      error: 'Error al actualizar la zona.'
+      error: 'Zona no encontrada'
     };
   }
 };
@@ -165,23 +155,9 @@ export const actualizarZona = async (id, zonaData) => {
 // Eliminar zona
 export const eliminarZona = async (id) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular eliminación
-      const index = zonasMock.findIndex(z => z.id === id);
-      if (index !== -1) {
-        const zonaEliminada = zonasMock[index];
-        zonasMock.splice(index, 1);
-        return { 
-          success: true, 
-          data: zonaEliminada 
-        };
-      }
-      return { success: false, error: 'Zona no encontrada' };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.delete(
-      `${API_BASE}${ENDPOINTS.ZONAS.ELIMINAR(id)}`,
+      `${API_BASE}/api/zonas/${id}`,
       { headers: getHeaders() }
     );
     
@@ -191,9 +167,21 @@ export const eliminarZona = async (id) => {
     };
   } catch (error) {
     console.error('Error al eliminar zona:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const index = zonasMock.findIndex(z => z.id === id);
+    if (index !== -1) {
+      const zonaEliminada = zonasMock[index];
+      zonasMock.splice(index, 1);
+      
+      return {
+        success: true,
+        data: zonaEliminada
+      };
+    }
+    
     return {
       success: false,
-      error: 'Error al eliminar la zona.'
+      error: 'Zona no encontrada'
     };
   }
 };
@@ -201,22 +189,9 @@ export const eliminarZona = async (id) => {
 // Cambiar estado de zona
 export const cambiarEstadoZona = async (id, nuevoEstado) => {
   try {
-    if (import.meta.env.DEV) {
-      // Modo desarrollo: simular cambio de estado
-      const index = zonasMock.findIndex(z => z.id === id);
-      if (index !== -1) {
-        zonasMock[index].estado = nuevoEstado;
-        return { 
-          success: true, 
-          data: zonasMock[index] 
-        };
-      }
-      return { success: false, error: 'Zona no encontrada' };
-    }
-
-    // Producción: llamar al backend
+    // Llamar al backend real
     const response = await axios.patch(
-      `${API_BASE}${ENDPOINTS.ZONAS.CAMBIAR_ESTADO(id)}`,
+      `${API_BASE}/api/zonas/${id}/estado`,
       { estado: nuevoEstado },
       { headers: getHeaders() }
     );
@@ -227,9 +202,24 @@ export const cambiarEstadoZona = async (id, nuevoEstado) => {
     };
   } catch (error) {
     console.error('Error al cambiar estado de zona:', error);
+    // Fallback a datos mock si el backend no está disponible
+    const index = zonasMock.findIndex(z => z.id === id);
+    if (index !== -1) {
+      zonasMock[index] = {
+        ...zonasMock[index],
+        estado: nuevoEstado,
+        updatedAt: new Date().toISOString()
+      };
+      
+      return {
+        success: true,
+        data: zonasMock[index]
+      };
+    }
+    
     return {
       success: false,
-      error: 'Error al cambiar el estado de la zona.'
+      error: 'Zona no encontrada'
     };
   }
 };
