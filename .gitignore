@@ -31,3 +31,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+# Variables de entorno - cada uno tiene su propio .env local
+.env
+.env.local
+.env.development
+.env.production
