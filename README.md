@@ -7,7 +7,7 @@
 ```
 App Móvil (React Native)          Panel Admin (React Web)
         │                                   │
-        └──────────── API Gateway :8080 ────┘
+        └──────────── API Gateway :8090 ────┘
                       (YARP Reverse Proxy)
                    ┌──────┬──────┬──────┐
                    │      │      │      │
@@ -49,44 +49,44 @@ Primera vez: tarda ~3-5 minutos mientras descarga imágenes SQL Server y compila
 
 ## Endpoints principales
 
-Todos los endpoints pasan por el **API Gateway en :8080**
+Todos los endpoints pasan por el **API Gateway en :8090**
 
 ### Autenticación
 ```
-POST http://localhost:8080/api/auth/login
+POST http://localhost:8090/api/auth/login
 Body: { "correo": "...", "password": "..." }
 → Devuelve JWT token
 ```
 
 ### Usuarios (requiere rol Administrador)
 ```
-GET  http://localhost:8080/api/usuarios?pagina=1&tamaño=10&rol=Guardia
-PUT  http://localhost:8080/api/usuarios/{id}/rol
+GET  http://localhost:8090/api/usuarios?pagina=1&tamaño=10&rol=Guardia
+PUT  http://localhost:8090/api/usuarios/{id}/rol
      Body: { "nuevoRol": "Guardia" }
-PATCH http://localhost:8080/api/usuarios/{id}/estado
+PATCH http://localhost:8090/api/usuarios/{id}/estado
      Body: { "nuevoEstado": "Activo" }
 ```
 
 ### Alertas (requiere JWT)
 ```
-POST  http://localhost:8080/api/alertas
+POST  http://localhost:8090/api/alertas
       Body: { "latitud": -1.234, "longitud": -78.678, "motivo": "Robo" }
-GET   http://localhost:8080/api/alertas?zona=Zona A&estado=Activa
-PATCH http://localhost:8080/api/alertas/{id}/asumir
-POST  http://localhost:8080/api/alertas/{id}/cerrar
+GET   http://localhost:8090/api/alertas?zona=Zona A&estado=Activa
+PATCH http://localhost:8090/api/alertas/{id}/asumir
+POST  http://localhost:8090/api/alertas/{id}/cerrar
 ```
 
 ### Zonas GeoJSON
 ```
-GET  http://localhost:8080/api/zonas
-POST http://localhost:8080/api/zonas  (solo Admin)
-PUT  http://localhost:8080/api/zonas/{id}
-GET  http://localhost:8080/api/zonas/punto?lat=-1.234&lon=-78.678
+GET  http://localhost:8090/api/zonas
+POST http://localhost:8090/api/zonas  (solo Admin)
+PUT  http://localhost:8090/api/zonas/{id}
+GET  http://localhost:8090/api/zonas/punto?lat=-1.234&lon=-78.678
 ```
 
 ### WebSocket
 ```
-ws://localhost:8080/ws?token=<JWT>
+ws://localhost:8090/ws?token=<JWT>
 ```
 El cliente se conecta con su JWT. Los guardias reciben notificaciones de nuevas alertas,
 asunciones y cierres en tiempo real.
