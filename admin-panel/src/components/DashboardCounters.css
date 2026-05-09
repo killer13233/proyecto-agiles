@@ -1,0 +1,159 @@
+.counters-container {
+  padding: 1rem;
+}
+
+.counters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.counter-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.counter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.counter-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.usuarios-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.alertas-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.zonas-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.counter-content h3 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.counter-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.counter-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #374151;
+  font-weight: 600;
+}
+
+.detail-value.positive {
+  color: #10b981;
+}
+
+.detail-value.negative {
+  color: #ef4444;
+}
+
+.detail-value.alert-active {
+  color: #f59e0b;
+}
+
+.detail-value.alert-assigned {
+  color: #2563eb;
+}
+
+.detail-value.alert-closed {
+  color: #6b7280;
+}
+
+.detail-value.alert-critical {
+  color: #dc2626;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .counters-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .counter-card {
+    padding: 1rem;
+  }
+  
+  .counter-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .counter-number {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .counters-container {
+    padding: 0.5rem;
+  }
+  
+  .counters-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .counter-card {
+    padding: 0.75rem;
+  }
+  
+  .counter-icon {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .counter-number {
+    font-size: 1.5rem;
+  }
+  
+  .detail-item {
+    font-size: 0.75rem;
+  }
+}
