@@ -1,19 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using MicroservicioA.Data;
 using MicroservicioA.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Base de datos ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// BASE DE DATOS
+// ─────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-// ── JWT ────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// JWT AUTH
+// ─────────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key no configurado");
 
@@ -38,53 +43,107 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// ── Servicios propios ──────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// SERVICES
+// ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
-// ── CORS ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// CORS
+// ─────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("UtaPolicy", policy =>
     {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
-// ── Controllers + Swagger ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// CONTROLLERS
+// ─────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen();
+// ─────────────────────────────────────────────────────────────
+// SWAGGER + JWT AUTH BUTTON 🔒
+/*
+    ESTE ES EL BLOQUE QUE TE FALTABA BIEN HECHO
+*/
+// ─────────────────────────────────────────────────────────────
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "MicroservicioA",   // ← debe coincidir exactamente con lo del JSON
+        Version = "v1"
+    });
 
-// ── Build app ──────────────────────────────────────────────────────────────
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "bearer",
+        BearerFormat = "JWT",
+        In           = ParameterLocation.Header,
+        Description  = "Escribe tu token JWT aquí"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// ─────────────────────────────────────────────────────────────
+// BUILD APP
+// ─────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Swagger SIEMPRE activo ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// SWAGGER PIPELINE
+// ─────────────────────────────────────────────────────────────
 app.UseSwagger();
 
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Microservicio A v1");
+});
 
-// ── Crear tablas automáticamente ──────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// DB SEEDER
+// ─────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>(); // o AlertaDbContext / ZonaDbContext
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
-    await DbSeeder.SeedAsync(db); // solo en el A
+    await DbSeeder.SeedAsync(db);
 }
 
-// ── Middlewares ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// MIDDLEWARE
+// ─────────────────────────────────────────────────────────────
 app.UseCors("UtaPolicy");
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
 
-// ── Run ────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// RUN
+// ─────────────────────────────────────────────────────────────
 app.Run();
