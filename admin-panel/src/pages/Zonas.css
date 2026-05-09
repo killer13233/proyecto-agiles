@@ -202,22 +202,202 @@
   display: flex;
   gap: 2rem;
   flex: 1;
-  min-height: 500px;
+  min-height: 600px;
+  height: calc(100vh - 300px);
 }
 
-.mapa-wrapper .mapa-container {
+.mapa-container {
   flex: 1;
-  min-height: 500px;
+  height: 100%;
+  min-height: 600px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
-.zona-info-panel {
-  width: 300px;
+.zonas-panel {
+  width: 350px;
   background: white;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 600px;
+}
+
+.zonas-panel-header {
   padding: 1.5rem;
-  height: fit-content;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.zonas-panel-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.zonas-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 1rem;
+  max-height: 400px;
+}
+
+.zona-item {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.zona-item:hover {
+  border-color: #2563eb;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.zona-item.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.zona-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.zona-item-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.875rem;
+}
+
+.zona-item-estado {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.zona-item-estado.activa {
+  background: #10b981;
+  color: white;
+}
+
+.zona-item-estado.inactiva {
+  background: #ef4444;
+  color: white;
+}
+
+.zona-item-details {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.zona-seleccionada-info {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.zona-seleccionada-info h4 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.zona-seleccionada-info p {
+  margin: 0.5rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.zona-seleccionada-info strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.color-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.color-selector label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.color-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: #1f2937;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.color-verde { background: #10b981; }
+.color-rojo { background: #ef4444; }
+.color-azul { background: #2563eb; }
+.color-amarillo { background: #f59e0b; }
+.color-morado { background: #8b5cf6; }
+.color-gris { background: #6b7280; }
+
+/* Scrollbar styling */
+.zonas-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.zonas-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.zonas-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.zonas-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.zonas-list::-webkit-scrollbar-corner {
+  background: #f1f5f9;
 }
 
 .zona-info-panel h3 {
@@ -473,6 +653,43 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .mapa-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .mapa-container {
+    min-height: 400px;
+    height: 400px;
+  }
+  
+  .zonas-panel {
+    width: 100%;
+    min-height: 300px;
+    height: 300px;
+  }
+  
+  .zonas-list {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  
+  .zona-item {
+    min-width: 200px;
+    margin-bottom: 0;
+    margin-right: 0.75rem;
+  }
+  
+  .zona-seleccionada-info {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .zonas-container {
     padding: 1rem;
@@ -484,13 +701,44 @@
     gap: 1rem;
   }
   
-  .zonas-controls {
-    justify-content: center;
-  }
-  
   .mapa-wrapper {
     flex-direction: column;
     gap: 1rem;
+  }
+  
+  .mapa-container {
+    min-height: 350px;
+    height: 350px;
+  }
+  
+  .zonas-panel {
+    width: 100%;
+    min-height: 250px;
+    height: 250px;
+  }
+  
+  .zonas-list {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .zona-item {
+    min-width: 180px;
+    padding: 0.75rem;
+  }
+  
+  .zona-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .zona-item-title {
+    font-size: 0.75rem;
+  }
+  
+  .zona-item-details {
+    font-size: 0.625rem;
   }
   
   .zona-info-panel {
@@ -501,11 +749,70 @@
   .zonas-grid {
     grid-template-columns: 1fr;
   }
+  
+  .zona-card-actions {
+    flex-direction: column;
+  }
+  
+  .zona-actions {
+    flex-direction: row;
+  }
+  
+  .zona-actions .btn {
+    width: auto;
+    flex: 1;
+  }
 }
 
 @media (max-width: 768px) {
   .zonas-container {
     padding: 0.5rem;
+  }
+  
+  .zonas-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .mapa-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .mapa-container {
+    min-height: 300px;
+    height: 300px;
+  }
+  
+  .zonas-panel {
+    width: 100%;
+    min-height: 200px;
+    height: 200px;
+  }
+  
+  .zonas-list {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .zona-item {
+    min-width: 150px;
+    padding: 0.5rem;
+  }
+  
+  .zona-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .zona-item-title {
+    font-size: 0.625rem;
+  }
+  
+  .zona-item-details {
+    font-size: 0.5rem;
   }
   
   .view-toggle {
@@ -515,6 +822,11 @@
   
   .toggle-btn {
     text-align: center;
+  }
+  
+  .creation-controls {
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
   .modal {

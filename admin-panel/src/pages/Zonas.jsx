@@ -14,6 +14,7 @@ const Zonas = () => {
   const [accionCargando, setAccionCargando] = useState(false);
   const [modoVista, setModoVista] = useState('mapa'); // 'mapa' o 'lista'
   const [modoCreacion, setModoCreacion] = useState(false); // Nuevo modo de creación fácil
+  const [colorZonaSeleccionada, setColorZonaSeleccionada] = useState('#10b981'); // Color del círculo
 
   // Formulario para crear/editar
   const [formulario, setFormulario] = useState({
@@ -235,47 +236,90 @@ const Zonas = () => {
       {/* Vista de Mapa */}
       {modoVista === 'mapa' && (
         <div className="mapa-wrapper">
-          <MapaZonas
-            zonas={zonas}
-            zonaSeleccionada={zonaSeleccionada}
-            onZonaClick={setZonaSeleccionada}
-            onMapClick={handleMapClick}
-            modoCreacion={modoCreacion}
-          />
+          <div className="mapa-container">
+            <MapaZonas
+              zonas={zonas}
+              zonaSeleccionada={zonaSeleccionada}
+              onZonaClick={setZonaSeleccionada}
+              onMapClick={handleMapClick}
+              modoCreacion={modoCreacion}
+              colorZona={colorZonaSeleccionada}
+            />
+          </div>
           
-          {zonaSeleccionada && (
-            <div className="zona-info-panel">
-              <h3>{zonaSeleccionada.nombre}</h3>
-              <p><strong>Descripción:</strong> {zonaSeleccionada.descripcion}</p>
-              <p><strong>Coordenadas:</strong> {zonaSeleccionada.latitud.toFixed(6)}, {zonaSeleccionada.longitud.toFixed(6)}</p>
-              <p><strong>Radio:</strong> {zonaSeleccionada.radio}m</p>
-              <p><strong>Estado:</strong> 
-                <span className={`badge ${zonaSeleccionada.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
-                  {zonaSeleccionada.estado}
-                </span>
-              </p>
-              <div className="zona-actions">
-                <button
-                  className="btn btn-editar"
-                  onClick={() => abrirModalEditar(zonaSeleccionada)}
-                >
-                  ✏️ Editar
-                </button>
-                <button
-                  className={`btn ${zonaSeleccionada.estado === 'Activa' ? 'btn-desactivar' : 'btn-activar'}`}
-                  onClick={() => handleCambiarEstado(zonaSeleccionada, zonaSeleccionada.estado === 'Activa' ? 'Inactiva' : 'Activa')}
-                >
-                  {zonaSeleccionada.estado === 'Activa' ? '⏸️ Desactivar' : '▶️ Activar'}
-                </button>
-                <button
-                  className="btn btn-eliminar"
-                  onClick={() => abrirModalEliminar(zonaSeleccionada)}
-                >
-                  🗑️ Eliminar
-                </button>
-              </div>
+          <div className="zonas-panel">
+            <div className="zonas-panel-header">
+              <h3>Zonas Definidas</h3>
             </div>
-          )}
+            <div className="zonas-list">
+              {zonas.map(zona => (
+                <div
+                  key={zona.id}
+                  className={`zona-item ${zonaSeleccionada?.id === zona.id ? 'selected' : ''}`}
+                  onClick={() => setZonaSeleccionada(zona)}
+                >
+                  <div className="zona-item-header">
+                    <span className="zona-item-title">{zona.nombre}</span>
+                    <span className={`zona-item-estado ${zona.estado.toLowerCase()}`}>
+                      {zona.estado}
+                    </span>
+                  </div>
+                  <div className="zona-item-details">
+                    {zona.descripcion}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {zonaSeleccionada && (
+              <div className="zona-seleccionada-info">
+                <h4>{zonaSeleccionada.nombre}</h4>
+                <p><strong>Descripción:</strong> {zonaSeleccionada.descripcion}</p>
+                <p><strong>Coordenadas:</strong> {zonaSeleccionada.latitud.toFixed(6)}, {zonaSeleccionada.longitud.toFixed(6)}</p>
+                <p><strong>Radio:</strong> {zonaSeleccionada.radio}m</p>
+                <p><strong>Estado:</strong> 
+                  <span className={`badge ${zonaSeleccionada.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
+                    {zonaSeleccionada.estado}
+                  </span>
+                </p>
+                <div className="color-selector">
+                  <label>Color del círculo:</label>
+                  <div className="color-options">
+                    <div
+                      className={`color-option color-verde ${colorZonaSeleccionada === '#10b981' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#10b981')}
+                      title="Verde"
+                    />
+                    <div
+                      className={`color-option color-rojo ${colorZonaSeleccionada === '#ef4444' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#ef4444')}
+                      title="Rojo"
+                    />
+                    <div
+                      className={`color-option color-azul ${colorZonaSeleccionada === '#2563eb' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#2563eb')}
+                      title="Azul"
+                    />
+                    <div
+                      className={`color-option color-amarillo ${colorZonaSeleccionada === '#f59e0b' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#f59e0b')}
+                      title="Amarillo"
+                    />
+                    <div
+                      className={`color-option color-morado ${colorZonaSeleccionada === '#8b5cf6' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#8b5cf6')}
+                      title="Morado"
+                    />
+                    <div
+                      className={`color-option color-gris ${colorZonaSeleccionada === '#6b7280' ? 'selected' : ''}`}
+                      onClick={() => setColorZonaSeleccionada('#6b7280')}
+                      title="Gris"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
