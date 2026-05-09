@@ -1,0 +1,547 @@
+.zonas-container {
+  padding: 2rem;
+  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+.zonas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.zonas-header h1 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.zonas-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.creation-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-crear {
+  background: #10b981;
+  color: white;
+}
+
+.btn-crear:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-crear-activo {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-crear-activo:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.view-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.toggle-btn.active {
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-editar {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-editar:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-activar {
+  background: #10b981;
+  color: white;
+}
+
+.btn-activar:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-desactivar {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-desactivar:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-eliminar {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-cancelar {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.btn-confirmar {
+  background: #10b981;
+  color: white;
+}
+
+.btn-confirmar:hover:not(:disabled) {
+  background: #059669;
+}
+
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Vista de Mapa */
+.mapa-wrapper {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  min-height: 500px;
+}
+
+.mapa-wrapper .mapa-container {
+  flex: 1;
+  min-height: 500px;
+}
+
+.zona-info-panel {
+  width: 300px;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.zona-info-panel h3 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.zona-info-panel p {
+  margin: 0.5rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.zona-info-panel strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-activo {
+  background: #10b981;
+  color: white;
+}
+
+.badge-inactivo {
+  background: #ef4444;
+  color: white;
+}
+
+.zona-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.zona-actions .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* Vista de Lista */
+.lista-zonas {
+  flex: 1;
+}
+
+.zonas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.zona-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.zona-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.zona-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.zona-card-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.zona-card-body {
+  padding: 1.5rem;
+}
+
+.zona-card-body p {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.zona-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.zona-details p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.zona-details strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.zona-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.zona-card-actions .btn {
+  flex: 1;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.modal-close:hover {
+  background: #f3f4f6;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.modal-input,
+.modal-textarea,
+.modal-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.modal-input:focus,
+.modal-textarea:focus,
+.modal-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.modal-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.warning-text {
+  color: #dc2626;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .zonas-container {
+    padding: 1rem;
+  }
+  
+  .zonas-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .zonas-controls {
+    justify-content: center;
+  }
+  
+  .mapa-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .zona-info-panel {
+    width: 100%;
+    order: -1;
+  }
+  
+  .zonas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .zonas-container {
+    padding: 0.5rem;
+  }
+  
+  .view-toggle {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .toggle-btn {
+    text-align: center;
+  }
+  
+  .modal {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .zona-card-actions {
+    flex-direction: column;
+  }
+  
+  .zona-actions {
+    flex-direction: row;
+  }
+  
+  .zona-actions .btn {
+    width: auto;
+    flex: 1;
+  }
+}
