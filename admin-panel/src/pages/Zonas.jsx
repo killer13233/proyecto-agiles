@@ -20,9 +20,8 @@ const Zonas = () => {
   const [formulario, setFormulario] = useState({
     nombre: '',
     descripcion: '',
-    latitud: -1.2687,
-    longitud: -78.62434,
-    radio: 200,
+    poligono: '[]',
+    color: '#10b981',
     estado: 'Activa'
   });
 
@@ -84,11 +83,10 @@ const Zonas = () => {
     }
   };
 
-  const handleMapClick = ({ latitud, longitud }) => {
+  const handleMapClick = (poligono) => {
     setFormulario(prev => ({
       ...prev,
-      latitud,
-      longitud
+      poligono: JSON.stringify(poligono)
     }));
     // Abrir modal automáticamente en modo de creación
     setMostrarModalCrear(true);
@@ -183,25 +181,46 @@ const Zonas = () => {
     }
   };
 
+  const handleActualizarZonaColor = async (id, nuevoColor) => {
+    try {
+      const zona = zonas.find(z => z.id === id);
+      if (!zona) return;
+
+      const resultado = await actualizarZona(id, {
+        ...zona,
+        color: nuevoColor
+      });
+
+      if (resultado.success) {
+        setZonas(prev => prev.map(z => 
+          z.id === id ? { ...z, color: nuevoColor } : z
+        ));
+      } else {
+        setError(resultado.error);
+      }
+    } catch (err) {
+      setError('Error al actualizar el color de la zona');
+    }
+  };
+
   const resetFormulario = () => {
     setFormulario({
       nombre: '',
       descripcion: '',
-      latitud: -0.180653,
-      longitud: -78.467838,
-      radio: 200,
+      poligono: '[]',
+      color: '#10b981',
       estado: 'Activa'
     });
   };
 
   const abrirModalEditar = (zona) => {
     setZonaSeleccionada(zona);
+    setColorZonaSeleccionada(zona.color || '#10b981');
     setFormulario({
       nombre: zona.nombre,
       descripcion: zona.descripcion,
-      latitud: zona.latitud,
-      longitud: zona.longitud,
-      radio: zona.radio,
+      poligono: zona.poligono,
+      color: zona.color || '#10b981',
       estado: zona.estado
     });
     setMostrarModalEditar(true);
@@ -210,6 +229,11 @@ const Zonas = () => {
   const abrirModalEliminar = (zona) => {
     setZonaSeleccionada(zona);
     setMostrarModalEliminar(true);
+  };
+
+  const handleZonaClick = (zona) => {
+    setZonaSeleccionada(zona);
+    setColorZonaSeleccionada(zona.color || '#10b981');
   };
 
   if (loading) {
@@ -275,7 +299,7 @@ const Zonas = () => {
             <MapaZonas
               zonas={zonas}
               zonaSeleccionada={zonaSeleccionada}
-              onZonaClick={setZonaSeleccionada}
+              onZonaClick={handleZonaClick}
               onMapClick={handleMapClick}
               modoCreacion={modoCreacion}
               colorZona={colorZonaSeleccionada}
@@ -288,11 +312,12 @@ const Zonas = () => {
             </div>
             <div className="zonas-list">
               {zonas.map(zona => (
-                <div
-                  key={zona.id}
-                  className={`zona-item ${zonaSeleccionada?.id === zona.id ? 'selected' : ''}`}
-                  onClick={() => setZonaSeleccionada(zona)}
-                >
+                    <div
+                      key={zona.id}
+                      className={`zona-item ${zonaSeleccionada?.id === zona.id ? 'selected' : ''}`}
+                      onClick={() => handleZonaClick(zona)}
+                    >
+
                   <div className="zona-item-header">
                     <span className="zona-item-title">{zona.nombre}</span>
                     <span className={`zona-item-estado ${zona.estado?.toLowerCase() || 'activa'}`}>
@@ -325,41 +350,31 @@ const Zonas = () => {
                      🗑️ Eliminar
                    </button>
                  </div>
-                 <div className="color-selector">
-                   <label>Color del círculo:</label>
-                   <div className="color-options">
-                     <div
-                       className={`color-option color-verde ${colorZonaSeleccionada === '#10b981' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#10b981')}
-                       title="Verde"
-                     />
-                     <div
-                       className={`color-option color-rojo ${colorZonaSeleccionada === '#ef4444' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#ef4444')}
-                       title="Rojo"
-                     />
-                     <div
-                       className={`color-option color-azul ${colorZonaSeleccionada === '#2563eb' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#2563eb')}
-                       title="Azul"
-                     />
-                     <div
-                       className={`color-option color-amarillo ${colorZonaSeleccionada === '#f59e0b' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#f59e0b')}
-                       title="Amarillo"
-                     />
-                     <div
-                       className={`color-option color-morado ${colorZonaSeleccionada === '#8b5cf6' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#8b5cf6')}
-                       title="Morado"
-                     />
-                     <div
-                       className={`color-option color-gris ${colorZonaSeleccionada === '#6b7280' ? 'selected' : ''}`}
-                       onClick={() => setColorZonaSeleccionada('#6b7280')}
-                       title="Gris"
-                     />
-                   </div>
-                 </div>
+                  <div className="color-selector">
+                    <label>Color de la Zona:</label>
+                    <div className="color-options">
+                      {[
+                        { color: '#10b981', label: 'Verde' },
+                        { color: '#ef4444', label: 'Rojo' },
+                        { color: '#2563eb', label: 'Azul' },
+                        { color: '#f59e0b', label: 'Amarillo' },
+                        { color: '#8b5cf6', label: 'Morado' },
+                        { color: '#6b7280', label: 'Gris' },
+                      ].map(opt => (
+                        <div
+                          key={opt.color}
+                          className={`color-option ${colorZonaSeleccionada === opt.color ? 'selected' : ''}`}
+                          onClick={async () => {
+                            setColorZonaSeleccionada(opt.color);
+                            await handleActualizarZonaColor(zonaSeleccionada.id, opt.color);
+                          }}
+                          title={opt.label}
+                          style={{ backgroundColor: opt.color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
                </div>
              )}
 
@@ -427,16 +442,61 @@ const Zonas = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="form-group">
-                <label>Nombre de la Zona</label>
-                <input
-                  type="text"
-                  value={formulario.nombre}
-                  onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-                  placeholder="Ej: Zona A - Facultad de Ingeniería"
-                  className="modal-input"
-                />
-              </div>
+               <div className="form-group">
+                 <label>Nombre de la Zona</label>
+                 <input
+                   type="text"
+                   value={formulario.nombre}
+                   onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
+                   placeholder="Ej: Zona A - Facultad de Ingeniería"
+                   className="modal-input"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Descripción</label>
+                 <textarea
+                   value={formulario.descripcion}
+                   onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
+                   placeholder="Describe el área que cubre esta zona..."
+                   className="modal-textarea"
+                   rows="3"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Estado</label>
+                 <select
+                   value={formulario.estado}
+                   onChange={(e) => setFormulario({...formulario, estado: e.target.value})}
+                   className="modal-select"
+                 >
+                   <option value="Activa">Activa</option>
+                   <option value="Inactiva">Inactiva</option>
+                 </select>
+               </div>
+
+               <div className="form-group">
+                 <label>Color de la Zona</label>
+                 <div className="color-options-modal">
+                   {[
+                     { color: '#10b981', label: 'Verde' },
+                     { color: '#ef4444', label: 'Rojo' },
+                     { color: '#2563eb', label: 'Azul' },
+                     { color: '#f59e0b', label: 'Amarillo' },
+                     { color: '#8b5cf6', label: 'Morado' },
+                     { color: '#6b7280', label: 'Gris' },
+                   ].map(opt => (
+                     <div 
+                       key={opt.color}
+                       className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
+                       onClick={() => setFormulario({...formulario, color: opt.color})}
+                       title={opt.label}
+                       style={{ backgroundColor: opt.color }}
+                     />
+                   ))}
+                 </div>
+               </div>
+
+
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea
@@ -537,15 +597,59 @@ const Zonas = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="form-group">
-                <label>Nombre de la Zona</label>
-                <input
-                  type="text"
-                  value={formulario.nombre}
-                  onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-                  className="modal-input"
-                />
-              </div>
+               <div className="form-group">
+                 <label>Nombre de la Zona</label>
+                 <input
+                   type="text"
+                   value={formulario.nombre}
+                   onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
+                   className="modal-input"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Descripción</label>
+                 <textarea
+                   value={formulario.descripcion}
+                   onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
+                   className="modal-textarea"
+                   rows="3"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Estado</label>
+                 <select
+                   value={formulario.estado}
+                   onChange={(e) => setFormulario({...formulario, estado: e.target.value})}
+                   className="modal-select"
+                 >
+                   <option value="Activa">Activa</option>
+                   <option value="Inactiva">Inactiva</option>
+                 </select>
+               </div>
+
+               <div className="form-group">
+                 <label>Color de la Zona</label>
+                 <div className="color-options-modal">
+                   {[
+                     { color: '#10b981', label: 'Verde' },
+                     { color: '#ef4444', label: 'Rojo' },
+                     { color: '#2563eb', label: 'Azul' },
+                     { color: '#f59e0b', label: 'Amarillo' },
+                     { color: '#8b5cf6', label: 'Morado' },
+                     { color: '#6b7280', label: 'Gris' },
+                   ].map(opt => (
+                     <div 
+                       key={opt.color}
+                       className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
+                       onClick={() => setFormulario({...formulario, color: opt.color})}
+                       title={opt.label}
+                       style={{ backgroundColor: opt.color }}
+                     />
+                   ))}
+                 </div>
+               </div>
+
+
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea

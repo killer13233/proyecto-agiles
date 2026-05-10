@@ -27,13 +27,7 @@ public static class ZonaSeeder
             Console.WriteLine($"[ZonaSeeder] Error limpiando zonas: {ex.Message}");
         }
 
-        var zonasBase = new List<(string Nombre, string Color, string Poligono)>
-        {
-            ("Zona A — Ingeniería", "#FF5733", "[[-78.6215,-1.2405],[-78.6200,-1.2405],[-78.6200,-1.2420],[-78.6215,-1.2420],[-78.6215,-1.2405]]"),
-            ("Zona B — Rectorado", "#33C3FF", "[[-78.6200,-1.2405],[-78.6185,-1.2405],[-78.6185,-1.2420],[-78.6200,-1.2420],[-78.6200,-1.2405]]"),
-            ("Zona C — Biblioteca", "#33FF57", "[[-78.6215,-1.2420],[-78.6200,-1.2420],[-78.6200,-1.2435],[-78.6215,-1.2435],[-78.6215,-1.2420]]"),
-            ("Zona D — Deportivo", "#FFD433", "[[-78.6200,-1.2420],[-78.6185,-1.2420],[-78.6185,-1.2435],[-78.6200,-1.2435],[-78.6200,-1.2420]]")
-        };
+        var zonasBase = new List<(string Nombre, string Color, string Poligono)>();
 
         foreach (var (nombre, color, poligono) in zonasBase)
         {

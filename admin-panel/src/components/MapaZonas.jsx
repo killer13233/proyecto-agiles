@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaZonas.css';
@@ -17,31 +17,65 @@ const MapaZonas = ({
    zonaSeleccionada = null, 
    onZonaClick = null,
    onMapClick = null,
-   center = [-1.2412, -78.6200],
-   zoom = 16,
+   center = [-1.269451, -78.623277],
+   zoom = 17,
    bounds = [
-     [-1.245, -78.625],  // Suroeste
-     [-1.235, -78.615]   // Noreste
+     [-1.260, -78.640],  // Suroeste amplio
+     [-1.220, -78.600]   // Noreste amplio
    ],
    modoCreacion = false  // Nuevo prop para modo de creación
  }) => {
+
 
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef();
 
   // Componente interno para manejar eventos del mapa
   const MapEvents = () => {
+    const [tempVertices, setTempVertices] = useState([]);
+
     useMapEvents({
       click (e) {
         if (modoCreacion) {
           const { lat, lng } = e.latlng;
-          if (onMapClick) {
-            onMapClick({ latitud: lat, longitud: lng });
-          }
+          
+          setTempVertices(prev => {
+            const newVertices = [...prev, [lng, lat]];
+            
+            // Si tenemos al menos 3 puntos y el usuario hace click cerca del primero, cerramos el polígono
+            if (prev.length >= 3) {
+              const firstPoint = prev[0];
+              const dist = Math.sqrt(Math.pow(lng - firstPoint[0], 2) + Math.pow(lat - firstPoint[1], 2));
+              
+              if (dist < 0.001) { // Umbral de cercanía para cerrar
+                const finalPolygon = [...newVertices, firstPoint];
+                if (onMapClick) {
+                  onMapClick(finalPolygon);
+                }
+                setTempVertices([]);
+                return [];
+              }
+            }
+            return newVertices;
+          });
         }
       },
     });
-    return null;
+
+    return (
+      <>
+        {tempVertices.length > 0 && (
+          <Polyline 
+            positions={tempVertices.map(v => [v[1], v[0]])} 
+            color="blue" 
+            dashArray="5, 10" 
+          />
+        )}
+        {tempVertices.map((v, i) => (
+          <Marker key={i} position={[v[1], v[0]]} />
+        ))}
+      </>
+    );
   };
 
   useEffect(() => {
@@ -71,18 +105,16 @@ const MapaZonas = ({
     <div className="mapa-container">
       {modoCreacion && (
         <div className="modo-creacion-indicator">
-          <span>📍 Haz click en el mapa para crear una zona</span>
+          <span>📍 Haz click en el mapa para marcar los vértices. Haz click en el primer punto para cerrar la zona.</span>
         </div>
       )}
-       <MapContainer
-         center={center}
-         zoom={zoom}
-         bounds={bounds}
-         maxBounds={bounds}
-         maxBoundsViscosity={1.0}
-         style={{ height: '100%', width: '100%' }}
-         ref={mapRef}
-       >
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          style={{ height: '100%', width: '100%' }}
+          ref={mapRef}
+        >
+
          <MapEvents />
          <TileLayer
 
@@ -93,13 +125,20 @@ const MapaZonas = ({
         {zonas.map(zona => {
           // Convertir GeoJSON [lon, lat] a formato Leaflet [lat, lon]
           let vertices = [];
-          try {
-            const coords = JSON.parse(zona.poligono || '[]');
+        try {
+          const parsed = JSON.parse(zona.poligono || '[]');
+          // Manejar formato GeoJSON {"type": "Polygon", "coordinates": [[...]]} 
+          // o formato arreglo simple [[...]]
+          const coords = parsed.coordinates ? parsed.coordinates[0] : parsed;
+          
+          if (Array.isArray(coords)) {
             vertices = coords.map(coord => [coord[1], coord[0]]);
-          } catch (e) {
-            console.error('Error parsing polygon:', e);
-            return null;
           }
+        } catch (e) {
+          console.error('Error parsing polygon:', e);
+          return null;
+        }
+
 
           if (vertices.length === 0) return null;
 
