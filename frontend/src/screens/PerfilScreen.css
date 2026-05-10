@@ -113,6 +113,7 @@
   margin-top: 18px;
   --background: #183f75;
   --border-radius: 12px;
+  color: white;
 }
 
 .expired-box {

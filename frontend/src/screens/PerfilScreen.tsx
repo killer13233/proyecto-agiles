@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar";
 import "./PerfilScreen.css";
 
+
+type Props = {
+  onIrInicio: () => void;
+  onIrAlarma: () => void;
+};
+
 type TokenData = {
   nombre?: string;
   email?: string;
@@ -15,7 +21,10 @@ type TokenData = {
   exp?: number;
 };
 
-const PerfilScreen: React.FC = () => {
+const PerfilScreen: React.FC<Props> = ({
+    onIrInicio,
+    onIrAlarma,
+    }) => {
   const [user, setUser] = useState<TokenData | null>(null);
   const [expired, setExpired] = useState(false);
   const rolUsuario =
@@ -49,6 +58,7 @@ const PerfilScreen: React.FC = () => {
     await Preferences.remove({ key: "token" });
     window.location.reload();
   };
+  
 
   if (expired) {
     return (
@@ -78,7 +88,7 @@ const PerfilScreen: React.FC = () => {
       <IonContent className="profile-bg">
         <div className="profile-phone">
           <div className="profile-header">
-            <p className="back" onClick={cerrarSesion}>
+            <p className="back" onClick={onIrInicio}>
             ← Inicio
             </p>
             <h2>Mi perfil</h2>
@@ -136,9 +146,17 @@ const PerfilScreen: React.FC = () => {
             </div>
           </div>
 
-          <IonButton expand="block" className="logout-btn" onClick={cerrarSesion}>
+          <IonButton
+            expand="block"
+            className="primary-btn"
+            onClick={onIrAlarma}
+            >
+            Alarma
+            </IonButton>
+
+            <IonButton expand="block" className="logout-btn" onClick={cerrarSesion}>
             Cerrar sesión
-          </IonButton>
+            </IonButton>
         </div>
       </IonContent>
     </IonPage>

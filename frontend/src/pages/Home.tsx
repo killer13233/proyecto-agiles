@@ -1,14 +1,32 @@
 import { useState } from "react";
 import LoginScreen from "../screens/LoginScreen";
 import PerfilScreen from "../screens/PerfilScreen";
+import HomeScreen from "../screens/HomeScreen";
 
 const Home: React.FC = () => {
-  const [isLogged, setIsLogged] = useState(false);
+  const [pantalla, setPantalla] = useState("login");
 
-  return isLogged ? (
-    <PerfilScreen />
-  ) : (
-    <LoginScreen onLoginSuccess={() => setIsLogged(true)} />
+  if (pantalla === "login") {
+    return (
+      <LoginScreen
+        onLoginSuccess={() => setPantalla("perfil")}
+      />
+    );
+  }
+
+  if (pantalla === "perfil") {
+    return (
+      <PerfilScreen
+        onIrInicio={() => setPantalla("login")}
+        onIrAlarma={() => setPantalla("home")}
+      />
+    );
+  }
+
+  return (
+    <HomeScreen
+      onVerPerfil={() => setPantalla("perfil")}
+    />
   );
 };
 
