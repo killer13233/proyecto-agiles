@@ -67,12 +67,11 @@ const usuariosMock = [
   }
 ];
 
-// Obtener usuarios paginados
 export const getUsuarios = async (pagina = 1, tamaño = 10) => {
   try {
-    // Llamar al backend real
+    // Llamar al backend real con los nombres de parámetros correctos
     const response = await axios.get(
-      `${API_BASE}/api/usuarios?page=${pagina}&size=${tamaño}`,
+      `${API_BASE}/api/usuarios?pagina=${pagina}&tamaño=${tamaño}`,
       { headers: getHeaders() }
     );
     
@@ -82,18 +81,9 @@ export const getUsuarios = async (pagina = 1, tamaño = 10) => {
     };
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
-    // Fallback a datos mock si el backend no está disponible
-    const inicio = (pagina - 1) * tamaño;
-    const fin = inicio + tamaño;
-    const usuariosPagina = usuariosMock.slice(inicio, fin);
-    
     return {
-      success: true,
-      data: {
-        usuarios: usuariosPagina,
-        paginaActual: pagina,
-        totalPaginas: Math.ceil(usuariosMock.length / tamaño)
-      }
+      success: false,
+      error: 'Error al obtener usuarios del servidor'
     };
   }
 };

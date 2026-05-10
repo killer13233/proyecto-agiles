@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaZonas.css';
@@ -29,7 +29,6 @@ const MapaZonas = ({
   const mapRef = useRef();
 
   useEffect(() => {
-    // Pequeño delay para asegurar que el mapa esté listo
     const timer = setTimeout(() => {
       setMapReady(true);
     }, 100);
@@ -37,7 +36,7 @@ const MapaZonas = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const handleCircleClick = (zona) => {
+  const handlePolygonClick = (zona) => {
     if (onZonaClick) {
       onZonaClick(zona);
     }
@@ -45,13 +44,11 @@ const MapaZonas = ({
 
   const handleMapClick = (e) => {
     if (modoCreacion) {
-      // Modo de creación: mostrar indicador visual
       const { lat, lng } = e.latlng;
       if (onMapClick) {
         onMapClick({ latitud: lat, longitud: lng });
       }
     } else if (onZonaClick) {
-      // Modo normal: solo si hay onZonaClick
       const { lat, lng } = e.latlng;
       onMapClick({ latitud: lat, longitud: lng });
     }
@@ -88,43 +85,42 @@ const MapaZonas = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {zonas.map(zona => (
-          <div key={zona.id}>
-            <Circle
-              center={[zona.latitud, zona.longitud]}
-              radius={zona.radio}
+        {zonas.map(zona => {
+          // Convertir GeoJSON [lon, lat] a formato Leaflet [lat, lon]
+          let vertices = [];
+          try {
+            const coords = JSON.parse(zona.poligono || '[]');
+            vertices = coords.map(coord => [coord[1], coord[0]]);
+          } catch (e) {
+            console.error('Error parsing polygon:', e);
+            return null;
+          }
+
+          if (vertices.length === 0) return null;
+
+          return (
+            <Polygon
+              key={zona.id}
+              positions={vertices}
               pathOptions={{
-                color: zona.estado === 'Activa' ? '#10b981' : '#ef4444',
-                fillColor: zona.estado === 'Activa' ? '#10b981' : '#ef4444',
+                color: zona.color || (zona.estado === 'Activa' ? '#10b981' : '#ef4444'),
+                fillColor: zona.color || (zona.estado === 'Activa' ? '#10b981' : '#ef4444'),
                 fillOpacity: 0.3,
                 weight: 2
               }}
               eventHandlers={{
-                click: () => handleCircleClick(zona)
-              }}
-            />
-            <Marker
-              position={[zona.latitud, zona.longitud]}
-              eventHandlers={{
-                click: () => handleCircleClick(zona)
+                click: () => handlePolygonClick(zona)
               }}
             >
               <Popup>
                 <div className="popup-content">
                   <h4>{zona.nombre}</h4>
-                  <p><strong>Descripción:</strong> {zona.descripcion}</p>
-                  <p><strong>Radio:</strong> {zona.radio}m</p>
-                  <p><strong>Estado:</strong> 
-                    <span className={`badge ${zona.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
-                      {zona.estado}
-                    </span>
-                  </p>
-                  <p><strong>Creada:</strong> {new Date(zona.createdAt).toLocaleDateString()}</p>
+                  <p><strong>Estado:</strong> {zona.estado || 'Activa'}</p>
                 </div>
               </Popup>
-            </Marker>
-          </div>
-        ))}
+            </Polygon>
+          );
+        })}
       </MapContainer>
     </div>
   );

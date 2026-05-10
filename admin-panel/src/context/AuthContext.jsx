@@ -25,55 +25,20 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      // Modo desarrollo: usar datos mock
-      if (import.meta.env.DEV) {
-        const usuariosMock = {
-          'm.palacios@uta.edu.ec': { 
-            id: 1, 
-            nombre: 'Martin Palacios', 
-            correo: 'm.palacios@uta.edu.ec', 
-            rol: 'Administrador' 
-          },
-          'j.paredes@uta.edu.ec': { 
-            id: 2, 
-            nombre: 'Juan Paredes', 
-            correo: 'j.paredes@uta.edu.ec', 
-            rol: 'Guardia' 
-          },
-          'a.chiriboga@uta.edu.ec': { 
-            id: 3, 
-            nombre: 'Abel Chiriboga', 
-            correo: 'a.chiriboga@uta.edu.ec', 
-            rol: 'Estudiante' 
-          },
-          's.pacha@uta.edu.ec': { 
-            id: 4, 
-            nombre: 'Sheyla Pacha', 
-            correo: 's.pacha@uta.edu.ec', 
-            rol: 'Estudiante' 
-          }
-        };
-
-        const usuario = usuariosMock[credentials.correo];
-        
-        if (usuario && credentials.password === 'Admin2026!') {
-          const mockToken = 'mock-jwt-token-development';
-          localStorage.setItem('token', mockToken);
-          localStorage.setItem('user', JSON.stringify(usuario));
-          setUser(usuario);
-          return { success: true };
-        } else {
-          return { success: false, error: 'Credenciales incorrectas' };
-        }
-      }
 
       // Producción: login real
       const response = await axios.post(`${API_BASE}/api/auth/login`, credentials);
       
       if (response.data.token) {
+        const userData = {
+          nombre: response.data.nombre,
+          correo: response.data.correo,
+          rol: response.data.rol,
+          zonaAsignada: response.data.zonaAsignada
+        };
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.usuario));
-        setUser(response.data.usuario);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
         return { success: true };
       }
     } catch (error) {

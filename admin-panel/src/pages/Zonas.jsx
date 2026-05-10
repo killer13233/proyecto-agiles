@@ -260,13 +260,13 @@ const Zonas = () => {
                 >
                   <div className="zona-item-header">
                     <span className="zona-item-title">{zona.nombre}</span>
-                    <span className={`zona-item-estado ${zona.estado.toLowerCase()}`}>
-                      {zona.estado}
+                    <span className={`zona-item-estado ${zona.estado?.toLowerCase() || 'activa'}`}>
+                      {zona.estado || 'Activa'}
                     </span>
                   </div>
-                  <div className="zona-item-details">
-                    {zona.descripcion}
-                  </div>
+                    <div className="zona-item-details">
+                      {zona.descripcion || 'Sin descripción'}
+                    </div>
                 </div>
               ))}
             </div>
@@ -274,14 +274,14 @@ const Zonas = () => {
             {zonaSeleccionada && (
               <div className="zona-seleccionada-info">
                 <h4>{zonaSeleccionada.nombre}</h4>
-                <p><strong>Descripción:</strong> {zonaSeleccionada.descripcion}</p>
-                <p><strong>Coordenadas:</strong> {zonaSeleccionada.latitud.toFixed(6)}, {zonaSeleccionada.longitud.toFixed(6)}</p>
-                <p><strong>Radio:</strong> {zonaSeleccionada.radio}m</p>
-                <p><strong>Estado:</strong> 
-                  <span className={`badge ${zonaSeleccionada.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
-                    {zonaSeleccionada.estado}
-                  </span>
-                </p>
+                 <p><strong>Descripción:</strong> {zonaSeleccionada.descripcion || 'Sin descripción'}</p>
+                 <p><strong>Coordenadas:</strong> {zonaSeleccionada.latitud?.toFixed(6) || '0.000000'}, {zonaSeleccionada.longitud?.toFixed(6) || '0.000000'}</p>
+                 <p><strong>Radio:</strong> {zonaSeleccionada.radio || 0}m</p>
+                 <p><strong>Estado:</strong> 
+                   <span className={`badge ${zonaSeleccionada.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
+                     {zonaSeleccionada.estado || 'Activa'}
+                   </span>
+                 </p>
                 <div className="color-selector">
                   <label>Color del círculo:</label>
                   <div className="color-options">

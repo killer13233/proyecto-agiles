@@ -121,22 +121,9 @@ export const getAlertas = async (filtros = {}) => {
     };
   } catch (error) {
     console.error('Error al obtener alertas:', error);
-    // Fallback a datos mock si el backend no está disponible
-    let alertasFiltradas = [...alertasMock];
-    
-    if (filtros.estado) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.estado === filtros.estado);
-    }
-    if (filtros.tipo) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.tipo === filtros.tipo);
-    }
-    if (filtros.prioridad) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.prioridad === filtros.prioridad);
-    }
-    
     return {
-      success: true,
-      data: { alertas: alertasFiltradas }
+      success: false,
+      error: 'Error al obtener alertas del servidor'
     };
   }
 };

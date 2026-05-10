@@ -31,7 +31,8 @@ const Alertas = () => {
       const resultado = await getAlertas(filtros);
       
       if (resultado.success) {
-        setAlertas(resultado.data.alertas);
+        // El backend devuelve la lista directamente en resultado.data
+        setAlertas(Array.isArray(resultado.data) ? resultado.data : (resultado.data.alertas || []));
       } else {
         setError(resultado.error);
       }

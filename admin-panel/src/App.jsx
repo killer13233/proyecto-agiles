@@ -3,12 +3,10 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/MainLayout';
 import Login from './pages/Login';
-
-// Páginas placeholder - se crearán en siguientes tareas
-const Dashboard = () => <div>Dashboard - En desarrollo</div>;
-const Usuarios = () => <div>Usuarios - En desarrollo</div>;
-const Zonas = () => <div>Zonas - En desarrollo</div>;
-const Alertas = () => <div>Alertas - En desarrollo</div>;
+import Usuarios from './pages/Usuarios';
+import Zonas from './pages/Zonas';
+import Alertas from './pages/Alertas';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (

@@ -39,8 +39,8 @@ const Usuarios = () => {
       const resultado = await getUsuarios(paginaActual, tamañoPagina);
       
       if (resultado.success) {
-        setUsuarios(resultado.data.usuarios);
-        setTotalPaginas(resultado.data.totalPaginas);
+        setUsuarios(resultado.data.items);
+        setTotalPaginas(Math.ceil(resultado.data.total / resultado.data.tamañoPagina));
       } else {
         setError(resultado.error);
       }
