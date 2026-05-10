@@ -1,0 +1,115 @@
+@property --progress {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.alarm-container {
+  text-align: center;
+  margin-top: 35px;
+}
+
+.alarm-title {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.alarm-button {
+  width: 155px;
+  height: 155px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  color: #e33434;
+  box-shadow: 0 8px 25px rgba(28, 52, 84, 0.18);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: auto;
+  font-weight: 800;
+  position: relative;
+  overflow: hidden;
+}
+
+.alarm-button strong {
+  font-size: 36px;
+  z-index: 2;
+}
+
+.alarm-button span {
+  font-size: 11px;
+  letter-spacing: 2px;
+  z-index: 2;
+}
+
+.alarm-button.presionando {
+  color: #ef4444;
+}
+
+.alarm-button.presionando::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ef4444 var(--progress), transparent 0deg);
+  animation: cargar 3s linear forwards;
+
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 6px),
+    white calc(100% - 5px)
+  );
+
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 6px),
+    white calc(100% - 5px)
+  );
+}
+
+@keyframes cargar {
+  from {
+    --progress: 0deg;
+  }
+
+  to {
+    --progress: 360deg;
+  }
+}
+
+.alarm-button.enviado {
+  color: #059669;
+  background: #dcfce7;
+}
+
+.alarm-button.enviado::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid #10b981;
+}
+
+.alarm-button.gps-error,
+.alarm-button.bloqueado {
+  opacity: 0.45;
+}
+
+.gps-error-box {
+  margin-top: 30px;
+  background: #fff7ed;
+  color: #b45309;
+  border: 1px solid #f59e0b;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.cooldown-text {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 20px;
+}
