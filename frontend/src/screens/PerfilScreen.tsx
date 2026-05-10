@@ -78,7 +78,9 @@ const PerfilScreen: React.FC = () => {
       <IonContent className="profile-bg">
         <div className="profile-phone">
           <div className="profile-header">
-            <p className="back">← Inicio</p>
+            <p className="back" onClick={cerrarSesion}>
+            ← Inicio
+            </p>
             <h2>Mi perfil</h2>
 
             <Avatar nombre={user?.nombre || "?"} />
