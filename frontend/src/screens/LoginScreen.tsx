@@ -10,9 +10,16 @@ import { useState } from "react";
 import { login } from "../services/authService";
 import { Preferences } from "@capacitor/preferences";
 import "./LoginScreen.css";
+import { jwtDecode } from "jwt-decode";
+
+type TokenData = {
+  role?: string;
+  rol?: string;
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"?: string;
+};
 
 type Props = {
-  onLoginSuccess: () => void;
+  onLoginSuccess: (rol: string) => void;
 };
 
 
@@ -38,10 +45,20 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       value: data.token,
     });
 
+    const decoded = jwtDecode<TokenData>(data.token);
+
+    const rol =
+    decoded.role ||
+    decoded.rol ||
+    decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+    "";
+
+    console.log("ROL LOGIN:", rol);
+
     setError(false);
     setMensaje("Login correcto");
 
-    onLoginSuccess();
+    onLoginSuccess(rol);
 
   }  catch (err: any) {
   const mensajeBackend =

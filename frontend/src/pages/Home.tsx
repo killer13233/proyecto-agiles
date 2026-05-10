@@ -2,6 +2,7 @@ import { useState } from "react";
 import LoginScreen from "../screens/LoginScreen";
 import PerfilScreen from "../screens/PerfilScreen";
 import HomeScreen from "../screens/HomeScreen";
+import AdminDashboard from "../screens/AdminDashboard";
 
 const Home: React.FC = () => {
   const [pantalla, setPantalla] = useState("login");
@@ -9,10 +10,22 @@ const Home: React.FC = () => {
   if (pantalla === "login") {
     return (
       <LoginScreen
-        onLoginSuccess={() => setPantalla("perfil")}
+        onLoginSuccess={(rol) => {
+        console.log("ROL RECIBIDO EN HOME:", rol);
+
+        if (rol === "Administrador") {
+          setPantalla("admin");
+        } else {
+          setPantalla("perfil");
+        }
+      }}
       />
     );
   }
+  if (pantalla === "admin") {
+    return <AdminDashboard />;
+  }
+
 
   if (pantalla === "perfil") {
     return (
