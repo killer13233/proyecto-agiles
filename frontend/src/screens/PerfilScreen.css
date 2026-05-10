@@ -1,0 +1,154 @@
+.profile-bg {
+  --background: #eef2f8;
+}
+
+.profile-phone {
+  max-width: 390px;
+  min-height: 100vh;
+  margin: auto;
+  padding: 0 18px 25px;
+}
+
+.profile-header {
+  background: #183f75;
+  color: white;
+  text-align: center;
+  padding: 28px 20px 36px;
+  border-radius: 0 0 28px 28px;
+}
+
+.back {
+  text-align: left;
+  font-size: 13px;
+  margin: 0;
+}
+
+.profile-header h2 {
+  margin: -15px 0 18px;
+  font-size: 18px;
+}
+
+.profile-header h3 {
+  margin: 12px 0 4px;
+}
+
+.profile-header p {
+  color: #dbe7f5;
+  font-size: 13px;
+}
+
+.avatar {
+  width: 76px;
+  height: 76px;
+  margin: auto;
+  border-radius: 50%;
+  background: white;
+  color: #183f75;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.role-badge {
+  background: #2f80ed;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.info-card {
+  background: white;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(28, 52, 84, 0.1);
+}
+
+.info-card h4 {
+  color: #8a94a6;
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #eef1f5;
+  font-size: 13px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row span {
+  color: #6b7280;
+}
+
+.row b {
+  color: #1b2b40;
+  text-align: right;
+}
+
+.active {
+  color: #0abf73 !important;
+}
+
+.logout-btn {
+  margin-top: 18px;
+  --background: white;
+  --color: #e33434;
+  --border-color: #ff8c8c;
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: 12px;
+  font-weight: 700;
+}
+
+.primary-btn {
+  margin-top: 18px;
+  --background: #183f75;
+  --border-radius: 12px;
+  color: white;
+}
+
+.expired-box {
+  margin-top: 24px;
+  background: #fff0f0;
+  border: 1px solid #ff9d9d;
+  color: #d93030;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.role-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+}
+
+.role-badge.estudiante {
+  background: #2f80ed;
+}
+
+.role-badge.guardia {
+  background: #f2a000;
+}
+
+.role-badge.administrador {
+  background: #9b51e0;
+}
+.back {
+  text-align: left;
+  font-size: 13px;
+  margin: 0;
+  cursor: pointer;
+}
