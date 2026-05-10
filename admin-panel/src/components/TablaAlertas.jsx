@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './TablaAlertas.css';
+import { getGuardias } from '../services/usuariosService';
 
 const TablaAlertas = ({ 
   alertas = [], 
@@ -13,16 +14,17 @@ const TablaAlertas = ({
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
   const [motivoCierre, setMotivoCierre] = useState('');
   const [guardiaSeleccionado, setGuardiaSeleccionado] = useState('');
+  const [guardiasDisponibles, setGuardiasDisponibles] = useState([]);
 
-  // Lista de guardias disponibles (mock)
-  const guardiasDisponibles = [
-    { id: 1, nombre: 'Juan Paredes' },
-    { id: 2, nombre: 'Martin Palacios' },
-    { id: 3, nombre: 'Sheyla Pacha' },
-    { id: 4, nombre: 'Abel Chiriboga' },
-    { id: 5, nombre: 'Carlos Mendoza' },
-    { id: 6, nombre: 'Maria Rodriguez' }
-  ];
+  useEffect(() => {
+    const fetchGuardias = async () => {
+      const result = await getGuardias();
+      if (result.success) {
+        setGuardiasDisponibles(result.data);
+      }
+    };
+    fetchGuardias();
+  }, []);
 
   const handleAsignar = (alerta) => {
     setAlertaSeleccionada(alerta);
@@ -251,11 +253,12 @@ const TablaAlertas = ({
                     className="guardia-select"
                   >
                     <option value="">-- Seleccionar guardia --</option>
-                    {guardiasDisponibles.map(guardia => (
-                      <option key={guardia.id} value={guardia.nombre}>
-                        {guardia.nombre}
-                      </option>
-                    ))}
+                     {guardiasDisponibles.map(guardia => (
+                       <option key={guardia.id} value={guardia.id}>
+                         {guardia.nombre}
+                       </option>
+                     ))}
+
                   </select>
                 </div>
               </div>

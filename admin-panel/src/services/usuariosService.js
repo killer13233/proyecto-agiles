@@ -15,58 +15,6 @@ const getHeaders = () => {
   };
 };
 
-// Usuarios mock para desarrollo
-const usuariosMock = [
-  {
-    id: 1,
-    nombre: 'Martin Palacios',
-    correo: 'm.palacios@uta.edu.ec',
-    rol: 'Administrador',
-    estado: 'Activo',
-    zona: 'Zona A'
-  },
-  {
-    id: 2,
-    nombre: 'Juan Paredes',
-    correo: 'j.paredes@uta.edu.ec',
-    rol: 'Guardia',
-    estado: 'Activo',
-    zona: 'Zona B'
-  },
-  {
-    id: 3,
-    nombre: 'Abel Chiriboga',
-    correo: 'a.chiriboga@uta.edu.ec',
-    rol: 'Estudiante',
-    estado: 'Activo',
-    zona: 'Zona C'
-  },
-  {
-    id: 4,
-    nombre: 'Sheyla Pacha',
-    correo: 's.pacha@uta.edu.ec',
-    rol: 'Estudiante',
-    estado: 'Inactivo',
-    zona: 'Zona A'
-  },
-  {
-    id: 5,
-    nombre: 'Maria Rodriguez',
-    correo: 'm.rodriguez@uta.edu.ec',
-    rol: 'Docente',
-    estado: 'Activo',
-    zona: 'Zona D'
-  },
-  {
-    id: 6,
-    nombre: 'Carlos Mendoza',
-    correo: 'c.mendoza@uta.edu.ec',
-    rol: 'Personal Administrativo',
-    estado: 'Activo',
-    zona: 'Zona B'
-  }
-];
-
 export const getUsuarios = async (pagina = 1, tamaño = 10) => {
   try {
     // Llamar al backend real con los nombres de parámetros correctos
@@ -91,10 +39,10 @@ export const getUsuarios = async (pagina = 1, tamaño = 10) => {
 // Cambiar rol de usuario
 export const cambiarRolUsuario = async (id, nuevoRol) => {
   try {
-    // Llamar al backend real
-    const response = await axios.patch(
+    // Llamar al backend real utilizando PUT como requiere el controlador
+    const response = await axios.put(
       `${API_BASE}/api/usuarios/${id}/rol`,
-      { rol: nuevoRol },
+      { nuevoRol },
       { headers: getHeaders() }
     );
     
@@ -104,19 +52,9 @@ export const cambiarRolUsuario = async (id, nuevoRol) => {
     };
   } catch (error) {
     console.error('Error al cambiar rol de usuario:', error);
-    // Fallback a datos mock si el backend no está disponible
-    const usuario = usuariosMock.find(u => u.id === id);
-    if (usuario) {
-      usuario.rol = nuevoRol;
-      return {
-        success: true,
-        data: usuario
-      };
-    }
-    
     return {
       success: false,
-      error: 'Usuario no encontrado'
+      error: 'Error al cambiar rol de usuario del servidor'
     };
   }
 };
@@ -137,19 +75,9 @@ export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
     };
   } catch (error) {
     console.error('Error al cambiar estado de usuario:', error);
-    // Fallback a datos mock si el backend no está disponible
-    const usuario = usuariosMock.find(u => u.id === id);
-    if (usuario) {
-      usuario.estado = nuevoEstado;
-      return {
-        success: true,
-        data: usuario
-      };
-    }
-    
     return {
       success: false,
-      error: 'Usuario no encontrado'
+      error: 'Error al cambiar estado de usuario del servidor'
     };
   }
 };
@@ -163,4 +91,24 @@ export const getRolesValidos = () => {
     'Guardia',
     'Administrador'
   ];
+};
+
+export const getGuardias = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/usuarios?rol=Guardia`,
+      { headers: getHeaders() }
+    );
+    
+    return {
+      success: true,
+      data: response.data.Items || response.data
+    };
+  } catch (error) {
+    console.error('Error al obtener guardias:', error);
+    return {
+      success: false,
+      error: 'Error al obtener guardias del servidor'
+    };
+  }
 };
