@@ -13,18 +13,19 @@ L.Icon.Default.mergeOptions({
 });
 
 const MapaZonas = ({ 
-  zonas = [], 
-  zonaSeleccionada = null, 
-  onZonaClick = null,
-  onMapClick = null,
-  center = [-1.2687, -78.62434],
-  zoom = 18,
-  bounds = [
-    [-1.272, -78.628],  // Suroeste del campus UTA
-    [-1.265, -78.620]   // Noreste del campus UTA
-  ],
-  modoCreacion = false  // Nuevo prop para modo de creación
-}) => {
+   zonas = [], 
+   zonaSeleccionada = null, 
+   onZonaClick = null,
+   onMapClick = null,
+   center = [-1.2412, -78.6200],
+   zoom = 16,
+   bounds = [
+     [-1.245, -78.625],  // Suroeste
+     [-1.235, -78.615]   // Noreste
+   ],
+   modoCreacion = false  // Nuevo prop para modo de creación
+ }) => {
+
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef();
 

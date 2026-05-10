@@ -88,7 +88,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ZonaDbContext>();
     db.Database.EnsureCreated();
+     await ZonaSeeder.SeedAsync(db);
 }
+
 
 // Middleware
 app.UseCors("UtaPolicy");

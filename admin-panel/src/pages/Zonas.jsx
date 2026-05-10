@@ -26,6 +26,38 @@ const Zonas = () => {
     estado: 'Activa'
   });
 
+  const normalizeZona = (zona) => {
+    if (!zona) return null;
+
+    let lat = 0;
+    let lon = 0;
+    let poligonoStr = zona.poligono || zona.Poligono || '[]';
+    
+    try {
+      const vertices = JSON.parse(poligonoStr);
+      if (Array.isArray(vertices) && vertices.length > 0) {
+        // Calcular el centroide simple (promedio de vértices)
+        const sum = vertices.reduce((acc, curr) => [acc[0] + curr[0], acc[1] + curr[1]], [0, 0]);
+        lon = sum[0] / vertices.length;
+        lat = sum[1] / vertices.length;
+      }
+    } catch (e) {
+      console.error('Error calculando centro de la zona:', e);
+    }
+
+    return {
+      ...zona,
+      nombre: zona.nombre || zona.Nombre || 'Sin nombre',
+      descripcion: zona.descripcion || zona.Descripcion || 'Sin descripción',
+      latitud: zona.latitud || zona.Latitud || lat,
+      longitud: zona.longitud || zona.Longitud || lon,
+      radio: zona.radio || zona.Radio || 200,
+      estado: zona.estado || zona.Estado || 'Activa',
+      color: zona.color || zona.Color || '#10b981',
+      poligono: poligonoStr,
+    };
+  };
+
   useEffect(() => {
     cargarZonas();
   }, []);
@@ -38,7 +70,10 @@ const Zonas = () => {
       const resultado = await getZonas();
       
       if (resultado.success) {
-        setZonas(resultado.data);
+        const normalizedZonas = Array.isArray(resultado.data) 
+          ? resultado.data.map(normalizeZona) 
+          : [];
+        setZonas(normalizedZonas);
       } else {
         setError(resultado.error);
       }
@@ -71,7 +106,7 @@ const Zonas = () => {
       const resultado = await crearZona(formulario);
       
       if (resultado.success) {
-        setZonas(prev => [...prev, resultado.data]);
+        setZonas(prev => [...prev, normalizeZona(resultado.data)]);
         setMostrarModalCrear(false);
         resetFormulario();
       } else {
@@ -97,7 +132,7 @@ const Zonas = () => {
       
       if (resultado.success) {
         setZonas(prev => prev.map(z => 
-          z.id === zonaSeleccionada.id ? resultado.data : z
+          z.id === zonaSeleccionada.id ? normalizeZona(resultado.data) : z
         ));
         setMostrarModalEditar(false);
         setZonaSeleccionada(null);
