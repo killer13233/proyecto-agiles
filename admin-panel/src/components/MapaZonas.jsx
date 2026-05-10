@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaZonas.css';
@@ -28,6 +28,21 @@ const MapaZonas = ({
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef();
 
+  // Componente interno para manejar eventos del mapa
+  const MapEvents = () => {
+    useMapEvents({
+      click (e) {
+        if (modoCreacion) {
+          const { lat, lng } = e.latlng;
+          if (onMapClick) {
+            onMapClick({ latitud: lat, longitud: lng });
+          }
+        }
+      },
+    });
+    return null;
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setMapReady(true);
@@ -39,18 +54,6 @@ const MapaZonas = ({
   const handlePolygonClick = (zona) => {
     if (onZonaClick) {
       onZonaClick(zona);
-    }
-  };
-
-  const handleMapClick = (e) => {
-    if (modoCreacion) {
-      const { lat, lng } = e.latlng;
-      if (onMapClick) {
-        onMapClick({ latitud: lat, longitud: lng });
-      }
-    } else if (onZonaClick) {
-      const { lat, lng } = e.latlng;
-      onMapClick({ latitud: lat, longitud: lng });
     }
   };
 
@@ -70,17 +73,18 @@ const MapaZonas = ({
           <span>📍 Haz click en el mapa para crear una zona</span>
         </div>
       )}
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        bounds={bounds}
-        maxBounds={bounds}
-        maxBoundsViscosity={1.0}
-        style={{ height: '100%', width: '100%' }}
-        ref={mapRef}
-        onClick={handleMapClick}
-      >
-        <TileLayer
+       <MapContainer
+         center={center}
+         zoom={zoom}
+         bounds={bounds}
+         maxBounds={bounds}
+         maxBoundsViscosity={1.0}
+         style={{ height: '100%', width: '100%' }}
+         ref={mapRef}
+       >
+         <MapEvents />
+         <TileLayer
+
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />

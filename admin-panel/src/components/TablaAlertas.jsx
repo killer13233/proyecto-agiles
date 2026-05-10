@@ -20,7 +20,12 @@ const TablaAlertas = ({
     const fetchGuardias = async () => {
       const result = await getGuardias();
       if (result.success) {
-        setGuardiasDisponibles(result.data);
+        const data = result.data;
+        console.log('DEBUG ALERTAS: Guardias cargados desde servidor:', data);
+        setGuardiasDisponibles(Array.isArray(data) ? data : []);
+      } else {
+        console.error('DEBUG ALERTAS: Error cargando guardias:', result.error);
+        setGuardiasDisponibles([]);
       }
     };
     fetchGuardias();
@@ -61,6 +66,45 @@ const TablaAlertas = ({
     return clases[prioridad] || 'badge-default';
   };
 
+  const normalizeAlerta = (alerta) => {
+    if (!alerta) return null;
+
+    const normalized = {
+      ...alerta,
+      titulo: alerta.motivo || alerta.Motivo || 'Sin título',
+      descripcion: alerta.descripcion || alerta.Descripcion || 'Sin descripción',
+      tipo: alerta.tipo || alerta.Tipo || 'General',
+      prioridad: alerta.prioridad || alerta.Prioridad || 'Media',
+      estado: alerta.estado || alerta.Estado || 'Desconocido',
+      ubicacion: alerta.zona || alerta.Zona || 'Sin zona',
+      latitud: alerta.latitud || alerta.Latitud,
+      longitud: alerta.longitud || alerta.Longitud,
+      reportadoPor: alerta.reportadoPor || alerta.ReportadoPor || 'Desconocido',
+      fechaCreacion: alerta.creadaEn || alerta.CreadaEn,
+      fechaCierre: alerta.cerradaEn || alerta.CerradaEn,
+    };
+
+    let guardiasIds = [];
+    const rawGuardias = alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados;
+    if (typeof rawGuardias === 'string') {
+      try { 
+        const parsed = JSON.parse(rawGuardias);
+        guardiasIds = Array.isArray(parsed) ? parsed.filter(id => id && String(id).trim() !== '') : []; 
+      } catch(e) { guardiasIds = []; }
+    } else if (Array.isArray(rawGuardias)) {
+      guardiasIds = rawGuardias.filter(id => id && String(id).trim() !== '');
+    }
+
+    if (guardiasIds.length > 0) {
+      const g = guardiasDisponibles.find(gd => String(gd.id) === String(guardiasIds[0]));
+      normalized.usuarioAsignado = g ? g.nombre : `[ID: ${guardiasIds[0]}]`;
+    } else {
+      normalized.usuarioAsignado = 'Sin asignar';
+    }
+
+    return normalized;
+  };
+
   const getTipoIcon = (tipo) => {
     const iconos = {
       'Seguridad': '🛡️',
@@ -73,13 +117,32 @@ const TablaAlertas = ({
   };
 
   const confirmarAsignacion = () => {
-    if (onAsignar && alertaSeleccionada && guardiaSeleccionado) {
-      onAsignar(alertaSeleccionada.id, guardiaSeleccionado);
+    if (!onAsignar || !alertaSeleccionada) return;
+
+    let finalId = '';
+    let finalNombre = '';
+
+    if (guardiaSeleccionado && typeof guardiaSeleccionado === 'object') {
+      finalId = guardiaSeleccionado.id;
+      finalNombre = guardiaSeleccionado.nombre;
+    } else if (typeof guardiaSeleccionado === 'string' && guardiaSeleccionado !== '') {
+      finalId = guardiaSeleccionado;
+      console.log('IDs en alerta:', guardiasIds);
+      console.log('Guardias disponibles:', guardiasDisponibles);
+      const g = guardiasDisponibles.find(gd => String(gd.id) === String(id));
+      finalNombre = g ? g.nombre : 'Guardia Desconocido';
+    }
+
+    if (finalId) {
+      onAsignar(alertaSeleccionada.id, finalId, finalNombre);
       setMostrarModalAsignar(false);
       setAlertaSeleccionada(null);
-      setGuardiaSeleccionado('');
+      setGuardiaSeleccionado(null);
+    } else {
+      alert('Por favor, selecciona un guardia válido');
     }
   };
+
 
   const confirmarCierre = () => {
     if (onCerrar && alertaSeleccionada) {
@@ -91,7 +154,9 @@ const TablaAlertas = ({
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
     return date.toLocaleDateString('es-EC', {
       day: '2-digit',
       month: 'short',
@@ -134,90 +199,118 @@ const TablaAlertas = ({
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            {alertas.map(alerta => (
-              <tr key={alerta.id}>
-                <td className="titulo-cell">
-                  <div className="alerta-titulo">
-                    <span className="tipo-icon">{getTipoIcon(alerta.tipo)}</span>
-                    {alerta.titulo}
-                  </div>
-                </td>
-                <td>
-                  <span className="tipo-badge">{alerta.tipo}</span>
-                </td>
-                <td>
-                  <span className={`badge ${getPrioridadBadgeClass(alerta.prioridad)}`}>
-                    {alerta.prioridad}
-                  </span>
-                </td>
-                <td>
-                  <span className={`badge ${getEstadoBadgeClass(alerta.estado)}`}>
-                    {alerta.estado}
-                  </span>
-                </td>
-                <td className="ubicacion-cell">
-                  <div className="ubicacion-info">
-                    <span className="ubicacion-icon">📍</span>
-                    <span>{alerta.ubicacion}</span>
-                  </div>
-                </td>
-                <td>
-                  {alerta.usuarioAsignado ? (
-                    <span className="usuario-asignado">{alerta.usuarioAsignado}</span>
-                  ) : (
-                    <span className="sin-asignar">Sin asignar</span>
-                  )}
-                </td>
-                <td>
-                  <div className="fecha-info">
-                    <div className="fecha-creacion">
-                      {formatDate(alerta.fechaCreacion)}
-                    </div>
-                    {alerta.fechaAsignacion && (
-                      <div className="fecha-asignacion">
-                        Asignada: {formatDate(alerta.fechaAsignacion)}
-                      </div>
-                    )}
-                    {alerta.fechaCierre && (
-                      <div className="fecha-cierre">
-                        Cerrada: {formatDate(alerta.fechaCierre)}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td>
-                  <div className="acciones-cell">
-                    <button
-                      className="btn-accion btn-detalles"
-                      onClick={() => handleVerDetalles(alerta)}
-                    >
-                      📋 Detalles
-                    </button>
-                    {alerta.estado === 'Activa' && (
-                      <button
-                        className="btn-accion btn-asignar"
-                        onClick={() => handleAsignar(alerta)}
-                      >
-                        👤 Asignar
-                      </button>
-                    )}
-                    {alerta.estado === 'Asignada' && (
-                      <button
-                        className="btn-accion btn-cerrar"
-                        onClick={() => handleCerrar(alerta)}
-                      >
-                        ✅ Cerrar
-                      </button>
-                    )}
-                    {alerta.estado === 'Cerrada' && (
-                      <span className="accion-completada">✅ Completada</span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+           <tbody>
+             {alertas.map(alerta => {
+               const titulo = alerta.motivo || alerta.Motivo || 'Sin título';
+               const estado = alerta.estado || alerta.Estado || 'Desconocido';
+               const zona = alerta.zona || alerta.Zona || 'Sin zona';
+               const fecha = alerta.creadaEn || alerta.CreadaEn;
+               const fechaCierre = alerta.cerradaEn || alerta.CerradaEn;
+               const tipo = alerta.tipo || 'General';
+               const prioridad = alerta.prioridad || 'Media';
+
+                 // Procesar guardias (filtramos IDs vacíos o nulos)
+                 let guardiasIds = [];
+                 const rawGuardias = alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados;
+                 if (typeof rawGuardias === 'string') {
+                   try { 
+                     const parsed = JSON.parse(rawGuardias);
+                     guardiasIds = Array.isArray(parsed) ? parsed.filter(id => id && String(id).trim() !== '') : []; 
+                   } catch(e) { guardiasIds = []; }
+                 } else if (Array.isArray(rawGuardias)) {
+                   guardiasIds = rawGuardias.filter(id => id && String(id).trim() !== '');
+                 }
+
+
+               console.log('IDs guardias de esta alerta:', guardiasIds);
+console.log('Guardias disponibles:', guardiasDisponibles);
+const guardiasNombres = guardiasIds.map(id => {
+  const g = guardiasDisponibles.find(gd => String(gd.id) === String(id));
+  return g ? g.nombre : `[ID: ${id}]`;
+});
+
+
+               return (
+                 <tr key={alerta.id}>
+                   <td className="titulo-cell">
+                     <div className="alerta-titulo">
+                       <span className="tipo-icon">{getTipoIcon(tipo)}</span>
+                       {titulo}
+                     </div>
+                   </td>
+                   <td>
+                     <span className="tipo-badge">{tipo}</span>
+                   </td>
+                   <td>
+                     <span className={`badge ${getPrioridadBadgeClass(prioridad)}`}>
+                       {prioridad}
+                     </span>
+                   </td>
+                   <td>
+                     <span className={`badge ${getEstadoBadgeClass(estado)}`}>
+                       {estado}
+                     </span>
+                   </td>
+                   <td className="ubicacion-cell">
+                     <div className="ubicacion-info">
+                       <span className="ubicacion-icon">📍</span>
+                       <span>{zona}</span>
+                     </div>
+                   </td>
+                    <td>
+                      {guardiasNombres.length > 0 ? (
+                        <span className="usuario-asignado">{guardiasNombres[0]}</span>
+                        ) : (
+                        <span className="sin-asignar">Sin asignar</span>
+                      )}
+                    </td>
+
+                   <td>
+                     <div className="fecha-info">
+                       <div className="fecha-creacion">
+                         {formatDate(fecha)}
+                       </div>
+                       {fechaCierre && (
+                         <div className="fecha-cierre">
+                           Cerrada: {formatDate(fechaCierre)}
+                         </div>
+                       )}
+                     </div>
+                   </td>
+                   <td>
+                     <div className="acciones-cell">
+                       <button
+                         className="btn-accion btn-detalles"
+                         onClick={() => handleVerDetalles(alerta)}
+                       >
+                         📋 Detalles
+                       </button>
+                       {estado === 'Activa' && (
+                         <button
+                           className="btn-accion btn-asignar"
+                           onClick={() => handleAsignar(alerta)}
+                         >
+                           👤 Asignar
+                         </button>
+                       )}
+                       {estado === 'Asignada' && (
+                         <button
+                           className="btn-accion btn-cerrar"
+                           onClick={() => handleCerrar(alerta)}
+                         >
+                           ✅ Cerrar
+                         </button>
+                       )}
+                       {estado === 'Cerrada' && (
+                         <span className="accion-completada">✅ Completada</span>
+                       )}
+                     </div>
+                   </td>
+                 </tr>
+               );
+             })}
+           </tbody>
+
         </table>
       </div>
 
@@ -335,61 +428,58 @@ const TablaAlertas = ({
       )}
 
       {/* Modal Detalles Alerta */}
-      {mostrarModalDetalles && alertaSeleccionada && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Detalles de Alerta</h3>
-              <button
-                className="modal-close"
-                onClick={() => setMostrarModalDetalles(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="alerta-detalle">
-                <h4>{alertaSeleccionada.titulo}</h4>
-                <p><strong>Descripción:</strong> {alertaSeleccionada.descripcion}</p>
-                <p><strong>Tipo:</strong> 
-                  <span className="tipo-badge">{alertaSeleccionada.tipo}</span>
-                </p>
-                <p><strong>Prioridad:</strong> 
-                  <span className={`badge ${getPrioridadBadgeClass(alertaSeleccionada.prioridad)}`}>
-                    {alertaSeleccionada.prioridad}
-                  </span>
-                </p>
-                <p><strong>Estado:</strong> 
-                  <span className={`badge ${getEstadoBadgeClass(alertaSeleccionada.estado)}`}>
-                    {alertaSeleccionada.estado}
-                  </span>
-                </p>
-                <p><strong>Ubicación:</strong> {alertaSeleccionada.ubicacion}</p>
-                <p><strong>Coordenadas:</strong> {alertaSeleccionada.latitud.toFixed(6)}, {alertaSeleccionada.longitud.toFixed(6)}</p>
-                <p><strong>Reportado por:</strong> {alertaSeleccionada.reportadoPor}</p>
-                <p><strong>Fecha de creación:</strong> {formatDate(alertaSeleccionada.fechaCreacion)}</p>
-                {alertaSeleccionada.usuarioAsignado && (
-                  <p><strong>Asignado a:</strong> {alertaSeleccionada.usuarioAsignado}</p>
-                )}
-                {alertaSeleccionada.fechaAsignacion && (
-                  <p><strong>Fecha de asignación:</strong> {formatDate(alertaSeleccionada.fechaAsignacion)}</p>
-                )}
-                {alertaSeleccionada.fechaCierre && (
-                  <p><strong>Fecha de cierre:</strong> {formatDate(alertaSeleccionada.fechaCierre)}</p>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-cancelar"
-                onClick={() => setMostrarModalDetalles(false)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
+     {/* Modal Detalles Alerta */}
+{mostrarModalDetalles && alertaSeleccionada && (
+  <div className="modal-overlay">
+    <div className="modal">
+      <div className="modal-header">
+        <h3>Detalles de Alerta</h3>
+        <button className="modal-close" onClick={() => setMostrarModalDetalles(false)}>×</button>
+      </div>
+      <div className="modal-body">
+        <div className="alerta-detalle">
+          <p><strong>Motivo:</strong> {alertaSeleccionada.motivo}</p>
+          <p><strong>Estado:</strong>
+            <span className={`badge ${getEstadoBadgeClass(alertaSeleccionada.estado)}`}>
+              {alertaSeleccionada.estado}
+            </span>
+          </p>
+          <p><strong>Zona:</strong> {alertaSeleccionada.zona}</p>
+          <p><strong>Coordenadas:</strong> {alertaSeleccionada.latitud?.toFixed(6)}, {alertaSeleccionada.longitud?.toFixed(6)}</p>
+          <p><strong>Reportado por:</strong> {alertaSeleccionada.nombreUsuario}</p>
+          <p><strong>Rol:</strong> {alertaSeleccionada.rolUsuario}</p>
+          {guardiasDisponibles.length > 0 && (() => {
+  let ids = [];
+  try { ids = JSON.parse(alertaSeleccionada.guardiasInvolucrados || '[]').filter(id => id && String(id).trim() !== ''); } catch(e) {}
+  const nombres = ids.map(id => {
+    const g = guardiasDisponibles.find(gd => String(gd.id) === String(id));
+    return g ? g.nombre : `[ID: ${id}]`;
+  });
+  return nombres.length > 0 ? <p><strong>Guardia(s) involucrado(s):</strong> {nombres.join(', ')}</p> : null;
+})()}
+          <p><strong>Fecha creación:</strong> {formatDate(alertaSeleccionada.creadaEn)}</p>
+          {alertaSeleccionada.cerradaEn && (
+            <p><strong>Fecha cierre:</strong> {formatDate(alertaSeleccionada.cerradaEn)}</p>
+          )}
+          {alertaSeleccionada.motivoResolucion && (
+            <p><strong>Motivo resolución:</strong> {alertaSeleccionada.motivoResolucion}</p>
+          )}
+          {alertaSeleccionada.resolucionDescripcion && (
+            <p><strong>Resolución:</strong> {alertaSeleccionada.resolucionDescripcion}</p>
+          )}
+          {alertaSeleccionada.cerradaPor && (
+            <p><strong>Cerrada por ID:</strong> {alertaSeleccionada.cerradaPor}</p>
+          )}
         </div>
-      )}
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-cancelar" onClick={() => setMostrarModalDetalles(false)}>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

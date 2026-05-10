@@ -1,6 +1,22 @@
 import axios from 'axios';
 import { API_BASE, ENDPOINTS } from './config';
 
+// Mapeo de roles: Nombre UI -> Nombre Backend (Enum)
+const mapaRoles = {
+  'Estudiante': 'Estudiante',
+  'Docente': 'Docente',
+  'Personal Administrativo': 'PersonalAdministrativo',
+  'Guardia': 'Guardia',
+  'Administrador': 'Administrador'
+};
+
+// Mapeo de estados: Nombre UI -> Nombre Backend (Enum)
+const mapaEstados = {
+  'Activo': 'Activo',
+  'Inactivo': 'Inactivo',
+  'Bloqueado': 'Bloqueado'
+};
+
 // Obtener token del localStorage
 const getToken = () => {
   return localStorage.getItem('token');
@@ -39,10 +55,13 @@ export const getUsuarios = async (pagina = 1, tamaño = 10) => {
 // Cambiar rol de usuario
 export const cambiarRolUsuario = async (id, nuevoRol) => {
   try {
+    // Mapear el nombre del rol de la UI al valor del Enum del backend
+    const rolBackend = mapaRoles[nuevoRol] || nuevoRol;
+    
     // Llamar al backend real utilizando PUT como requiere el controlador
     const response = await axios.put(
       `${API_BASE}/api/usuarios/${id}/rol`,
-      { nuevoRol },
+      { nuevoRol: rolBackend },
       { headers: getHeaders() }
     );
     
@@ -62,10 +81,17 @@ export const cambiarRolUsuario = async (id, nuevoRol) => {
 // Cambiar estado de usuario
 export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
   try {
+    // Mapear el nombre del estado de la UI al valor del Enum del backend
+    // Usamos trim() para evitar espacios accidentales
+    const estadoLimpio = nuevoEstado.trim();
+    const estadoBackend = mapaEstados[estadoLimpio] || estadoLimpio;
+    
+    console.log(`Enviando cambio de estado para usuario ${id}: ${estadoBackend}`);
+    
     // Llamar al backend real
     const response = await axios.patch(
       `${API_BASE}/api/usuarios/${id}/estado`,
-      { estado: nuevoEstado },
+      { nuevoEstado: estadoBackend },
       { headers: getHeaders() }
     );
     
@@ -99,10 +125,12 @@ export const getGuardias = async () => {
       `${API_BASE}/api/usuarios?rol=Guardia`,
       { headers: getHeaders() }
     );
-    
+
+    // The backend returns a PaginadoResponse with lowercase properties: items, total, tamañoPagina
+    const guardiasArray = response.data.items || [];
     return {
       success: true,
-      data: response.data.Items || response.data
+      data: guardiasArray
     };
   } catch (error) {
     console.error('Error al obtener guardias:', error);

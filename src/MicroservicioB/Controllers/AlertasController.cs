@@ -37,7 +37,7 @@ public class AlertasController : ControllerBase
 
     /// <summary>PATCH /api/alertas/5/asumir — guardia se acerca al evento</summary>
     [HttpPatch("{id:int}/asumir")]
-    [Authorize(Roles = "Guardia")]
+    [Authorize(Roles = "Guardia,Administrador")]
     public async Task<IActionResult> Asumir(int id, [FromBody] AsumirAlertaRequest req)
     {
         var ok = await _svc.AsumirAsync(id, req);

@@ -15,6 +15,19 @@ const getHeaders = () => {
   };
 };
 
+// Función auxiliar para convertir Centro + Radio en un Polígono GeoJSON (cuadrado)
+const generarPoligonoDesdeRadio = (lat, lon, radio) => {
+  const offset = radio / 111000; // Conversión aproximada metros -> grados
+  const vertices = [
+    [lon - offset, lat + offset],
+    [lon + offset, lat + offset],
+    [lon + offset, lat - offset],
+    [lon - offset, lat - offset],
+    [lon - offset, lat + offset] // Cerrar polígono
+  ];
+  return JSON.stringify(vertices);
+};
+
 // Obtener todas las zonas
 export const getZonas = async () => {
   try {
@@ -40,10 +53,17 @@ export const getZonas = async () => {
 // Crear nueva zona
 export const crearZona = async (zonaData) => {
   try {
+    // Transformar datos del formulario (Círculo) al formato del Backend (Polígono + Color)
+    const payload = {
+      nombre: zonaData.nombre,
+      color: zonaData.color || '#10b981',
+      poligono: generarPoligonoDesdeRadio(zonaData.latitud, zonaData.longitud, zonaData.radio)
+    };
+
     // Llamar al backend real
     const response = await axios.post(
       `${API_BASE}/api/zonas`,
-      zonaData,
+      payload,
       { headers: getHeaders() }
     );
     
@@ -63,10 +83,17 @@ export const crearZona = async (zonaData) => {
 // Actualizar zona
 export const actualizarZona = async (id, zonaData) => {
   try {
+    // Transformar datos del formulario (Círculo) al formato del Backend (Polígono + Color)
+    const payload = {
+      nombre: zonaData.nombre,
+      color: zonaData.color || '#10b981',
+      poligono: generarPoligonoDesdeRadio(zonaData.latitud, zonaData.longitud, zonaData.radio)
+    };
+
     // Llamar al backend real
     const response = await axios.put(
       `${API_BASE}/api/zonas/${id}`,
-      zonaData,
+      payload,
       { headers: getHeaders() }
     );
     

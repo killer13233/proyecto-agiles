@@ -282,43 +282,52 @@ const Zonas = () => {
                      {zonaSeleccionada.estado || 'Activa'}
                    </span>
                  </p>
-                <div className="color-selector">
-                  <label>Color del círculo:</label>
-                  <div className="color-options">
-                    <div
-                      className={`color-option color-verde ${colorZonaSeleccionada === '#10b981' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#10b981')}
-                      title="Verde"
-                    />
-                    <div
-                      className={`color-option color-rojo ${colorZonaSeleccionada === '#ef4444' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#ef4444')}
-                      title="Rojo"
-                    />
-                    <div
-                      className={`color-option color-azul ${colorZonaSeleccionada === '#2563eb' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#2563eb')}
-                      title="Azul"
-                    />
-                    <div
-                      className={`color-option color-amarillo ${colorZonaSeleccionada === '#f59e0b' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#f59e0b')}
-                      title="Amarillo"
-                    />
-                    <div
-                      className={`color-option color-morado ${colorZonaSeleccionada === '#8b5cf6' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#8b5cf6')}
-                      title="Morado"
-                    />
-                    <div
-                      className={`color-option color-gris ${colorZonaSeleccionada === '#6b7280' ? 'selected' : ''}`}
-                      onClick={() => setColorZonaSeleccionada('#6b7280')}
-                      title="Gris"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+                 <div className="zona-actions-panel">
+                   <button className="btn btn-editar" onClick={() => abrirModalEditar(zonaSeleccionada)}>
+                     ✏️ Editar
+                   </button>
+                   <button className="btn btn-eliminar" onClick={() => abrirModalEliminar(zonaSeleccionada)}>
+                     🗑️ Eliminar
+                   </button>
+                 </div>
+                 <div className="color-selector">
+                   <label>Color del círculo:</label>
+                   <div className="color-options">
+                     <div
+                       className={`color-option color-verde ${colorZonaSeleccionada === '#10b981' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#10b981')}
+                       title="Verde"
+                     />
+                     <div
+                       className={`color-option color-rojo ${colorZonaSeleccionada === '#ef4444' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#ef4444')}
+                       title="Rojo"
+                     />
+                     <div
+                       className={`color-option color-azul ${colorZonaSeleccionada === '#2563eb' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#2563eb')}
+                       title="Azul"
+                     />
+                     <div
+                       className={`color-option color-amarillo ${colorZonaSeleccionada === '#f59e0b' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#f59e0b')}
+                       title="Amarillo"
+                     />
+                     <div
+                       className={`color-option color-morado ${colorZonaSeleccionada === '#8b5cf6' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#8b5cf6')}
+                       title="Morado"
+                     />
+                     <div
+                       className={`color-option color-gris ${colorZonaSeleccionada === '#6b7280' ? 'selected' : ''}`}
+                       onClick={() => setColorZonaSeleccionada('#6b7280')}
+                       title="Gris"
+                     />
+                   </div>
+                 </div>
+               </div>
+             )}
+
           </div>
         </div>
       )}
@@ -335,14 +344,14 @@ const Zonas = () => {
                     {zona.estado}
                   </span>
                 </div>
-                <div className="zona-card-body">
-                  <p>{zona.descripcion}</p>
-                  <div className="zona-details">
-                    <p><strong>Latitud:</strong> {zona.latitud.toFixed(6)}</p>
-                    <p><strong>Longitud:</strong> {zona.longitud.toFixed(6)}</p>
-                    <p><strong>Radio:</strong> {zona.radio}m</p>
-                  </div>
-                </div>
+                 <div className="zona-card-body">
+                   <p>{zona.descripcion}</p>
+                   <div className="zona-details">
+                     <p><strong>Color:</strong> {zona.color || 'No definido'}</p>
+                     <p><strong>Tipo:</strong> Polígono GeoJSON</p>
+                   </div>
+                 </div>
+
                 <div className="zona-card-actions">
                   <button
                     className="btn btn-editar"
@@ -406,35 +415,47 @@ const Zonas = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Latitud</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={formulario.latitud}
-                    onChange={(e) => setFormulario({...formulario, latitud: parseFloat(e.target.value)})}
-                    className="modal-input"
-                  />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={formulario.latitud}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setFormulario({...formulario, latitud: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
                 </div>
                 <div className="form-group">
                   <label>Longitud</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={formulario.longitud}
-                    onChange={(e) => setFormulario({...formulario, longitud: parseFloat(e.target.value)})}
-                    className="modal-input"
-                  />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={formulario.longitud}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setFormulario({...formulario, longitud: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
                 </div>
               </div>
               <div className="form-group">
                 <label>Radio (metros)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="1000"
-                  value={formulario.radio}
-                  onChange={(e) => setFormulario({...formulario, radio: parseInt(e.target.value)})}
-                  className="modal-input"
-                />
+                    <input
+                      type="number"
+                      min="50"
+                      max="1000"
+                      value={formulario.radio}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setFormulario({...formulario, radio: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
               </div>
               <div className="form-group">
                 <label>Estado</label>
@@ -502,35 +523,47 @@ const Zonas = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Latitud</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={formulario.latitud}
-                    onChange={(e) => setFormulario({...formulario, latitud: parseFloat(e.target.value)})}
-                    className="modal-input"
-                  />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={formulario.latitud}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setFormulario({...formulario, latitud: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
                 </div>
                 <div className="form-group">
                   <label>Longitud</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={formulario.longitud}
-                    onChange={(e) => setFormulario({...formulario, longitud: parseFloat(e.target.value)})}
-                    className="modal-input"
-                  />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={formulario.longitud}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setFormulario({...formulario, longitud: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
                 </div>
               </div>
               <div className="form-group">
                 <label>Radio (metros)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="1000"
-                  value={formulario.radio}
-                  onChange={(e) => setFormulario({...formulario, radio: parseInt(e.target.value)})}
-                  className="modal-input"
-                />
+                    <input
+                      type="number"
+                      min="50"
+                      max="1000"
+                      value={formulario.radio}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setFormulario({...formulario, radio: isNaN(val) ? 0 : val});
+                      }}
+                      className="modal-input"
+                    />
+
               </div>
               <div className="form-group">
                 <label>Estado</label>

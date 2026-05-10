@@ -14,24 +14,33 @@ const Alertas = () => {
     usuario: '',
     fechaDesde: ''
   });
+  const [debouncedFiltros, setDebouncedFiltros] = useState(filtros);
 
   const tiposAlerta = getTiposAlerta();
   const prioridadesAlerta = getPrioridadesAlerta();
   const estadosAlerta = getEstadosAlerta();
 
+  // Efecto para el debounce de los filtros
   useEffect(() => {
-    cargarAlertas();
+    const handler = setTimeout(() => {
+      setDebouncedFiltros(filtros);
+    }, 300);
+
+    return () => clearTimeout(handler);
   }, [filtros]);
 
-  const cargarAlertas = async () => {
-    setLoading(true);
+  useEffect(() => {
+    cargarAlertas(true);
+  }, [debouncedFiltros]);
+
+  const cargarAlertas = async (isFilterUpdate = false) => {
+    if (!isFilterUpdate) setLoading(true);
     setError('');
     
     try {
-      const resultado = await getAlertas(filtros);
+      const resultado = await getAlertas(debouncedFiltros);
       
       if (resultado.success) {
-        // El backend devuelve la lista directamente en resultado.data
         setAlertas(Array.isArray(resultado.data) ? resultado.data : (resultado.data.alertas || []));
       } else {
         setError(resultado.error);
@@ -42,6 +51,7 @@ const Alertas = () => {
       setLoading(false);
     }
   };
+
 
   const handleFiltroChange = (campo, valor) => {
     setFiltros(prev => ({
@@ -60,17 +70,19 @@ const Alertas = () => {
     });
   };
 
-  const handleAsignar = async (idAlerta, idUsuario) => {
+  const handleAsignar = async (idAlerta, guardiaId, nombreGuardia) => {
     try {
-      const resultado = await asignarAlerta(idAlerta, idUsuario);
+      const resultado = await asignarAlerta(idAlerta, guardiaId, nombreGuardia);
       
       if (resultado.success) {
-        // Recargar alertas para mostrar el cambio
+        alert('✅ Alerta asignada correctamente a ' + nombreGuardia);
         await cargarAlertas();
       } else {
+        alert('❌ Error al asignar: ' + resultado.error);
         setError(resultado.error);
       }
     } catch (err) {
+      alert('❌ Error crítico al asignar la alerta');
       setError('Error al asignar la alerta');
     }
   };

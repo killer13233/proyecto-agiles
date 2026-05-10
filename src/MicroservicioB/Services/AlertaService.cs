@@ -39,16 +39,17 @@ public class AlertaService : IAlertaService
         var zona = await ConsultarZonaAsync(req.Latitud, req.Longitud);
 
         var alerta = new Alerta
-        {
-            UsuarioId     = usuarioId,
-            NombreUsuario = nombreUsuario,
-            RolUsuario    = rolUsuario,
-            Motivo        = req.Motivo,
-            Latitud       = req.Latitud,
-            Longitud      = req.Longitud,
-            Zona          = zona,
-            Estado        = EstadoAlerta.Activa
-        };
+{
+    UsuarioId     = usuarioId,
+    NombreUsuario = nombreUsuario,
+    RolUsuario    = rolUsuario,
+    Motivo        = req.Motivo,
+    Latitud       = req.Latitud,
+    Longitud      = req.Longitud,
+    Zona          = zona,
+    Estado        = EstadoAlerta.Activa,
+    CreadaEn      = DateTime.UtcNow
+};
 
         _db.Alertas.Add(alerta);
         await _db.SaveChangesAsync();
@@ -73,6 +74,8 @@ public class AlertaService : IAlertaService
     {
         var alerta = await _db.Alertas.FindAsync(alertaId);
         if (alerta is null || alerta.Estado == EstadoAlerta.Cerrada) return false;
+
+        if (string.IsNullOrWhiteSpace(req.GuardiaId)) return false;
 
         var guardias = JsonSerializer.Deserialize<List<string>>(alerta.GuardiasInvolucrados)
             ?? new List<string>();
@@ -103,13 +106,22 @@ public class AlertaService : IAlertaService
         if (alerta is null)                          return (false, "Alerta no encontrada.");
         if (alerta.Estado == EstadoAlerta.Cerrada)   return (false, "La alerta ya está cerrada.");
 
+        // Asegurar que el guardia que cierra la alerta también figure como involucrado
+        var guardias = JsonSerializer.Deserialize<List<string>>(alerta.GuardiasInvolucrados)
+            ?? new List<string>();
+        if (!guardias.Contains(guardiaId))
+        {
+            guardias.Add(guardiaId);
+            alerta.GuardiasInvolucrados = JsonSerializer.Serialize(guardias);
+        }
+
         alerta.Estado                = EstadoAlerta.Cerrada;
         alerta.MotivoResolucion      = req.MotivoResolucion;
         alerta.ResolucionDescripcion = req.ResolucionDescripcion;
         alerta.CerradaPor            = guardiaId;
         alerta.CerradaEn             = DateTime.UtcNow;
-
         await _db.SaveChangesAsync();
+
 
         await _ws.BroadcastGuardiasAsync(new
         {

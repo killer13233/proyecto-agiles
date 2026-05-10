@@ -43,16 +43,18 @@ export const getAlertas = async (filtros = {}) => {
   }
 };
 
-// Asignar alerta a usuario
-export const asignarAlerta = async (idAlerta, idUsuario) => {
+// Asignar alerta a guardia
+export const asignarAlerta = async (idAlerta, guardiaId, nombreGuardia) => {
   try {
+    console.log(`Intentando asignar guardia ${guardiaId} (${nombreGuardia}) a alerta ${idAlerta}`);
     // Llamar al backend real
     const response = await axios.patch(
-      `${API_BASE}/api/alertas/${idAlerta}/asignar`,
-      { usuarioAsignado: idUsuario },
+      `${API_BASE}/api/alertas/${idAlerta}/asumir`,
+      { guardiaId, nombreGuardia },
       { headers: getHeaders() }
     );
-    
+
+    console.log(`Asignación exitosa:`, response.data);
     return {
       success: true,
       data: response.data
