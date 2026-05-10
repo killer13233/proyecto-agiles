@@ -11,15 +11,24 @@ import { login } from "../services/authService";
 import { Preferences } from "@capacitor/preferences";
 import "./LoginScreen.css";
 
-const LoginScreen: React.FC = () => {
+type Props = {
+  onLoginSuccess: () => void;
+};
+
+
+const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState(false);
-
+  const [intentosPorUsuario, setIntentosPorUsuario] = useState<Record<string, number>>({});
+  const [bloqueadoPorUsuario, setBloqueadoPorUsuario] = useState<Record<string, boolean>>({});
+  const correoActual = email.trim().toLowerCase();
+  const intentosActuales = intentosPorUsuario[correoActual] ?? 3;
+  const bloqueadoActual = bloqueadoPorUsuario[correoActual] ?? false;
+  
   const handleLogin = async () => {
   try {
-
     const data = await login(email, password);
 
     console.log(data);
@@ -30,15 +39,49 @@ const LoginScreen: React.FC = () => {
     });
 
     setError(false);
-
     setMensaje("Login correcto");
 
-  } catch {
+    onLoginSuccess();
 
+  }  catch (err: any) {
+  const mensajeBackend =
+    err?.response?.data?.message ||
+    err?.response?.data?.mensaje ||
+    err?.response?.data ||
+    "";
+
+  const textoError = String(mensajeBackend).toLowerCase();
+
+  if (
+    textoError.includes("no encontrado") ||
+    textoError.includes("no existe") ||
+    textoError.includes("usuario")
+  ) {
     setError(true);
-
-    setMensaje("Credenciales incorrectas. Intente nuevamente.");
+    setMensaje("Usuario no encontrado.");
+    return;
   }
+
+  const nuevosIntentos = intentosActuales - 1;
+
+  setIntentosPorUsuario({
+    ...intentosPorUsuario,
+    [correoActual]: nuevosIntentos,
+  });
+
+  setError(true);
+
+  if (nuevosIntentos <= 0) {
+    setBloqueadoPorUsuario({
+      ...bloqueadoPorUsuario,
+      [correoActual]: true,
+    });
+
+    setMensaje("Cuenta bloqueada. Contacte al administrador.");
+  } else {
+    setMensaje(`Credenciales incorrectas. Te quedan ${nuevosIntentos} intento(s).`);
+  }
+}
 };
 
   return (
@@ -82,12 +125,21 @@ const LoginScreen: React.FC = () => {
               />
             </IonItem>
 
-            <IonButton expand="block" className="login-btn" onClick={handleLogin}>
-              Ingresar
-            </IonButton>
+           <IonButton
+                    expand="block"
+                    className="login-btn"
+                    onClick={handleLogin}
+                    disabled={bloqueadoActual}
+                    >
+                    Ingresar
+                    </IonButton>
 
             <IonText>
-              <p className="login-help">3 intentos fallidos bloquean la cuenta</p>
+                <p className="login-help">
+                   {bloqueadoActual
+  ? "Cuenta bloqueada"
+  : `${intentosActuales} intentos fallidos bloquean la cuenta`}
+                </p>
             </IonText>
           </div>
         </div>
@@ -95,5 +147,6 @@ const LoginScreen: React.FC = () => {
     </IonPage>
   );
 };
+
 
 export default LoginScreen;

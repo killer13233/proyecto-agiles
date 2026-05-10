@@ -1,6 +1,6 @@
 import { useState } from "react";
-import LoginScreen from "../screens/LoginScreen";
-import PerfilScreen from "../screens/PerfilScreen";
+import LoginScreen from "./LoginScreen";
+import PerfilScreen from "./PerfilScreen";
 
 const Home: React.FC = () => {
   const [isLogged, setIsLogged] = useState(false);
