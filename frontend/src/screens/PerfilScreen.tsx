@@ -32,6 +32,7 @@ const PerfilScreen: React.FC<Props> = ({
   user?.rol ||
   (user as any)?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
   "Sin rol";
+  const esEstudiante = rolUsuario.toLowerCase() === "estudiante";
   useEffect(() => {
     const cargarToken = async () => {
       const { value } = await Preferences.get({ key: "token" });
@@ -146,13 +147,15 @@ const PerfilScreen: React.FC<Props> = ({
             </div>
           </div>
 
-          <IonButton
-            expand="block"
-            className="primary-btn"
-            onClick={onIrAlarma}
+          {esEstudiante && (
+            <IonButton
+              expand="block"
+              className="primary-btn"
+              onClick={onIrAlarma}
             >
-            Alarma
+              Alarma
             </IonButton>
+          )}
 
             <IonButton expand="block" className="logout-btn" onClick={cerrarSesion}>
             Cerrar sesión
