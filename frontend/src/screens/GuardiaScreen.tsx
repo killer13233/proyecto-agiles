@@ -1,14 +1,16 @@
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonList, IonItem, IonLabel, IonButton, IonToggle,
-  IonButtons, IonBadge,
+  IonButtons, IonBadge, IonModal
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { Preferences } from "@capacitor/preferences";
-import { getAlertas, asumirAlerta } from "../services/alertasService";
+import { getAlertas, asumirAlerta, getZonas } from "../services/alertasService";
 import { wsService } from "../services/wsService";
 import ModalCierre from "../components/ModalCierre";
+import MapaAlerta from "../components/MapaAlerta";
+
 
 interface Alerta {
   id: number;
@@ -16,6 +18,8 @@ interface Alerta {
   motivo: string;
   zona: string;
   estado: string;
+  latitud: number;
+  longitud: number;
 }
 
 interface TokenData {
@@ -23,18 +27,41 @@ interface TokenData {
   nombre?: string;
 }
 
-const GuardiaScreen: React.FC = () => {
+interface GuardiaProps {
+  onIrInicio?: () => void;
+}
+
+const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [zonas, setZonas] = useState<any[]>([]);
   const [disponible, setDisponible] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalMapaVisible, setModalMapaVisible] = useState(false);
   const [alertaSeleccionada, setAlertaSeleccionada] = useState<Alerta | null>(null);
   const [usuario, setUsuario] = useState<TokenData | null>(null);
 
   useEffect(() => {
-    cargarUsuario();
-    cargarAlertas();
-    conectarWS();
-    return () => wsService.disconnect();
+    let cancelado = false;
+
+    const init = async () => {
+      await cargarUsuario();
+      await cargarAlertas();
+      await cargarZonas();
+
+      // ✅ Esperar que StrictMode termine su ciclo de desmontaje
+      await new Promise((r) => setTimeout(r, 150));
+
+      if (!cancelado) {
+        await conectarWS();
+      }
+    };
+
+    init();
+
+    return () => {
+      cancelado = true;
+      wsService.disconnect();
+    };
   }, []);
 
   const cargarUsuario = async () => {
@@ -45,23 +72,50 @@ const GuardiaScreen: React.FC = () => {
   const cargarAlertas = async () => {
     try {
       const data = await getAlertas("Activa");
-      setAlertas(data);
+      console.log("DATA ALERTAS RAW:", data);
+      const alertasLista = Array.isArray(data) ? data : (data?.alertas || []);
+      
+      const alertasFiltradas = alertasLista.filter((a: any) => 
+        (a.estado || a.Estado) !== 'Cerrada'
+      );
+      
+      console.log("ALERTAS FILTRADAS:", alertasFiltradas);
+      setAlertas(alertasFiltradas);
     } catch (err) {
-      console.error(err);
+      console.error("Error cargando alertas:", err);
+      setAlertas([]);
     }
   };
+
+  const cargarZonas = async () => {
+    try {
+      const data = await getZonas();
+      const zonasLista = Array.isArray(data) ? data : (data?.zonas || []);
+      setZonas(zonasLista);
+    } catch (err) {
+      console.error("Error cargando zonas:", err);
+    }
+  };
+
+
 
   const conectarWS = async () => {
     await wsService.connect();
 
     wsService.on("nueva_alerta", (data) => {
-      setAlertas((prev) => [...prev, {
-        id: data.alertaId,
-        nombreUsuario: data.nombreUsuario,
-        motivo: data.motivo,
-        zona: data.zona,
-        estado: "Activa",
-      }]);
+      setAlertas((prev) => {
+        const existe = prev.some((a) => a.id === data.alertaId);
+        if (existe) return prev;
+        return [...prev, {
+          id: data.alertaId,
+          nombreUsuario: data.nombreUsuario,
+          motivo: data.motivo,
+          zona: data.zona,
+          estado: "Activa",
+          latitud: data.latitud || -1.269451,
+          longitud: data.longitud || -78.623277,
+        }];
+      });
     });
 
     wsService.on("alerta_asumida", (data) => {
@@ -77,6 +131,8 @@ const GuardiaScreen: React.FC = () => {
 
   const handleAsumir = async (alerta: Alerta) => {
     if (!usuario) return;
+    setAlertaSeleccionada(alerta);
+    setModalMapaVisible(true);
     await asumirAlerta(alerta.id, usuario.sub || "", usuario.nombre || "");
   };
 
@@ -90,6 +146,11 @@ const GuardiaScreen: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Alertas Activas</IonTitle>
+          <IonButtons slot="start">
+            <IonButton onClick={onIrInicio}>
+              ← Volver
+            </IonButton>
+          </IonButtons>
           <IonButtons slot="end">
             <IonLabel style={{ marginRight: 8, fontSize: 13 }}>
               {disponible ? "Disponible" : "No disponible"}
@@ -147,6 +208,32 @@ const GuardiaScreen: React.FC = () => {
             setAlertaSeleccionada(null);
           }}
         />
+
+        <IonModal isOpen={modalMapaVisible} onDidDismiss={() => setModalMapaVisible(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Ubicación de la Alerta</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setModalMapaVisible(false)}>Cerrar</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            {alertaSeleccionada && (
+              <MapaAlerta 
+                lat={alertaSeleccionada.latitud} 
+                lng={alertaSeleccionada.longitud} 
+                motivo={alertaSeleccionada.motivo} 
+                height="60vh"
+                zonas={zonas}
+              />
+            )}
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p><strong>Alerta:</strong> {alertaSeleccionada?.motivo}</p>
+              <p><strong>Zona:</strong> {alertaSeleccionada?.zona}</p>
+            </div>
+          </IonContent>
+        </IonModal>
       </IonContent>
     </IonPage>
   );

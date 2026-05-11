@@ -114,7 +114,7 @@ const PerfilScreen: React.FC<Props> = ({
 
             <div className="row">
               <span>Correo institucional</span>
-              <b>{rolUsuario}</b>
+             <b>{user?.email || user?.correo || (user as any)?.["email"] || "Sin correo"}</b>
             </div>
 
             <div className="row">

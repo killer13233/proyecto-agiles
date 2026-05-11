@@ -31,6 +31,13 @@ const Alertas = () => {
 
   useEffect(() => {
     cargarAlertas(true);
+
+    // Actualización automática cada 10 segundos
+    const interval = setInterval(() => {
+      cargarAlertas(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [debouncedFiltros]);
 
   const cargarAlertas = async (isFilterUpdate = false) => {

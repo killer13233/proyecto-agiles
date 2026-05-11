@@ -25,6 +25,9 @@ export const getAlertas = async (filtros = {}) => {
     if (filtros.prioridad) params.append('prioridad', filtros.prioridad);
     if (filtros.fecha) params.append('fecha', filtros.fecha);
     
+    // Evitar la caché del navegador añadiendo un timestamp
+    params.append('_t', Date.now().toString());
+    
     const response = await axios.get(
       `${API_BASE}/api/alertas?${params.toString()}`,
       { headers: getHeaders() }

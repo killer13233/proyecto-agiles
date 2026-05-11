@@ -45,6 +45,7 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
       value: data.token,
     });
 
+    localStorage.setItem("token", data.token);
     const decoded = jwtDecode<TokenData>(data.token);
 
     const rol =
@@ -54,7 +55,7 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
     "";
 
     console.log("ROL LOGIN:", rol);
-
+    localStorage.setItem("rol", rol);
     setError(false);
     setMensaje("Login correcto");
 

@@ -16,11 +16,11 @@ const Dashboard = () => {
   useEffect(() => {
     cargarDatosDashboard();
     
-    // Configurar actualización automática cada 30 segundos
+    // Configurar actualización automática cada 10 segundos
     const interval = setInterval(() => {
       cargarDatosDashboard();
       setUltimaActualizacion(new Date());
-    }, 30000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);

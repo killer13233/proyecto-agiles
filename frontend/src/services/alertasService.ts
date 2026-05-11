@@ -10,7 +10,15 @@ const getToken = async () => {
 
 export const getAlertas = async (estado: string = "Activa") => {
   const token = await getToken();
-  const response = await axios.get(`${API_BASE}/api/Alertas?estado=${estado}`, {
+  const response = await axios.get(`${API_BASE}/api/alertas?estado=${estado}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const getZonas = async () => {
+  const token = await getToken();
+  const response = await axios.get(`${API_BASE}/api/zonas`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -19,7 +27,7 @@ export const getAlertas = async (estado: string = "Activa") => {
 export const asumirAlerta = async (id: number, guardiaId: string, nombreGuardia: string) => {
   const token = await getToken();
   const response = await axios.patch(
-    `${API_BASE}/api/Alertas/${id}/asumir`,
+    `${API_BASE}/api/alertas/${id}/asumir`,
     { guardiaId, nombreGuardia },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -29,7 +37,7 @@ export const asumirAlerta = async (id: number, guardiaId: string, nombreGuardia:
 export const cerrarAlerta = async (id: number, motivoResolucion: string, resolucionDescripcion: string) => {
   const token = await getToken();
   const response = await axios.post(
-    `${API_BASE}/api/Alertas/${id}/cerrar`,
+    `${API_BASE}/api/alertas/${id}/cerrar`,
     { motivoResolucion, resolucionDescripcion },
     { headers: { Authorization: `Bearer ${token}` } }
   );
