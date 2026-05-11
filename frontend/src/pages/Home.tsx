@@ -4,6 +4,7 @@ import PerfilScreen from "../screens/PerfilScreen";
 import HomeScreen from "../screens/HomeScreen";
 import AdminDashboard from "../screens/AdminDashboard";
 import GuardiaScreen from "../screens/GuardiaScreen";
+import GuardiaInfoScreen from "../screens/GuardiaInfoScreen";
 
 const Home: React.FC = () => {
   const [pantalla, setPantalla] = useState<string | null>(null); // null = cargando
@@ -15,7 +16,7 @@ const Home: React.FC = () => {
 
     if (token && rol) {
       if (rol === "Administrador") setPantalla("admin");
-      else if (rol === "Guardia") setPantalla("guardia");
+      else if (rol === "Guardia") setPantalla("guardia-info");
       else setPantalla("perfil");
     } else {
       setPantalla("login");
@@ -27,7 +28,7 @@ const Home: React.FC = () => {
     console.log("ROL RECIBIDO EN HOME:", rol);
     localStorage.setItem("rol", rol);
     if (rol === "Administrador") setPantalla("admin");
-    else if (rol === "Guardia") setPantalla("guardia");
+    else if (rol === "Guardia") setPantalla("guardia-info");
     else setPantalla("perfil");
   };
 
@@ -45,13 +46,23 @@ const Home: React.FC = () => {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
-  if (pantalla === "admin") {
-    return <AdminDashboard />;
-  }
+    if (pantalla === "admin") {
+      return <AdminDashboard />;
+    }
+    
+    if (pantalla === "guardia-info") {
+      return (
+        <GuardiaInfoScreen 
+          onVerAlertas={() => setPantalla("guardia")} 
+          onCerrarSesion={handleLogout} 
+        />
+      );
+    }
 
-  if (pantalla === "guardia") {
-    return <GuardiaScreen onIrInicio={handleLogout} />;
-  }
+    if (pantalla === "guardia") {
+      return <GuardiaScreen onIrInicio={() => setPantalla("guardia-info")} />;
+    }
+
 
   if (pantalla === "perfil") {
     return (
