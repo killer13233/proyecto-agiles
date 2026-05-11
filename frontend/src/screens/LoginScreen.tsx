@@ -35,18 +35,20 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
   const bloqueadoActual = bloqueadoPorUsuario[correoActual] ?? false;
   
   const handleLogin = async () => {
-  try {
-    const data = await login(email, password);
+    if (!email.trim() || !password.trim()) {
+      setError(true);
+      setMensaje("Por favor, ingrese correo y contraseña.");
+      return;
+    }
+
+    try {
+      const data = await login(email.trim(), password);
 
     console.log(data);
-
-    await Preferences.set({
-      key: "token",
-      value: data.token,
-    });
-
+    
     localStorage.setItem("token", data.token);
     const decoded = jwtDecode<TokenData>(data.token);
+
 
     const rol =
     decoded.role ||

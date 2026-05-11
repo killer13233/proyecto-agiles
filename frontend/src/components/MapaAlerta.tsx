@@ -38,8 +38,12 @@ const ZONA_COLORS: Record<string, string> = {
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
-    map.invalidateSize();
-    map.setView(center, 16);
+    // Pequeño delay para asegurar que el modal de Ionic ha terminado su animación de apertura
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      map.setView(center, 16);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [map, center]);
   return null;
 };

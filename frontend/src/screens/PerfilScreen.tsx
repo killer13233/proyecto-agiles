@@ -34,29 +34,35 @@ const PerfilScreen: React.FC<Props> = ({
   "Sin rol";
   const esEstudiante = rolUsuario.toLowerCase() === "estudiante";
   useEffect(() => {
-    const cargarToken = async () => {
-      const { value } = await Preferences.get({ key: "token" });
+    const cargarToken = () => {
+      const value = localStorage.getItem("token");
 
       if (!value) {
         setExpired(true);
         return;
       }
 
-      const decoded = jwtDecode<TokenData>(value);
-      console.log(decoded);
-      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-        setExpired(true);
-        return;
-      }
+      try {
+        const decoded = jwtDecode<TokenData>(value);
+        console.log("Token decodificado en Perfil:", decoded);
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          setExpired(true);
+          return;
+        }
 
-      setUser(decoded);
+        setUser(decoded);
+      } catch (e) {
+        console.error("Error decodificando token en Perfil:", e);
+        setExpired(true);
+      }
     };
 
     cargarToken();
   }, []);
 
   const cerrarSesion = async () => {
-    await Preferences.remove({ key: "token" });
+    localStorage.removeItem("token");
+    localStorage.removeItem("rol");
     window.location.reload();
   };
   
