@@ -107,7 +107,7 @@ const Dashboard = () => {
       {/* Gráficos */}
       <div className="dashboard-section">
         <h2>Estadísticas</h2>
-        <DashboardCharts data={estadisticas} />
+       <DashboardCharts data={dashboardData.estadisticas || estadisticas} />
       </div>
 
       {/* Actividad Reciente */}

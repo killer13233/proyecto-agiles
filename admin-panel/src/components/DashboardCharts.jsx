@@ -1,7 +1,7 @@
 import './DashboardCharts.css';
 
 const DashboardCharts = ({ data = {} }) => {
-  const { estadisticas = {} } = data;
+const estadisticas = data || {};
 
   const formatNumber = (num) => {
     return new Intl.NumberFormat('es-EC').format(num);
@@ -22,12 +22,12 @@ const DashboardCharts = ({ data = {} }) => {
                     <div 
                       className="bar-fill" 
                       style={{ 
-                        height: `${(dia.cantidad / 20) * 100}%`,
+                        height: `${Math.min((dia.count / Math.max(...(estadisticas.alertasPorDia?.map(d => d.count) || [1]))) * 100, 100)}%`,
                         backgroundColor: '#3b82f6'
                       }}
                     />
                   </div>
-                  <div className="bar-value">{dia.cantidad}</div>
+                  <div className="bar-value">{dia.count}</div>
                 </div>
               ))}
             </div>
