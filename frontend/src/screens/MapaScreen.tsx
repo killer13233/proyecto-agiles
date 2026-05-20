@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonBackButton, IonCard, IonCardContent, IonText, IonSpinner, IonBadge } from '@ionic/react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaScreen.css';
 import { obtenerUbicacion, iniciarSeguimientoGPS, PositionData } from '../services/gpsService';
+import { Preferences } from '@capacitor/preferences';
 
 // Fix para los iconos de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -106,12 +107,23 @@ const MapController = ({ center, zoom }: { center: [number, number]; zoom: numbe
   return null;
 };
 
+// Componente para manejar eventos de clic en el mapa
+const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+};
+
 const MapaScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [zonas, setZonas] = useState<Zona[]>(ZONAS_CAMPUS);
   const [mapReady, setMapReady] = useState(false);
   const [userPosition, setUserPosition] = useState<PositionData | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [touchedPosition, setTouchedPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     // Simular carga de zonas desde el backend
@@ -151,6 +163,21 @@ const MapaScreen: React.FC = () => {
     return cleanup;
   }, [mapReady]);
 
+  // Función para manejar clic en el mapa
+  const handleMapClick = async (lat: number, lng: number) => {
+    setTouchedPosition({ lat, lng });
+    
+    // Guardar coordenadas en Preferences para usar en alertas
+    try {
+      await Preferences.set({
+        key: 'alerta_ubicacion',
+        value: JSON.stringify({ latitud: lat, longitud: lng })
+      });
+    } catch (error) {
+      console.error('Error guardando coordenadas:', error);
+    }
+  };
+
   const parsePolygon = (poligono: string): [number, number][] => {
     try {
       const parsed = JSON.parse(poligono || '[]');
@@ -189,6 +216,7 @@ const MapaScreen: React.FC = () => {
               style={{ height: '100%', width: '100%' }}
             >
               <MapController center={CAMPUS_CENTER} zoom={CAMPUS_ZOOM} />
+              <MapClickHandler onMapClick={handleMapClick} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -239,6 +267,18 @@ const MapaScreen: React.FC = () => {
                   </Marker>
                 </>
               )}
+
+              {/* Marcador de posición tocada por el usuario */}
+              {touchedPosition && (
+                <Marker position={[touchedPosition.lat, touchedPosition.lng]}>
+                  <Popup>
+                    <strong>Ubicación seleccionada</strong><br />
+                    Lat: {touchedPosition.lat.toFixed(6)}<br />
+                    Lng: {touchedPosition.lng.toFixed(6)}<br />
+                    <em>Esta ubicación se usará para la alerta</em>
+                  </Popup>
+                </Marker>
+              )}
             </MapContainer>
 
             <IonCard className="info-card">
@@ -247,6 +287,13 @@ const MapaScreen: React.FC = () => {
                   <p><strong>Mapa del Campus UTA Huachi</strong></p>
                   <p className="info-text">Las 4 zonas del campus están delimitadas en el mapa.</p>
                   <p className="info-text">Toca el mapa para registrar tu ubicación.</p>
+                  {touchedPosition && (
+                    <p className="success-text">
+                      <IonBadge color="primary">Ubicación seleccionada</IonBadge><br />
+                      Lat: {touchedPosition.lat.toFixed(6)}<br />
+                      Lng: {touchedPosition.lng.toFixed(6)}
+                    </p>
+                  )}
                   {gpsError && (
                     <p className="error-text">
                       <IonBadge color="danger">GPS Error</IonBadge> {gpsError}
