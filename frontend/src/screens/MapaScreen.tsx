@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaScreen.css';
 import { obtenerUbicacion, iniciarSeguimientoGPS, PositionData } from '../services/gpsService';
+import { validarPuntoEnCampus } from '../services/zonasService';
 import { Preferences } from '@capacitor/preferences';
 
 // Fix para los iconos de Leaflet
@@ -124,6 +125,7 @@ const MapaScreen: React.FC = () => {
   const [userPosition, setUserPosition] = useState<PositionData | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [touchedPosition, setTouchedPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [campusStatus, setCampusStatus] = useState<{ dentro: boolean; zona: string } | null>(null);
 
   useEffect(() => {
     // Simular carga de zonas desde el backend
@@ -167,6 +169,18 @@ const MapaScreen: React.FC = () => {
   const handleMapClick = async (lat: number, lng: number) => {
     setTouchedPosition({ lat, lng });
     
+    // Validar si el punto está dentro del campus
+    try {
+      const validacion = await validarPuntoEnCampus(lat, lng);
+      setCampusStatus({
+        dentro: validacion.dentroDelCampus,
+        zona: validacion.zona
+      });
+    } catch (error) {
+      console.error('Error validando punto:', error);
+      setCampusStatus({ dentro: false, zona: 'Error de validación' });
+    }
+    
     // Guardar coordenadas en Preferences para usar en alertas
     try {
       await Preferences.set({
@@ -177,6 +191,22 @@ const MapaScreen: React.FC = () => {
       console.error('Error guardando coordenadas:', error);
     }
   };
+
+  // Validar posición GPS del usuario
+  useEffect(() => {
+    if (userPosition) {
+      validarPuntoEnCampus(userPosition.latitud, userPosition.longitud)
+        .then(validacion => {
+          setCampusStatus({
+            dentro: validacion.dentroDelCampus,
+            zona: validacion.zona
+          });
+        })
+        .catch(error => {
+          console.error('Error validando posición GPS:', error);
+        });
+    }
+  }, [userPosition]);
 
   const parsePolygon = (poligono: string): [number, number][] => {
     try {
@@ -287,6 +317,22 @@ const MapaScreen: React.FC = () => {
                   <p><strong>Mapa del Campus UTA Huachi</strong></p>
                   <p className="info-text">Las 4 zonas del campus están delimitadas en el mapa.</p>
                   <p className="info-text">Toca el mapa para registrar tu ubicación.</p>
+                  
+                  {campusStatus && (
+                    <p className={campusStatus.dentro ? 'success-text' : 'warning-text'}>
+                      <IonBadge color={campusStatus.dentro ? 'success' : 'warning'}>
+                        {campusStatus.dentro ? 'Dentro del campus' : 'Fuera del campus'}
+                      </IonBadge>
+                      {campusStatus.dentro ? ` - ${campusStatus.zona}` : ''}
+                    </p>
+                  )}
+                  
+                  {!campusStatus?.dentro && (
+                    <p className="warning-text">
+                      <em>El mapa sigue funcionando normalmente</em>
+                    </p>
+                  )}
+                  
                   {touchedPosition && (
                     <p className="success-text">
                       <IonBadge color="primary">Ubicación seleccionada</IonBadge><br />
