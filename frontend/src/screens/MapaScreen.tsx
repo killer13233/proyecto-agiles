@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonBackButton, IonCard, IonCardContent, IonText, IonSpinner, IonBadge } from '@ionic/react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaScreen.css';
@@ -111,7 +111,7 @@ const MapController = ({ center, zoom }: { center: [number, number]; zoom: numbe
 // Componente para manejar eventos de clic en el mapa
 const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
   useMapEvents({
-    click(e) {
+    click(e: any) {
       onMapClick(e.latlng.lat, e.latlng.lng);
     }
   });
@@ -252,7 +252,7 @@ const MapaScreen: React.FC = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {zonas.map(zona => {
+              {zonas.map((zona: Zona) => {
                 const vertices = parsePolygon(zona.poligono);
                 if (vertices.length === 0) return null;
 
