@@ -1,6 +1,6 @@
 const WS_BASE = import.meta.env.VITE_WS_URL;
  
-type WsEvent = "nueva_alerta" | "alerta_asumida" | "alerta_cerrada";
+type WsEvent = "nueva_alerta" | "alerta_asumida" | "alerta_cerrada" | "guardia_disponibilidad";
 type Handler = (data: any) => void;
  
 class WsService {
@@ -19,7 +19,6 @@ class WsService {
     }
  
     const token = localStorage.getItem("token") || "";
- 
     if (!token) {
       console.error("WS: no hay token disponible");
       return;
@@ -64,6 +63,15 @@ class WsService {
     };
   }
  
+  // ← NUEVO: enviar mensaje al backend
+  send(data: object) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(data));
+    } else {
+      console.warn("WS: intento de envío sin conexión abierta");
+    }
+  }
+
   on(event: WsEvent, handler: Handler) {
     this.handlers[event] = handler;
   }

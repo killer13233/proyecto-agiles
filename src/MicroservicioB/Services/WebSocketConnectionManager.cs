@@ -11,6 +11,7 @@ public interface IWebSocketManager
     void Remover(string userId);
     Task BroadcastGuardiasAsync(object mensaje);
     Task EnviarAUsuarioAsync(string userId, object mensaje);
+    Task EnviarAAdminsAsync(string payload);
     int ConexionesActivas();
 }
 
@@ -29,6 +30,24 @@ public class WebSocketConnectionManager : IWebSocketManager
         _conexiones[userId] = (socket, rol);
         Console.WriteLine($"[WS] Conectado: {userId} ({rol}). Total: {_conexiones.Count}");
     }
+    // En la clase WebSocketConnectionManager agrega este método:
+public async Task EnviarAAdminsAsync(string payload)
+{
+    var bytes = Encoding.UTF8.GetBytes(payload);
+    var segment = new ArraySegment<byte>(bytes);
+
+    var admins = _conexiones
+        .Where(kv => kv.Value.Rol == "Administrador" &&
+                     kv.Value.Socket.State == WebSocketState.Open)
+        .ToList();
+
+    Console.WriteLine($"[WS] Enviando disponibilidad a {admins.Count} admin(s).");
+
+    var tareas = admins.Select(kv =>
+        kv.Value.Socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None));
+
+    await Task.WhenAll(tareas);
+}
 
     public void Remover(string userId)
     {
