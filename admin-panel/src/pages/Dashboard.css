@@ -29,9 +29,12 @@
   font-size: 0.875rem;
   color: #6b7280;
 }
-
 .actualizacion-indicator {
-  animation: rotate 2s linear infinite;
+  display: inline-block; /* necesario para que transform funcione en un span */
+}
+
+.actualizacion-indicator.refrescando {
+  animation: rotate 1s linear infinite;
 }
 
 @keyframes rotate {

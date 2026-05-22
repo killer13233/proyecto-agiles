@@ -18,31 +18,36 @@ const getHeaders = () => {
 // Obtener alertas con filtros
 export const getAlertas = async (filtros = {}) => {
   try {
-    // Llamar al backend real
     const params = new URLSearchParams();
-    if (filtros.estado) params.append('estado', filtros.estado);
-    if (filtros.tipo) params.append('tipo', filtros.tipo);
-    if (filtros.prioridad) params.append('prioridad', filtros.prioridad);
-    if (filtros.fecha) params.append('fecha', filtros.fecha);
-    
-    // Evitar la caché del navegador añadiendo un timestamp
+    if (filtros.estado)     params.append('estado', filtros.estado);
+    if (filtros.tipo)       params.append('tipo', filtros.tipo);
+    if (filtros.prioridad)  params.append('prioridad', filtros.prioridad);
+    if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde); // ← nombre correcto
+    if (filtros.usuario)    params.append('usuario', filtros.usuario);
     params.append('_t', Date.now().toString());
-    
+
     const response = await axios.get(
       `${API_BASE}/api/alertas?${params.toString()}`,
       { headers: getHeaders() }
     );
-    
-    return {
-      success: true,
-      data: response.data
-    };
+
+    let alertas = response.data?.alertas || response.data || [];
+    if (!Array.isArray(alertas)) alertas = [];
+
+    // Filtrado en el frontend como respaldo (por si el backend no filtra)
+    if (filtros.estado)     alertas = alertas.filter(a => (a.estado || a.Estado) === filtros.estado);
+    if (filtros.usuario)    alertas = alertas.filter(a => 
+      (a.nombreUsuario || a.NombreUsuario || '').toLowerCase().includes(filtros.usuario.toLowerCase())
+    );
+    if (filtros.fechaDesde) alertas = alertas.filter(a => {
+      const fecha = new Date(a.creadaEn || a.CreadaEn);
+      return fecha >= new Date(filtros.fechaDesde);
+    });
+
+    return { success: true, data: alertas };
   } catch (error) {
     console.error('Error al obtener alertas:', error);
-    return {
-      success: false,
-      error: 'Error al obtener alertas del servidor'
-    };
+    return { success: false, error: 'Error al obtener alertas del servidor' };
   }
 };
 

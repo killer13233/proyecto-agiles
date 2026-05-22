@@ -33,9 +33,9 @@ const Alertas = () => {
     cargarAlertas(true);
 
     // Actualización automática cada 10 segundos
-    const interval = setInterval(() => {
-      cargarAlertas(true);
-    }, 10000);
+   const interval = setInterval(() => {
+  cargarAlertas(false); // ← silencioso
+}, 10000);
 
     return () => clearInterval(interval);
   }, [debouncedFiltros]);
