@@ -1,98 +1,81 @@
-import { Capacitor } from "@capacitor/core";
-import { Preferences } from "@capacitor/preferences";
-
 const WS_BASE = import.meta.env.VITE_WS_URL;
-
+ 
 type WsEvent = "nueva_alerta" | "alerta_asumida" | "alerta_cerrada";
 type Handler = (data: any) => void;
-
+ 
 class WsService {
   private socket: WebSocket | null = null;
   private handlers: Partial<Record<WsEvent, Handler>> = {};
-  private connecting = false; // ✅ flag para evitar doble conexión
-
+  private connecting = false;
+ 
   async connect() {
     if (!WS_BASE) {
       console.error("WS: VITE_WS_URL no está definida en .env");
       return;
     }
-
-    // ✅ Si ya hay socket abierto o conectando, no hacer nada
-    if (this.connecting) {
-      console.warn("WS: conexión en progreso, ignorando...");
+ 
+    if (this.connecting || this.socket?.readyState === WebSocket.OPEN) {
       return;
     }
-
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      console.warn("WS: ya conectado, ignorando...");
-      return;
-    }
-
-    let token = "";
-    if (Capacitor.isNativePlatform()) {
-      const { value } = await Preferences.get({ key: "token" });
-      token = value || "";
-    } else {
-      token =
-        localStorage.getItem("token") ||
-        sessionStorage.getItem("token") ||
-        "";
-    }
-
+ 
+    const token = localStorage.getItem("token") || "";
+ 
     if (!token) {
       console.error("WS: no hay token disponible");
       return;
     }
-
-    this.connecting = true; // ✅ marcar como conectando
+ 
+    this.connecting = true;
     const url = `${WS_BASE}/ws?token=${token}`;
     console.log("WS conectando a:", url);
     this.socket = new WebSocket(url);
-
+ 
     this.socket.onopen = () => {
-      this.connecting = false; // ✅ limpiar flag al conectar
+      this.connecting = false;
       console.log("WS conectado ✅");
     };
-
+ 
     this.socket.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
         console.log("WS mensaje recibido:", data);
+        
+        if (data.tipo === 'nueva_alerta') {
+          window.dispatchEvent(new CustomEvent('app-nueva-alerta', { detail: data }));
+        } else if (data.tipo === 'alerta_asumida') {
+          window.dispatchEvent(new CustomEvent('app-alerta-asumida', { detail: data }));
+        }
+ 
         const handler = this.handlers[data.tipo as WsEvent];
         if (handler) handler(data);
       } catch (err) {
         console.error("WS parse error", err);
       }
     };
-
+ 
     this.socket.onerror = (e) => {
-      this.connecting = false; // ✅ limpiar flag en error
+      this.connecting = false;
       console.error("WS error", e);
     };
-
+ 
     this.socket.onclose = () => {
-      this.connecting = false; // ✅ limpiar flag al cerrar
+      this.connecting = false;
       console.log("WS cerrado");
     };
   }
-
+ 
   on(event: WsEvent, handler: Handler) {
     this.handlers[event] = handler;
   }
-
+ 
   disconnect() {
-    // ✅ Solo cerrar si está OPEN o CONNECTING
-    if (
-      this.socket &&
-      (this.socket.readyState === WebSocket.OPEN ||
-        this.socket.readyState === WebSocket.CONNECTING)
-    ) {
+    if (this.socket) {
       this.socket.close();
+      this.socket = null;
     }
-    this.socket = null;
     this.connecting = false;
     this.handlers = {};
   }
 }
-
+ 
 export const wsService = new WsService();

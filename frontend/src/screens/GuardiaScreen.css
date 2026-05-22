@@ -1,0 +1,124 @@
+.guardia-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.guardia-header h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+}
+
+.status-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* ── Card base ── */
+.alerta-card {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #ef4444; /* rojo por defecto (Activa) */
+}
+
+/* ── Asumida POR MÍ → fondo amarillo suave ── */
+.alerta-card.asumida-yo {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+}
+
+/* ── Asumida POR OTRO → fondo azul suave ── */
+.alerta-card.asumida-otro {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+}
+
+/* ── Badges ── */
+.alerta-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+    color: white;
+}
+
+.badge-activa       { background-color: #ef4444; }
+.badge-asumida-yo   { background-color: #f59e0b; }
+.badge-asumida-otro { background-color: #3b82f6; }
+
+/* ── Cabecera de la alerta ── */
+.alerta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.alerta-title {
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+/* ── Info ── */
+.alerta-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.alerta-info div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+/* ── Botones ── */
+.alerta-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: opacity 0.2s;
+}
+
+.btn-asumir {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.btn-cerrar {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Deshabilitado genérico */
+.action-btn:disabled {
+    background-color: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}

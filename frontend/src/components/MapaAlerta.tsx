@@ -11,6 +11,23 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+// Definición de iconos personalizados por color según estado
+const getCustomIcon = (estado: string) => {
+  let color = 'blue'; // default
+  if (estado === 'Activa') color = 'red';
+  else if (estado === 'Asumida') color = 'orange';
+  else if (estado === 'Cerrada') color = 'gray';
+
+  return new L.Icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+};
+
 interface Zona {
   id: number;
   nombre: string;
@@ -22,6 +39,7 @@ interface MapaAlertaProps {
   lat: number;
   lng: number;
   motivo: string;
+  estado: string;
   height?: string;
   zonas?: Zona[];
 }
@@ -38,7 +56,6 @@ const ZONA_COLORS: Record<string, string> = {
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
-    // Pequeño delay para asegurar que el modal de Ionic ha terminado su animación de apertura
     const timer = setTimeout(() => {
       map.invalidateSize();
       map.setView(center, 16);
@@ -48,7 +65,7 @@ const MapController = ({ center }: { center: [number, number] }) => {
   return null;
 };
 
-const MapaAlerta: React.FC<MapaAlertaProps> = ({ lat, lng, motivo, height = '300px', zonas = [] }) => {
+const MapaAlerta: React.FC<MapaAlertaProps> = ({ lat, lng, motivo, estado, height = '300px', zonas = [] }) => {
   const safeLat = lat || -1.269451;
   const safeLng = lng || -78.623277;
 
@@ -96,10 +113,10 @@ const MapaAlerta: React.FC<MapaAlertaProps> = ({ lat, lng, motivo, height = '300
           );
         })}
 
-        <Marker position={[safeLat, safeLng]}>
+        <Marker position={[safeLat, safeLng]} icon={getCustomIcon(estado)}>
           <Popup>
             <strong>Alerta: {motivo}</strong> <br />
-            Ubicación del evento
+            Estado: {estado}
           </Popup>
         </Marker>
       </MapContainer>

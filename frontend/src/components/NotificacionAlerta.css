@@ -1,0 +1,75 @@
+.notificacion-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    z-index: 10000;
+    animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+    from { transform: translate(-50%, -100%); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.notificacion-content {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-left: 6px solid #ef4444;
+}
+
+.notificacion-icon {
+    font-size: 1.8rem;
+}
+
+.notificacion-text {
+    flex: 1;
+}
+
+.notificacion-title {
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.notificacion-body {
+    font-size: 0.9rem;
+    color: #333;
+    margin: 4px 0;
+}
+
+.notificacion-zona {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0;
+}
+
+.notificacion-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-detalles {
+    --background: #3b82f6;
+    --color: white;
+    font-weight: bold;
+    height: 30px;
+    margin: 0;
+}
+
+.btn-cerrar {
+    --color: #999;
+    font-size: 0.8rem;
+    height: 20px;
+    margin: 0;
+}

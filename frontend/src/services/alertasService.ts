@@ -1,14 +1,19 @@
 import axios from "axios";
 import { Preferences } from "@capacitor/preferences";
-
+import { Capacitor } from "@capacitor/core";
+ 
 const API_BASE = import.meta.env.VITE_API_URL;
-
+ 
 const getToken = async () => {
-  const { value } = await Preferences.get({ key: "token" });
-  return value || "";
+  if (Capacitor.isNativePlatform()) {
+    const { value } = await Preferences.get({ key: "token" });
+    return value || "";
+  }
+  return localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 };
-
+ 
 export const getAlertas = async (estado: string = "Activa") => {
+
   const token = await getToken();
   const response = await axios.get(`${API_BASE}/api/alertas?estado=${estado}`, {
     headers: { Authorization: `Bearer ${token}` },

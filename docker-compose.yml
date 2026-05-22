@@ -14,6 +14,12 @@ services:
       - sqldata-a:/var/opt/mssql
     networks:
       - uta-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Uta2026!Strong' -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
 
   sqlserver-b:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -27,6 +33,12 @@ services:
       - sqldata-b:/var/opt/mssql
     networks:
       - uta-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Uta2026!Strong' -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
 
   sqlserver-c:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -40,6 +52,12 @@ services:
       - sqldata-c:/var/opt/mssql
     networks:
       - uta-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Uta2026!Strong' -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
 
   microservicio-a:
     build:
@@ -50,22 +68,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
-      - sqlserver-a
-    networks:
-      - uta-network
-    restart: on-failure
-
-  microservicio-b:
-    build:
-      context: ./src/MicroservicioB
-      dockerfile: Dockerfile
-    ports:
-      - "8082:8082"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-    depends_on:
-      - sqlserver-b
-      - microservicio-c
+      sqlserver-a:
+        condition: service_healthy
     networks:
       - uta-network
     restart: on-failure
@@ -79,7 +83,25 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
-      - sqlserver-c
+      sqlserver-c:
+        condition: service_healthy
+    networks:
+      - uta-network
+    restart: on-failure
+
+  microservicio-b:
+    build:
+      context: ./src/MicroservicioB
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      sqlserver-b:
+        condition: service_healthy
+      microservicio-c:
+        condition: service_started   # ← quitar esta línea si B no llama a C al arrancar
     networks:
       - uta-network
     restart: on-failure
@@ -96,6 +118,26 @@ services:
       - microservicio-a
       - microservicio-b
       - microservicio-c
+    networks:
+      - uta-network
+    restart: on-failure
+
+  admin-panel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    networks:
+      - uta-network
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
     networks:
       - uta-network
     restart: on-failure
