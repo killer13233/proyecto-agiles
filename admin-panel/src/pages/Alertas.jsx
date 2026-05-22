@@ -20,33 +20,27 @@ const Alertas = () => {
   const prioridadesAlerta = getPrioridadesAlerta();
   const estadosAlerta = getEstadosAlerta();
 
-  // Efecto para el debounce de los filtros
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedFiltros(filtros);
     }, 300);
-
     return () => clearTimeout(handler);
   }, [filtros]);
 
   useEffect(() => {
-    cargarAlertas(true);
-
-    // Actualización automática cada 10 segundos
-   const interval = setInterval(() => {
-  cargarAlertas(false); // ← silencioso
-}, 10000);
-
+    cargarAlertas(false); // primera carga → muestra spinner
+    const interval = setInterval(() => {
+      cargarAlertas(true); // refresco automático → silencioso
+    }, 10000);
     return () => clearInterval(interval);
   }, [debouncedFiltros]);
 
-  const cargarAlertas = async (isFilterUpdate = false) => {
-    if (!isFilterUpdate) setLoading(true);
+  // silencioso=false → muestra spinner | silencioso=true → recarga sin spinner
+  const cargarAlertas = async (silencioso = false) => {
+    if (!silencioso) setLoading(true);
     setError('');
-    
     try {
       const resultado = await getAlertas(debouncedFiltros);
-      
       if (resultado.success) {
         setAlertas(Array.isArray(resultado.data) ? resultado.data : (resultado.data.alertas || []));
       } else {
@@ -59,31 +53,20 @@ const Alertas = () => {
     }
   };
 
-
   const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
+    setFiltros(prev => ({ ...prev, [campo]: valor }));
   };
 
   const limpiarFiltros = () => {
-    setFiltros({
-      estado: '',
-      tipo: '',
-      prioridad: '',
-      usuario: '',
-      fechaDesde: ''
-    });
+    setFiltros({ estado: '', tipo: '', prioridad: '', usuario: '', fechaDesde: '' });
   };
 
   const handleAsignar = async (idAlerta, guardiaId, nombreGuardia) => {
     try {
       const resultado = await asignarAlerta(idAlerta, guardiaId, nombreGuardia);
-      
       if (resultado.success) {
         alert('✅ Alerta asignada correctamente a ' + nombreGuardia);
-        await cargarAlertas();
+        await cargarAlertas(true); // silencioso
       } else {
         alert('❌ Error al asignar: ' + resultado.error);
         setError(resultado.error);
@@ -97,10 +80,8 @@ const Alertas = () => {
   const handleCerrar = async (idAlerta, motivo) => {
     try {
       const resultado = await cerrarAlerta(idAlerta, motivo);
-      
       if (resultado.success) {
-        // Recargar alertas para mostrar el cambio
-        await cargarAlertas();
+        await cargarAlertas(true); // silencioso
       } else {
         setError(resultado.error);
       }
@@ -109,17 +90,9 @@ const Alertas = () => {
     }
   };
 
-  const getAlertasActivas = () => {
-    return alertas.filter(a => a.estado === 'Activa').length;
-  };
-
-  const getAlertasAsignadas = () => {
-    return alertas.filter(a => a.estado === 'Asignada').length;
-  };
-
-  const getAlertasCerradas = () => {
-    return alertas.filter(a => a.estado === 'Cerrada').length;
-  };
+  const getAlertasActivas   = () => alertas.filter(a => a.estado === 'Activa').length;
+  const getAlertasAsignadas = () => alertas.filter(a => a.estado === 'Asumida').length; // ← antes 'Asignada'
+  const getAlertasCerradas  = () => alertas.filter(a => a.estado === 'Cerrada').length;
 
   if (loading) {
     return (
@@ -155,84 +128,34 @@ const Alertas = () => {
         <div className="filtros-grid">
           <div className="filtro-group">
             <label htmlFor="estado">Estado</label>
-            <select
-              id="estado"
-              value={filtros.estado}
-              onChange={(e) => handleFiltroChange('estado', e.target.value)}
-              className="filtro-select"
-            >
+            <select id="estado" value={filtros.estado} onChange={(e) => handleFiltroChange('estado', e.target.value)} className="filtro-select">
               <option value="">Todos los estados</option>
-              {estadosAlerta.map(estado => (
-                <option key={estado} value={estado}>
-                  {estado}
-                </option>
-              ))}
+              {estadosAlerta.map(estado => <option key={estado} value={estado}>{estado}</option>)}
             </select>
           </div>
-
           <div className="filtro-group">
             <label htmlFor="tipo">Tipo</label>
-            <select
-              id="tipo"
-              value={filtros.tipo}
-              onChange={(e) => handleFiltroChange('tipo', e.target.value)}
-              className="filtro-select"
-            >
+            <select id="tipo" value={filtros.tipo} onChange={(e) => handleFiltroChange('tipo', e.target.value)} className="filtro-select">
               <option value="">Todos los tipos</option>
-              {tiposAlerta.map(tipo => (
-                <option key={tipo} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
+              {tiposAlerta.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
             </select>
           </div>
-
           <div className="filtro-group">
             <label htmlFor="prioridad">Prioridad</label>
-            <select
-              id="prioridad"
-              value={filtros.prioridad}
-              onChange={(e) => handleFiltroChange('prioridad', e.target.value)}
-              className="filtro-select"
-            >
+            <select id="prioridad" value={filtros.prioridad} onChange={(e) => handleFiltroChange('prioridad', e.target.value)} className="filtro-select">
               <option value="">Todas las prioridades</option>
-              {prioridadesAlerta.map(prioridad => (
-                <option key={prioridad} value={prioridad}>
-                  {prioridad}
-                </option>
-              ))}
+              {prioridadesAlerta.map(prioridad => <option key={prioridad} value={prioridad}>{prioridad}</option>)}
             </select>
           </div>
-
           <div className="filtro-group">
             <label htmlFor="usuario">Usuario</label>
-            <input
-              type="text"
-              id="usuario"
-              value={filtros.usuario}
-              onChange={(e) => handleFiltroChange('usuario', e.target.value)}
-              placeholder="Buscar por usuario..."
-              className="filtro-input"
-            />
+            <input type="text" id="usuario" value={filtros.usuario} onChange={(e) => handleFiltroChange('usuario', e.target.value)} placeholder="Buscar por usuario..." className="filtro-input" />
           </div>
-
           <div className="filtro-group">
             <label htmlFor="fechaDesde">Desde</label>
-            <input
-              type="date"
-              id="fechaDesde"
-              value={filtros.fechaDesde}
-              onChange={(e) => handleFiltroChange('fechaDesde', e.target.value)}
-              className="filtro-input"
-            />
+            <input type="date" id="fechaDesde" value={filtros.fechaDesde} onChange={(e) => handleFiltroChange('fechaDesde', e.target.value)} className="filtro-input" />
           </div>
-
-          <button
-            className="btn btn-limpiar"
-            onClick={limpiarFiltros}
-          >
-            🗑️ Limpiar Filtros
-          </button>
+          <button className="btn btn-limpiar" onClick={limpiarFiltros}>🗑️ Limpiar Filtros</button>
         </div>
       </div>
 

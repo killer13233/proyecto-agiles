@@ -295,11 +295,15 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
               <span style={{ fontWeight: "bold", color: disponible ? "#10b981" : "#ef4444" }}>
                 {disponible ? "Disponible" : "No disponible"}
               </span>
-              <IonToggle
-                checked={disponible}
-                onIonChange={(e) => setDisponible(e.detail.checked)}
-                style={{ marginLeft: "10px" }}
-              />
+            <IonToggle
+  checked={disponible}
+  onIonChange={(e) => {
+    const nuevoEstado = e.detail.checked;
+    setDisponible(nuevoEstado);
+    wsService.send({ tipo: "disponibilidad", disponible: nuevoEstado });
+  }}
+  style={{ marginLeft: "10px" }}
+/>
             </div>
             <IonButton
               fill="clear"

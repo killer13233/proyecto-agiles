@@ -20,7 +20,6 @@ export const getAlertas = async (filtros = {}) => {
   try {
     const params = new URLSearchParams();
     if (filtros.estado)     params.append('estado', filtros.estado);
-    if (filtros.tipo)       params.append('tipo', filtros.tipo);
     if (filtros.prioridad)  params.append('prioridad', filtros.prioridad);
     if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde); // ← nombre correcto
     if (filtros.usuario)    params.append('usuario', filtros.usuario);
@@ -111,5 +110,5 @@ export const getPrioridadesAlerta = () => {
 
 // Obtener estados válidos
 export const getEstadosAlerta = () => {
-  return ['Activa', 'Asignada', 'Cerrada', 'Cancelada'];
+  return ['Activa', 'Asumida', 'Cerrada'];
 };

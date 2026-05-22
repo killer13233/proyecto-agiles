@@ -116,26 +116,48 @@ public class WebSocketController : ControllerBase
 
 
     private async Task EscucharAsync(WebSocket socket, string userId)
+{
+    var buffer = new byte[1024 * 4];
+    try
     {
-        var buffer = new byte[1024 * 4];
-        try
+        while (socket.State == WebSocketState.Open)
         {
-            while (socket.State == WebSocketState.Open)
+            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            if (result.MessageType == WebSocketMessageType.Close)
+                break;
+
+            if (result.MessageType == WebSocketMessageType.Text)
             {
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Close)
-                    break;
-                // Mensajes del cliente (ping/disponibilidad) — procesados en Sprint 2
+                var mensaje = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
+                try
+                {
+                    var json = System.Text.Json.JsonDocument.Parse(mensaje);
+                    var tipo = json.RootElement.GetProperty("tipo").GetString();
+
+                    if (tipo == "disponibilidad")
+                    {
+                        var disponible = json.RootElement.GetProperty("disponible").GetBoolean();
+                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            tipo = "guardia_disponibilidad",
+                            guardiaId = userId,
+                            disponible
+                        });
+                        await _wsManager.EnviarAAdminsAsync(payload);
+                    }
+                }
+                catch { /* mensaje malformado, ignorar */ }
             }
         }
-        catch { /* cliente desconectado abruptamente */ }
-        finally
-        {
-            _wsManager.Remover(userId);
-            if (socket.State == WebSocketState.Open)
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado", CancellationToken.None);
-        }
     }
+    catch { }
+    finally
+    {
+        _wsManager.Remover(userId);
+        if (socket.State == WebSocketState.Open)
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado", CancellationToken.None);
+    }
+}
 
     private ClaimsPrincipal? ValidarToken(string token)
     {

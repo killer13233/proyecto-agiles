@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/MainLayout';
@@ -7,16 +8,32 @@ import Usuarios from './pages/Usuarios';
 import Zonas from './pages/Zonas';
 import Alertas from './pages/Alertas';
 import Dashboard from './pages/Dashboard';
+import { adminWsService } from './services/wsService';
 
 function App() {
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userRaw = localStorage.getItem('user');
+    const rol = userRaw ? JSON.parse(userRaw)?.rol : null;
+
+    if (token && rol === 'Administrador') {
+      adminWsService.connect(token);
+
+      adminWsService.on('guardia_disponibilidad', (data) => {
+        console.log('[Admin] Guardia disponibilidad:', data);
+        window.dispatchEvent(new CustomEvent('guardia-disponibilidad', { detail: data }));
+      });
+    }
+
+    return () => adminWsService.disconnect();
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Ruta pública */}
           <Route path="/login" element={<Login />} />
           
-          {/* Rutas protegidas */}
           <Route path="/" element={
             <ProtectedRoute>
               <MainLayout />
@@ -33,7 +50,6 @@ function App() {
             <Route path="alertas" element={<Alertas />} />
           </Route>
           
-          {/* Ruta por defecto */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
