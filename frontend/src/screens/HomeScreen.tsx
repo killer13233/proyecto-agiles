@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { IonContent, IonPage } from "@ionic/react";
+import { useHistory } from "react-router-dom";
 import BotonAlarma from "../components/ButtonAlarm";
 import "./HomeScreen.css";
 import { obtenerUbicacion } from "../services/gpsService";
@@ -9,6 +10,7 @@ type Props = {
 };
 
 const HomeScreen: React.FC<Props> = ({ onVerPerfil }) => {
+  const history = useHistory();
   const [zona, setZona] = useState("Obteniendo zona...");
   const [coordenadas, setCoordenadas] = useState({ lat: 0, lon: 0 });
   const [usuario, setUsuario] = useState({ nombre: "", rol: "" });
@@ -86,6 +88,10 @@ const HomeScreen: React.FC<Props> = ({ onVerPerfil }) => {
 
           <button className="perfil-btn" onClick={onVerPerfil}>
             Ver datos del usuario
+          </button>
+
+          <button className="perfil-btn" onClick={() => history.push('/mapa')}>
+            🗺️ Ver mapa del campus
           </button>
 
         </div>
