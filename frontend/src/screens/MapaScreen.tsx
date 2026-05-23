@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonBackButton, IonCard, IonCardContent, IonText, IonSpinner, IonBadge } from '@ionic/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonBackButton, IonCard, IonCardContent, IonText, IonSpinner, IonBadge, IonButton, IonModal, IonAlert } from '@ionic/react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapaScreen.css';
 import { obtenerUbicacion, iniciarSeguimientoGPS, PositionData } from '../services/gpsService';
-import { validarPuntoEnCampus } from '../services/zonasService';
+import { validarPuntoEnCampus, obtenerZonas, Zona as ZonaBackend } from '../services/zonasService';
 import { Preferences } from '@capacitor/preferences';
+import { enviarAlerta } from '../services/alertService';
 
 // Fix para los iconos de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,13 +17,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-interface Zona {
-  id: number;
-  nombre: string;
-  poligono: string;
-  color?: string;
-}
-
 const ZONA_COLORS: Record<string, string> = {
   'Zona A': '#3b82f6',
   'Zona B': '#22c55e',
@@ -31,69 +25,9 @@ const ZONA_COLORS: Record<string, string> = {
   'default': '#8b5cf6'
 };
 
-// Coordenadas del campus UTA Huachi
+// Coordenadas del campus UTA Huachi (mismas que admin-panel)
 const CAMPUS_CENTER: [number, number] = [-1.269451, -78.623277];
-const CAMPUS_ZOOM = 16;
-
-// Zonas del campus UTA (polígonos de ejemplo - deben ajustarse a las reales)
-const ZONAS_CAMPUS: Zona[] = [
-  {
-    id: 1,
-    nombre: 'Zona A',
-    poligono: JSON.stringify({
-      coordinates: [[
-        [-78.624, -1.268],
-        [-78.623, -1.268],
-        [-78.623, -1.269],
-        [-78.624, -1.269],
-        [-78.624, -1.268]
-      ]]
-    }),
-    color: ZONA_COLORS['Zona A']
-  },
-  {
-    id: 2,
-    nombre: 'Zona B',
-    poligono: JSON.stringify({
-      coordinates: [[
-        [-78.623, -1.269],
-        [-78.622, -1.269],
-        [-78.622, -1.270],
-        [-78.623, -1.270],
-        [-78.623, -1.269]
-      ]]
-    }),
-    color: ZONA_COLORS['Zona B']
-  },
-  {
-    id: 3,
-    nombre: 'Zona C',
-    poligono: JSON.stringify({
-      coordinates: [[
-        [-78.624, -1.270],
-        [-78.623, -1.270],
-        [-78.623, -1.271],
-        [-78.624, -1.271],
-        [-78.624, -1.270]
-      ]]
-    }),
-    color: ZONA_COLORS['Zona C']
-  },
-  {
-    id: 4,
-    nombre: 'Zona D',
-    poligono: JSON.stringify({
-      coordinates: [[
-        [-78.622, -1.270],
-        [-78.621, -1.270],
-        [-78.621, -1.271],
-        [-78.622, -1.271],
-        [-78.622, -1.270]
-      ]]
-    }),
-    color: ZONA_COLORS['Zona D']
-  }
-];
+const CAMPUS_ZOOM = 17;
 
 // Componente para controlar el mapa
 const MapController = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
@@ -120,20 +54,35 @@ const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number
 
 const MapaScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [zonas, setZonas] = useState<Zona[]>(ZONAS_CAMPUS);
+  const [zonas, setZonas] = useState<ZonaBackend[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [userPosition, setUserPosition] = useState<PositionData | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [touchedPosition, setTouchedPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [campusStatus, setCampusStatus] = useState<{ dentro: boolean; zona: string } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [alertaEnviada, setAlertaEnviada] = useState(false);
+  const [presionandoBoton, setPresionandoBoton] = useState(false);
+  const [contadorBoton, setContadorBoton] = useState(3);
+  const timerRef = useRef<any>(null);
+  const intervalRef = useRef<any>(null);
 
   useEffect(() => {
-    // Simular carga de zonas desde el backend
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setMapReady(true);
-    }, 500);
-    return () => clearTimeout(timer);
+    // Cargar zonas desde el backend
+    const cargarZonas = async () => {
+      try {
+        const zonasData = await obtenerZonas();
+        console.log('Zonas cargadas:', zonasData);
+        setZonas(zonasData);
+      } catch (error) {
+        console.error('Error cargando zonas:', error);
+      } finally {
+        setLoading(false);
+        setMapReady(true);
+      }
+    };
+
+    cargarZonas();
   }, []);
 
   useEffect(() => {
@@ -167,30 +116,90 @@ const MapaScreen: React.FC = () => {
 
   // Función para manejar clic en el mapa
   const handleMapClick = async (lat: number, lng: number) => {
+    console.log('Clic en mapa:', lat, lng);
     setTouchedPosition({ lat, lng });
-    
+    setAlertaEnviada(false);
+
     // Validar si el punto está dentro del campus
     try {
       const validacion = await validarPuntoEnCampus(lat, lng);
+      console.log('Validación:', validacion);
       setCampusStatus({
         dentro: validacion.dentroDelCampus,
         zona: validacion.zona
       });
+
+      // Mostrar modal con información del punto
+      setShowModal(true);
     } catch (error) {
       console.error('Error validando punto:', error);
       setCampusStatus({ dentro: false, zona: 'Error de validación' });
-    }
-    
-    // Guardar coordenadas en Preferences para usar en alertas
-    try {
-      await Preferences.set({
-        key: 'alerta_ubicacion',
-        value: JSON.stringify({ latitud: lat, longitud: lng })
-      });
-    } catch (error) {
-      console.error('Error guardando coordenadas:', error);
+      setShowModal(true);
     }
   };
+
+  // Función para enviar alerta desde el punto seleccionado
+  const handleEnviarAlertaDesdePunto = async () => {
+    if (!touchedPosition) return;
+
+    try {
+      await enviarAlerta(
+        touchedPosition.lat,
+        touchedPosition.lng,
+        "Emergencia desde punto seleccionado"
+      );
+      setAlertaEnviada(true);
+      setShowModal(false);
+      setPresionandoBoton(false);
+      setContadorBoton(3);
+
+      // Guardar coordenadas en Preferences
+      await Preferences.set({
+        key: 'alerta_ubicacion',
+        value: JSON.stringify({ latitud: touchedPosition.lat, longitud: touchedPosition.lng })
+      });
+    } catch (error) {
+      console.error('Error enviando alerta:', error);
+      setPresionandoBoton(false);
+      setContadorBoton(3);
+    }
+  };
+
+  // Función para iniciar el presionado del botón
+  const iniciarPresionBoton = () => {
+    setPresionandoBoton(true);
+    setContadorBoton(3);
+
+    let tiempo = 3;
+
+    intervalRef.current = setInterval(() => {
+      tiempo -= 1;
+      setContadorBoton(tiempo);
+    }, 1000);
+
+    timerRef.current = setTimeout(() => {
+      clearInterval(intervalRef.current);
+      handleEnviarAlertaDesdePunto();
+    }, 3000);
+  };
+
+  // Función para cancelar el presionado del botón
+  const cancelarPresionBoton = () => {
+    if (!presionandoBoton) return;
+
+    clearTimeout(timerRef.current);
+    clearInterval(intervalRef.current);
+    setPresionandoBoton(false);
+    setContadorBoton(3);
+  };
+
+  // Limpiar timers al desmontar
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current);
+      clearInterval(intervalRef.current);
+    };
+  }, []);
 
   // Validar posición GPS del usuario
   useEffect(() => {
@@ -252,19 +261,25 @@ const MapaScreen: React.FC = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {zonas.map((zona: Zona) => {
+              {zonas.map((zona: ZonaBackend) => {
                 const vertices = parsePolygon(zona.poligono);
                 if (vertices.length === 0) return null;
 
                 return (
-                  <Polygon 
-                    key={zona.id} 
+                  <Polygon
+                    key={zona.id}
                     positions={vertices}
-                    pathOptions={{ 
+                    pathOptions={{
                       color: zona.color || ZONA_COLORS.default,
                       fillColor: zona.color || ZONA_COLORS.default,
                       fillOpacity: 0.3,
                       weight: 2
+                    }}
+                    eventHandlers={{
+                      click: (e) => {
+                        e.originalEvent.stopPropagation();
+                        handleMapClick(e.latlng.lat, e.latlng.lng);
+                      }
                     }}
                   >
                     <Popup>{zona.nombre}</Popup>
@@ -356,6 +371,76 @@ const MapaScreen: React.FC = () => {
           </div>
         )}
       </IonContent>
+
+      {/* Modal de información del punto seleccionado */}
+      <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Información del Punto</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowModal(false)}>Cerrar</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          {campusStatus?.dentro ? (
+            <div>
+              <IonCard>
+                <IonCardContent>
+                  <h2>📍 Punto dentro del campus</h2>
+                  <p><strong>Zona:</strong> {campusStatus.zona}</p>
+                  <p><strong>Latitud:</strong> {touchedPosition?.lat.toFixed(6)}</p>
+                  <p><strong>Longitud:</strong> {touchedPosition?.lng.toFixed(6)}</p>
+                  <IonButton
+                    expand="block"
+                    color="danger"
+                    onMouseDown={iniciarPresionBoton}
+                    onMouseUp={cancelarPresionBoton}
+                    onMouseLeave={cancelarPresionBoton}
+                    onTouchStart={iniciarPresionBoton}
+                    onTouchEnd={cancelarPresionBoton}
+                  >
+                    {presionandoBoton ? (
+                      <>
+                        <strong>{contadorBoton}</strong>
+                        <span>segundos</span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>🚨</strong>
+                        <span>Mantén presionado 3s para enviar alerta</span>
+                      </>
+                    )}
+                  </IonButton>
+                </IonCardContent>
+              </IonCard>
+            </div>
+          ) : (
+            <div>
+              <IonCard>
+                <IonCardContent>
+                  <h2>⚠️ Punto fuera del campus UTA</h2>
+                  <p>El punto seleccionado no está dentro de las 4 zonas delimitadas del campus.</p>
+                  <p><strong>Latitud:</strong> {touchedPosition?.lat.toFixed(6)}</p>
+                  <p><strong>Longitud:</strong> {touchedPosition?.lng.toFixed(6)}</p>
+                  <IonText color="danger">
+                    <p>No se puede enviar una alerta desde este punto.</p>
+                  </IonText>
+                </IonCardContent>
+              </IonCard>
+            </div>
+          )}
+        </IonContent>
+      </IonModal>
+
+      {/* Alerta de confirmación de envío */}
+      <IonAlert
+        isOpen={alertaEnviada}
+        onDidDismiss={() => setAlertaEnviada(false)}
+        header="Alerta Enviada"
+        message="La alerta se ha enviado correctamente desde el punto seleccionado."
+        buttons={['OK']}
+      />
     </IonPage>
   );
 };
