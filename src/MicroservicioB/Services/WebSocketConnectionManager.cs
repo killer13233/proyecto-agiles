@@ -12,52 +12,58 @@ public interface IWebSocketManager
     Task BroadcastGuardiasAsync(object mensaje);
     Task EnviarAUsuarioAsync(string userId, object mensaje);
     Task EnviarAAdminsAsync(string payload);
+    void ActualizarDisponibilidad(string guardiaId, bool disponible);
+    Task EnviarEstadosAAdmin(string adminId);
     int ConexionesActivas();
 }
 
-/// <summary>
-/// Maneja todas las conexiones WebSocket activas.
-/// Singleton — vive durante toda la vida de la aplicación.
-/// </summary>
 public class WebSocketConnectionManager : IWebSocketManager
 {
-    // userId → (socket, rol)
     private readonly ConcurrentDictionary<string, (WebSocket Socket, string Rol)>
         _conexiones = new();
+
+    private readonly ConcurrentDictionary<string, bool> _disponibilidades = new();
 
     public void Agregar(string userId, string rol, WebSocket socket)
     {
         _conexiones[userId] = (socket, rol);
         Console.WriteLine($"[WS] Conectado: {userId} ({rol}). Total: {_conexiones.Count}");
     }
-    // En la clase WebSocketConnectionManager agrega este método:
-public async Task EnviarAAdminsAsync(string payload)
-{
-    var bytes = Encoding.UTF8.GetBytes(payload);
-    var segment = new ArraySegment<byte>(bytes);
-
-    var admins = _conexiones
-        .Where(kv => kv.Value.Rol == "Administrador" &&
-                     kv.Value.Socket.State == WebSocketState.Open)
-        .ToList();
-
-    Console.WriteLine($"[WS] Enviando disponibilidad a {admins.Count} admin(s).");
-
-    var tareas = admins.Select(kv =>
-        kv.Value.Socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None));
-
-    await Task.WhenAll(tareas);
-}
 
     public void Remover(string userId)
     {
         _conexiones.TryRemove(userId, out _);
+        _disponibilidades.TryRemove(userId, out _);
         Console.WriteLine($"[WS] Desconectado: {userId}. Total: {_conexiones.Count}");
     }
 
-    /// <summary>
-    /// Envía un mensaje a todos los guardias conectados con socket abierto.
-    /// </summary>
+    public void ActualizarDisponibilidad(string guardiaId, bool disponible)
+    {
+        _disponibilidades[guardiaId] = disponible;
+    }
+
+    public async Task EnviarEstadosAAdmin(string adminId)
+    {
+        if (!_conexiones.TryGetValue(adminId, out var conn)) return;
+        if (conn.Socket.State != WebSocketState.Open) return;
+
+        foreach (var kv in _disponibilidades)
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                tipo = "guardia_disponibilidad",
+                guardiaId = kv.Key,
+                disponible = kv.Value
+            });
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            await conn.Socket.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None);
+        }
+    }
+
     public async Task BroadcastGuardiasAsync(object mensaje)
     {
         var json = JsonSerializer.Serialize(mensaje);
@@ -77,9 +83,24 @@ public async Task EnviarAAdminsAsync(string payload)
         await Task.WhenAll(tareas);
     }
 
-    /// <summary>
-    /// Envía un mensaje a un usuario específico por su userId.
-    /// </summary>
+    public async Task EnviarAAdminsAsync(string payload)
+    {
+        var bytes = Encoding.UTF8.GetBytes(payload);
+        var segment = new ArraySegment<byte>(bytes);
+
+        var admins = _conexiones
+            .Where(kv => kv.Value.Rol == "Administrador" &&
+                         kv.Value.Socket.State == WebSocketState.Open)
+            .ToList();
+
+        Console.WriteLine($"[WS] Enviando a {admins.Count} admin(s).");
+
+        var tareas = admins.Select(kv =>
+            kv.Value.Socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None));
+
+        await Task.WhenAll(tareas);
+    }
+
     public async Task EnviarAUsuarioAsync(string userId, object mensaje)
     {
         if (!_conexiones.TryGetValue(userId, out var conn)) return;

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../services/config';
-
+import { adminWsService } from '../services/wsService';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -39,6 +39,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
+        if (response.data.rol === 'Administrador') {
+  adminWsService.connect(response.data.token);
+  adminWsService.on('guardia_disponibilidad', (data) => {
+    window.dispatchEvent(new CustomEvent('guardia-disponibilidad', { detail: data }));
+  });
+}
+
         return { success: true };
       }
     } catch (error) {

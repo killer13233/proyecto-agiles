@@ -74,6 +74,7 @@ const Home: React.FC = () => {
           try {
             await wsService.connect();
             console.log("WS conectado globalmente en Home");
+              wsService.send({ tipo: "disponibilidad", disponible: true });
           } catch (e) {
             console.error("Error conectando WS:", e);
           }
