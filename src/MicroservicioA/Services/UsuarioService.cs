@@ -9,6 +9,8 @@ public interface IUsuarioService
     Task<PaginadoResponse<UsuarioDto>> ListarAsync(int pagina, int tamaño, string? rolFiltro);
     Task<(bool ok, string? error)> CambiarRolAsync(int id, string nuevoRol);
     Task<(bool ok, string? error)> CambiarEstadoAsync(int id, string nuevoEstado);
+    Task<(bool ok, string? error)> CambiarDisponibilidadAsync(int id, bool disponible, int solicitanteId, string rolSolicitante);
+
 }
 
 public class UsuarioService : IUsuarioService
@@ -74,4 +76,16 @@ public class UsuarioService : IUsuarioService
         await _db.SaveChangesAsync();
         return (true, null);
     }
-}
+    public async Task<(bool ok, string? error)> CambiarDisponibilidadAsync(int id, bool disponible, int solicitanteId, string rolSolicitante)
+    {
+    var usuario = await _db.Usuarios.FindAsync(id);
+    if (usuario is null) return (false, "Usuario no encontrado.");
+    if (usuario.Rol != Rol.Guardia)
+        return (false, "Solo los guardias tienen control de disponibilidad.");
+    if (solicitanteId != id && rolSolicitante != "Administrador")
+        return (false, "Solo el propio guardia o un administrador puede cambiar la disponibilidad.");
+    usuario.Disponible = disponible;
+    await _db.SaveChangesAsync();
+    return (true, null);
+    }
+    }
