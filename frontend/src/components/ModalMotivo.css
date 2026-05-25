@@ -1,0 +1,111 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-card {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 420px;
+}
+.modal-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.modal-icono-alerta {
+  font-size: 32px;
+}
+.modal-subtitulo {
+  color: #666;
+  font-size: 13px;
+  margin: 4px 0;
+}
+.modal-titulo {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1b2b40;
+  margin-bottom: 16px;
+}
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.modal-opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  border: 2px solid #e0e6ef;
+  border-radius: 12px;
+  background: #f7f9fc;
+  font-size: 14px;
+  cursor: pointer;
+}
+.modal-opcion.seleccionado {
+  border-color: #183f75;
+  background: #e8eef8;
+}
+.modal-opcion-icono {
+  font-size: 22px;
+}
+.modal-otro {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e6ef;
+  border-radius: 12px;
+  background: #f7f9fc;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.modal-otro.seleccionado {
+  border-color: #183f75;
+  background: #e8eef8;
+}
+.modal-descripcion {
+  width: 100%;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  resize: none;
+  height: 80px;
+  box-sizing: border-box;
+}
+.modal-error {
+  color: #d93030;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.modal-confirmar {
+  width: 100%;
+  background: #183f75;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.modal-cancelar {
+  width: 100%;
+  background: transparent;
+  color: #666;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+}
