@@ -15,19 +15,17 @@ public class AlertasController : ControllerBase
     private readonly IAlertaService _svc;
     public AlertasController(IAlertaService svc) => _svc = svc;
 
-    /// <summary>POST /api/alertas — crea una alerta y la transmite a guardias vía WS</summary>
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearAlertaRequest req)
     {
-        var usuarioId    = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        var usuarioId     = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         var nombreUsuario = User.FindFirstValue("nombre") ?? "";
-        var rolUsuario   = User.FindFirstValue(ClaimTypes.Role) ?? "";
+        var rolUsuario    = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
         var alerta = await _svc.CrearAsync(usuarioId, nombreUsuario, rolUsuario, req);
         return CreatedAtAction(nameof(Listar), new { id = alerta.Id }, alerta);
     }
 
-    /// <summary>GET /api/alertas?zona=Zona A&estado=Activa</summary>
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] string? zona, [FromQuery] string? estado)
     {
@@ -35,7 +33,6 @@ public class AlertasController : ControllerBase
         return Ok(alertas);
     }
 
-    /// <summary>PATCH /api/alertas/5/asumir — guardia se acerca al evento</summary>
     [HttpPatch("{id:int}/asumir")]
     [Authorize(Roles = "Guardia,Administrador")]
     public async Task<IActionResult> Asumir(int id, [FromBody] AsumirAlertaRequest req)
@@ -45,7 +42,6 @@ public class AlertasController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>POST /api/alertas/5/cerrar — guardia cierra el caso, cierra para todos</summary>
     [HttpPost("{id:int}/cerrar")]
     [Authorize(Roles = "Guardia")]
     public async Task<IActionResult> Cerrar(int id, [FromBody] CerrarAlertaRequest req)
@@ -57,10 +53,6 @@ public class AlertasController : ControllerBase
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Endpoint WebSocket: ws://host:8082/ws
-// Los clientes (app guardia, app usuario) se conectan aquí enviando el JWT
-// ─────────────────────────────────────────────────────────────────────────────
 [ApiController]
 [Route("ws")]
 public class WebSocketController : ControllerBase
@@ -83,7 +75,6 @@ public class WebSocketController : ControllerBase
             return;
         }
 
-        // El cliente debe mandar el JWT como query param: ws://host/ws?token=xxx
         var token  = HttpContext.Request.Query["token"].ToString();
         var claims = ValidarToken(token);
 
@@ -99,10 +90,15 @@ public class WebSocketController : ControllerBase
         using var socket = await HttpContext.WebSockets.AcceptWebSocketAsync();
         _wsManager.Agregar(userId, rol, socket);
 
-        // Mantener la conexión abierta mientras el cliente esté conectado
+        // ← CAMBIO 1: Si es admin, enviarle los estados actuales de disponibilidad
+        if (rol == "Administrador")
+        {
+            await _wsManager.EnviarEstadosAAdmin(userId);
+        }
+
         await EscucharAsync(socket, userId);
     }
-    
+
     [HttpGet("ping")]
     [AllowAnonymous]
     public IActionResult Ping()
@@ -114,50 +110,53 @@ public class WebSocketController : ControllerBase
         ));
     }
 
-
     private async Task EscucharAsync(WebSocket socket, string userId)
-{
-    var buffer = new byte[1024 * 4];
-    try
     {
-        while (socket.State == WebSocketState.Open)
+        var buffer = new byte[1024 * 4];
+        try
         {
-            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            if (result.MessageType == WebSocketMessageType.Close)
-                break;
-
-            if (result.MessageType == WebSocketMessageType.Text)
+            while (socket.State == WebSocketState.Open)
             {
-                var mensaje = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-                try
-                {
-                    var json = System.Text.Json.JsonDocument.Parse(mensaje);
-                    var tipo = json.RootElement.GetProperty("tipo").GetString();
+                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                if (result.MessageType == WebSocketMessageType.Close)
+                    break;
 
-                    if (tipo == "disponibilidad")
+                if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    var mensaje = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    try
                     {
-                        var disponible = json.RootElement.GetProperty("disponible").GetBoolean();
-                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        var json = System.Text.Json.JsonDocument.Parse(mensaje);
+                        var tipo = json.RootElement.GetProperty("tipo").GetString();
+
+                        if (tipo == "disponibilidad")
                         {
-                            tipo = "guardia_disponibilidad",
-                            guardiaId = userId,
-                            disponible
-                        });
-                        await _wsManager.EnviarAAdminsAsync(payload);
+                            var disponible = json.RootElement.GetProperty("disponible").GetBoolean();
+
+                            // ← CAMBIO 2: Guardar el estado de disponibilidad
+                            _wsManager.ActualizarDisponibilidad(userId, disponible);
+
+                            var payload = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                tipo = "guardia_disponibilidad",
+                                guardiaId = userId,
+                                disponible
+                            });
+                            await _wsManager.EnviarAAdminsAsync(payload);
+                        }
                     }
+                    catch { }
                 }
-                catch { /* mensaje malformado, ignorar */ }
             }
         }
+        catch { }
+        finally
+        {
+            _wsManager.Remover(userId);
+            if (socket.State == WebSocketState.Open)
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado", CancellationToken.None);
+        }
     }
-    catch { }
-    finally
-    {
-        _wsManager.Remover(userId);
-        if (socket.State == WebSocketState.Open)
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado", CancellationToken.None);
-    }
-}
 
     private ClaimsPrincipal? ValidarToken(string token)
     {

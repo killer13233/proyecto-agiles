@@ -78,23 +78,15 @@ export const asignarAlerta = async (idAlerta, guardiaId, nombreGuardia) => {
 // Cerrar alerta
 export const cerrarAlerta = async (idAlerta, motivo = '') => {
   try {
-    // Llamar al backend real
-    const response = await axios.patch(
+    const response = await axios.post(  // ← post, no patch
       `${API_BASE}/api/alertas/${idAlerta}/cerrar`,
       { motivoCierre: motivo },
       { headers: getHeaders() }
     );
-    
-    return {
-      success: true,
-      data: response.data
-    };
+    return { success: true, data: response.data };
   } catch (error) {
     console.error('Error al cerrar alerta:', error);
-    return {
-      success: false,
-      error: 'Error al cerrar alerta del servidor'
-    };
+    return { success: false, error: 'Error al cerrar alerta del servidor' };
   }
 };
 

@@ -101,7 +101,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [modalMapaVisible, setModalMapaVisible] = useState(false);
   const [alertaSeleccionada, setAlertaSeleccionada] = useState<Alerta | null>(null);
 
-  useEffect(() => {
+ useEffect(() => {
     let cancelado = false;
 
     const init = async () => {
@@ -115,7 +115,9 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
       await new Promise((r) => setTimeout(r, 150));
 
       if (!cancelado) {
+        await wsService.connect();
         registrarEventosWS();
+        wsService.send({ tipo: "disponibilidad", disponible: true });
       }
     };
 
@@ -123,6 +125,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
 
     return () => {
       cancelado = true;
+      wsService.disconnect();
     };
   }, []);
 
@@ -164,8 +167,18 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
 
   const cargarAlertas = async (usuario: TokenData | null, zonaActual: string | null) => {
     try {
-      const data = await getAlertas("Activa");
-      const alertasLista = Array.isArray(data) ? data : (data?.alertas || []);
+     const [dataActivas, dataAsumidas] = await Promise.all([
+  getAlertas("Activa"),
+  getAlertas("Asumida")
+]);
+
+const listaActivas = Array.isArray(dataActivas) ? dataActivas : (dataActivas?.alertas || []);
+const listaAsumidas = Array.isArray(dataAsumidas) ? dataAsumidas : (dataAsumidas?.alertas || []);
+
+const alertasLista = [
+  ...listaActivas,
+  ...listaAsumidas.filter((a: any) => !listaActivas.some((b: any) => b.id === a.id))
+];
 
       const alertasFiltradas = alertasLista
         .filter((a: any) => (a.estado || a.Estado) !== "Cerrada")
@@ -300,6 +313,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   onIonChange={(e) => {
     const nuevoEstado = e.detail.checked;
     setDisponible(nuevoEstado);
+      console.log('Enviando disponibilidad:', nuevoEstado, 'socket state:', (wsService as any).socket?.readyState);
     wsService.send({ tipo: "disponibilidad", disponible: nuevoEstado });
   }}
   style={{ marginLeft: "10px" }}
