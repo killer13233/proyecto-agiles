@@ -16,8 +16,10 @@ const BotonAlarma: React.FC = () => {
 
   const iniciarPresion = () => {
     if (estado === "bloqueado") return;
+
     setEstado("presionando");
     setContador(3);
+
     let tiempo = 3;
     intervalRef.current = setInterval(() => {
       tiempo -= 1;
@@ -25,6 +27,7 @@ const BotonAlarma: React.FC = () => {
     }, 1000);
     timerRef.current = setTimeout(async () => {
       clearInterval(intervalRef.current);
+
       try {
         const pos = await obtenerUbicacion();
         setUbicacion(pos);
@@ -38,6 +41,7 @@ const BotonAlarma: React.FC = () => {
 
   const cancelarPresion = () => {
     if (estado !== "presionando") return;
+
     clearTimeout(timerRef.current);
     clearInterval(intervalRef.current);
     setEstado("normal");
@@ -82,7 +86,7 @@ const BotonAlarma: React.FC = () => {
       </p>
 
       <button
-        className={`alarm-button ${estado === "modal" ? "normal" : estado}`}
+        className={`alarm-button ${estado}`}
         onMouseDown={iniciarPresion}
         onMouseUp={cancelarPresion}
         onMouseLeave={cancelarPresion}
@@ -113,12 +117,6 @@ const BotonAlarma: React.FC = () => {
           GPS desactivado. Active la ubicación para enviar la alerta.
         </div>
       )}
-
-      <ModalMotivo
-        isOpen={estado === "modal"}
-        onConfirmar={handleConfirmarMotivo}
-        onCancelar={handleCancelarModal}
-      />
     </div>
   );
 };
