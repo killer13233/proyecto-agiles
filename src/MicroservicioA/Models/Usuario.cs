@@ -31,9 +31,6 @@ public class Usuario
     // Zona asignada (null = sin zona asignada aún)
     public string? ZonaAsignada { get; set; }
 
-    
-    public bool Disponible { get; set; } = false;
-
     // Control de intentos de login fallidos
     public int IntentosFallidos { get; set; } = 0;
     public DateTime? UltimoAcceso { get; set; }
