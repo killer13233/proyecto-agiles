@@ -519,4 +519,21 @@
     width: auto;
     flex: 1;
   }
+  .badge-disponibilidad {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge-disponibilidad.disponible {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-disponibilidad.no-disponible {
+  background: #f3f4f6;
+  color: #6b7280;
+}
 }
