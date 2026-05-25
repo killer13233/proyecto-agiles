@@ -5,7 +5,6 @@ import { Preferences } from "@capacitor/preferences";
 const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.0.104:8090";
 
 const getToken = async (): Promise<string> => {
-  // En móvil usar Preferences, en web usar localStorage
   if (Capacitor.isNativePlatform()) {
     const { value } = await Preferences.get({ key: "token" });
     return value || "";
@@ -16,12 +15,13 @@ const getToken = async (): Promise<string> => {
 export const enviarAlerta = async (
   latitud: number,
   longitud: number,
-  motivo: string
+  motivo: string,
+  descripcion: string = ""
 ) => {
   const token = await getToken();
   const response = await axios.post(
     `${API_BASE}/api/alertas`,
-    { latitud, longitud, motivo },
+    { latitud, longitud, motivo, descripcion },
     { headers: { Authorization: `Bearer ${token}` } }
   );
   return response.data;
