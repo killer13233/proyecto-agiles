@@ -1,0 +1,121 @@
+.modal-motivo {
+  --height: auto;
+  --border-radius: 20px 20px 0 0;
+  align-items: flex-end;
+}
+
+/* Header gris con ícono */
+.modal-header-alerta {
+  background: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 20px;
+  gap: 8px;
+}
+.icono-alerta {
+  font-size: 2rem;
+}
+.modal-header-texto {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0;
+}
+
+/* Cuerpo blanco */
+.modal-body {
+  background: #fff;
+  padding: 20px 16px 32px;
+}
+
+.modal-label {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 14px;
+  color: #1a1a1a;
+}
+
+/* Grid 2 columnas */
+.motivos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.motivo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 10px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.motivo-btn.selected {
+  background: #1a6fdb;
+  border-color: #1a6fdb;
+  color: #fff;
+}
+.motivo-icon {
+  font-size: 1.4rem;
+}
+.motivo-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Fila completa para Otro */
+.motivo-otro {
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.descripcion-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #ccc;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  resize: none;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+}
+
+.modal-error {
+  color: #e03e3e;
+  font-size: 0.82rem;
+  text-align: center;
+  margin: 0 0 10px;
+}
+
+/* Botón confirmar — blanco con borde azul */
+.btn-confirmar {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #1a6fdb;
+  border-radius: 12px;
+  background: #fff;
+  color: #1a6fdb;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-confirmar:disabled {
+  border-color: #ccc;
+  color: #ccc;
+  cursor: not-allowed;
+}
+.btn-confirmar:not(:disabled):active {
+  background: #eef4ff;
+}
