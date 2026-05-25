@@ -158,7 +158,6 @@ const Usuarios = () => {
               <th>Rol</th>
               <th>Estado</th>
               <th>Zona</th>
-              <th>Disponibilidad</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -178,14 +177,6 @@ const Usuarios = () => {
                   </span>
                 </td>
                 <td>{usuario.zona}</td>
-                <td>{usuario.rol === 'Guardia' ? (
-                  <span className={`badge-disponibilidad ${usuario.disponible ? 'disponible' : 'no-disponible'}`}>
-                    {usuario.disponible ? '● En servicio' : '● Fuera de servicio'}
-                  </span>
-                  ) : (
-                    <span style={{ color: '#ccc' }}>—</span>
-                  )}
-                </td>
                 <td>
                   <div className="action-buttons">
                     <button
