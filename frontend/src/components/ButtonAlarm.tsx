@@ -1,18 +1,22 @@
 import { useRef, useState } from "react";
 import { obtenerUbicacion } from "../services/gpsService";
 import { enviarAlerta } from "../services/alertService";
+import { PositionData } from "../services/gpsService";
 import ModalMotivo from "./ModalMotivo";
 import "./ButtonAlarm.css";
 
 const BotonAlarma: React.FC = () => {
-  const [estado, setEstado] = useState<"normal" | "presionando" | "modal" | "enviado" | "gps-error" | "bloqueado">("normal");
+  const [estado, setEstado] = useState
+    "normal" | "presionando" | "modal" | "enviado" | "gps-error" | "bloqueado"
+  >("normal");
   const [contador, setContador] = useState(3);
-  const [ubicacionPreparada, setUbicacionPreparada] = useState<{ latitud: number; longitud: number } | null>(null);
+  const [ubicacion, setUbicacion] = useState<PositionData | null>(null);
   const timerRef = useRef<any>(null);
   const intervalRef = useRef<any>(null);
 
   const iniciarPresion = () => {
     if (estado === "bloqueado") return;
+
     setEstado("presionando");
     setContador(3);
     let tiempo = 3;
@@ -25,10 +29,11 @@ const BotonAlarma: React.FC = () => {
     timerRef.current = setTimeout(async () => {
       clearInterval(intervalRef.current);
       try {
-        const ubicacion = await obtenerUbicacion();
-        setUbicacionPreparada(ubicacion);
-        setEstado("modal"); // ← muestra el modal en lugar de enviar directo
+        const pos = await obtenerUbicacion();
+        setUbicacion(pos);
+        setEstado("modal"); // ← abre el modal en vez de enviar directo
       } catch (error) {
+        console.error(error);
         setEstado("gps-error");
       }
     }, 3000);
@@ -42,32 +47,37 @@ const BotonAlarma: React.FC = () => {
     setContador(3);
   };
 
-  const handleConfirmarMotivo = async (motivo: string, descripcion?: string) => {
-    if (!ubicacionPreparada) return;
-    const motivoFinal = motivo === "Otro" && descripcion ? `Otro: ${descripcion}` : motivo;
+  const handleConfirmarMotivo = async (motivo: string) => {
+    if (!ubicacion) return;
     try {
-      await enviarAlerta(ubicacionPreparada.latitud, ubicacionPreparada.longitud, motivoFinal);
+      await enviarAlerta(ubicacion.latitud, ubicacion.longitud, motivo);
       setEstado("enviado");
       setTimeout(() => {
         setEstado("bloqueado");
         setTimeout(() => setEstado("normal"), 60000);
       }, 1500);
-    } catch {
+    } catch (error) {
+      console.error(error);
       setEstado("gps-error");
     }
   };
 
   const handleCancelarModal = () => {
+    setUbicacion(null);
     setEstado("normal");
-    setUbicacionPreparada(null);
   };
 
   return (
     <div className="alarm-container">
       <p className="alarm-title">
-        {estado === "presionando" ? "¡Manténlo presionado!"
-          : estado === "enviado" ? "Alerta enviada correctamente"
-          : estado === "gps-error" ? "GPS desactivado"
+        {estado === "presionando"
+          ? "¡Manténlo presionado!"
+          : estado === "enviado"
+          ? "Alerta enviada correctamente"
+          : estado === "gps-error"
+          ? "GPS desactivado"
+          : estado === "bloqueado"
+          ? "Botón disponible en 60 segundos"
           : "Mantén presionado 3 segundos para activar"}
       </p>
 
@@ -78,21 +88,30 @@ const BotonAlarma: React.FC = () => {
         onMouseLeave={cancelarPresion}
         onTouchStart={iniciarPresion}
         onTouchEnd={cancelarPresion}
+        disabled={estado === "bloqueado"}
       >
         {estado === "presionando" ? (
-          <><strong>{contador}</strong><span>segundos</span></>
+          <>
+            <strong>{contador}</strong>
+            <span>segundos</span>
+          </>
         ) : estado === "enviado" ? (
-          <><strong>✓</strong><span>¡ENVIADO!</span></>
+          <>
+            <strong>✓</strong>
+            <span>¡ENVIADO!</span>
+          </>
         ) : (
-          <><strong>🚨</strong><span>ALARMA</span></>
+          <>
+            <strong>🚨</strong>
+            <span>ALARMA</span>
+          </>
         )}
       </button>
 
       {estado === "gps-error" && (
-        <div className="gps-error-box">GPS desactivado. Active la ubicación para enviar la alerta.</div>
-      )}
-      {estado === "bloqueado" && (
-        <p className="cooldown-text">Botón disponible en 60 segundos</p>
+        <div className="gps-error-box">
+          GPS desactivado. Active la ubicación para enviar la alerta.
+        </div>
       )}
 
       <ModalMotivo
