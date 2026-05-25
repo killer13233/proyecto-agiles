@@ -56,4 +56,17 @@ public class UsuariosController : ControllerBase
         if (!ok) return BadRequest(new ErrorResponse(error!));
         return NoContent();
     }
+    /// <summary>
+    /// Actualiza disponibilidad del guardia. Solo el propio guardia o un administrador.
+    /// PATCH /api/usuarios/5/disponibilidad
+    /// </summary>
+    [HttpPatch("{id:int}/disponibilidad")]
+    public async Task<IActionResult> CambiarDisponibilidad(int id, [FromBody] CambiarDisponibilidadRequest request)
+    {
+        var solicitanteId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
+        var rolSolicitante = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        var (ok, error) = await _svc.CambiarDisponibilidadAsync(id, request.Disponible, solicitanteId, rolSolicitante);
+        if (!ok) return BadRequest(new ErrorResponse(error!));
+        return NoContent();
+    }
 }
