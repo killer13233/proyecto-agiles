@@ -25,6 +25,7 @@ public record UsuarioDto(
 
 public record CambiarRolRequest(string NuevoRol);
 public record CambiarEstadoRequest(string NuevoEstado);
+public record CambiarDisponibilidadRequest(bool Disponible);
 
 // ── Paginación ─────────────────────────────────────────────────────────────
 public record PaginadoResponse<T>(
