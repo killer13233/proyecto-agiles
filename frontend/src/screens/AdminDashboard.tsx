@@ -4,7 +4,7 @@ import {
   Polygon,
   Marker,
 } from "@react-google-maps/api";
-import "./AdminDashBoard.css";
+import "./AdminDashboard.css";
 import { useEffect, useState } from "react";
 import { obtenerUsuarios } from "../services/usuarioService";
 
