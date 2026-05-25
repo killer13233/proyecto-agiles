@@ -16,22 +16,19 @@ const BotonAlarma: React.FC = () => {
 
   const iniciarPresion = () => {
     if (estado === "bloqueado") return;
-
     setEstado("presionando");
     setContador(3);
     let tiempo = 3;
-
     intervalRef.current = setInterval(() => {
       tiempo -= 1;
       setContador(tiempo);
     }, 1000);
-
     timerRef.current = setTimeout(async () => {
       clearInterval(intervalRef.current);
       try {
         const pos = await obtenerUbicacion();
         setUbicacion(pos);
-        setEstado("modal"); // ← abre el modal en vez de enviar directo
+        setEstado("modal");
       } catch (error) {
         console.error(error);
         setEstado("gps-error");
@@ -47,21 +44,24 @@ const BotonAlarma: React.FC = () => {
     setContador(3);
   };
 
-  const handleConfirmarMotivo = async (motivo: string) => {
-    if (!ubicacion) return;
-    try {
-      await enviarAlerta(ubicacion.latitud, ubicacion.longitud, motivo);
-      setEstado("enviado");
-      setTimeout(() => {
-        setEstado("bloqueado");
-        setTimeout(() => setEstado("normal"), 60000);
-      }, 1500);
-    } catch (error) {
-      console.error(error);
-      setEstado("gps-error");
-    }
+ const handleConfirmarMotivo = async (motivo: string, descripcion?: string) => {
+  if (!ubicacion) return;
+  try {
+    await enviarAlerta(
+      ubicacion.latitud,
+      ubicacion.longitud,
+      descripcion ? descripcion : motivo  // si hay descripcion, esa ES el motivo
+    );
+    setEstado("enviado");
+    setTimeout(() => {
+      setEstado("bloqueado");
+      setTimeout(() => setEstado("normal"), 60000);
+    }, 1500);
+  } catch (error) {
+    console.error(error);
+    setEstado("gps-error");
+  }
   };
-
   const handleCancelarModal = () => {
     setUbicacion(null);
     setEstado("normal");
