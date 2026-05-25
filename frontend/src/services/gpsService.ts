@@ -91,14 +91,13 @@ export const iniciarSeguimientoGPS = (
       maximumAge: 5000,
     },
     (position) => {
-      callback({
-        latitud: position.coords.latitude,
-        longitud: position.coords.longitude,
-        precision: position.coords.accuracy,
-      });
-    },
-    (error) => {
-      errorCallback?.(new Error(error.message || "Error de GPS"));
+      if (position) {
+        callback({
+          latitud: position.coords.latitude,
+          longitud: position.coords.longitude,
+          precision: position.coords.accuracy,
+        });
+      }
     }
   ).then((id) => {
     watchId = id;
