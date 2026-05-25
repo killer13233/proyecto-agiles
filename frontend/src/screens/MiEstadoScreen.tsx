@@ -20,7 +20,9 @@ interface TokenData {
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8090";
 
-const MiEstadoScreen: React.FC = () => {
+type Props = { onVolver: () => void; };
+
+const MiEstadoScreen: React.FC<Props> = ({ onVolver }) => {
   const [disponible, setDisponible] = useState(true);
   const [alertasRecientes, setAlertasRecientes] = useState<Alerta[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -75,12 +77,13 @@ const MiEstadoScreen: React.FC = () => {
       <IonContent className="estado-bg">
 
         {/* Header azul */}
-        <div className="estado-header">
-          <h2>Mi estado</h2>
-          <span className={`estado-badge-top ${disponible ? "verde" : "gris"}`}>
-            {disponible ? "● En servicio" : "● Fuera de servicio"}
-          </span>
-        </div>
+       <div className="estado-header">
+  <button className="btn-volver" onClick={onVolver}>← Volver</button>
+  <h2>Mi estado</h2>
+  <span className={`estado-badge-top ${disponible ? "verde" : "gris"}`}>
+    {disponible ? "● En servicio" : "● Fuera de servicio"}
+  </span>
+</div>
 
         <div className="estado-body">
 

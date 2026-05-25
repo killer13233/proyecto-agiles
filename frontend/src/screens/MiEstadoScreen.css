@@ -151,3 +151,11 @@
   margin: 0;
   font-size: 0.9rem;
 }
+.btn-volver {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+}
