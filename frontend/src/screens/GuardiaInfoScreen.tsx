@@ -3,11 +3,12 @@ import { Preferences } from "@capacitor/preferences";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar";
-import "./PerfilScreen.css"; // Reusing styles for consistency
+import "./PerfilScreen.css";
 
 type Props = {
   onVerAlertas: () => void;
   onCerrarSesion: () => void;
+  onMiEstado: () => void;   // ← nuevo prop
 };
 
 type TokenData = {
@@ -19,7 +20,7 @@ type TokenData = {
   zona?: string;
 };
 
-const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) => {
+const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion, onMiEstado }) => {
   const [user, setUser] = useState<TokenData | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,11 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
 
           <IonButton expand="block" className="primary-btn" onClick={onVerAlertas} style={{ marginTop: '20px' }}>
             🚨 Ver Alertas Activas
+          </IonButton>
+
+          {/* ← botón nuevo */}
+          <IonButton expand="block" className="primary-btn" onClick={onMiEstado} style={{ marginTop: '10px' }}>
+            🟢 Mi Estado
           </IonButton>
 
           <IonButton expand="block" className="logout-btn" onClick={onCerrarSesion} style={{ marginTop: '10px' }}>
