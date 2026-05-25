@@ -10,13 +10,25 @@ public class Alerta
     public double Latitud { get; set; }
     public double Longitud { get; set; }
     public string Zona { get; set; } = "";
-public EstadoAlerta Estado { get; set; } = EstadoAlerta.Activa;
-    public string GuardiasInvolucrados { get; set; } = "[]"; // JSON string
+    public EstadoAlerta Estado { get; set; } = EstadoAlerta.Activa;
+    public string GuardiasInvolucrados { get; set; } = "[]";
+    public string? GuardiaResponsableId { get; set; }
+    public string? NombreGuardiaResponsable { get; set; }
     public string? MotivoResolucion { get; set; }
     public string? ResolucionDescripcion { get; set; }
     public string? CerradaPor { get; set; }
     public DateTime CreadaEn { get; set; }
     public DateTime? CerradaEn { get; set; }
+}
+
+public class AlertaHistorial
+{
+    public int Id { get; set; }
+    public int AlertaId { get; set; }
+    public string Accion { get; set; } = "";
+    public string GuardiaId { get; set; } = "";
+    public string NombreGuardia { get; set; } = "";
+    public DateTime FechaHora { get; set; }
 }
 
 public record AlertaDto(
@@ -30,13 +42,15 @@ public record AlertaDto(
     string Zona,
     string Estado,
     string GuardiasInvolucrados,
+    string? GuardiaResponsableId,
+    string? NombreGuardiaResponsable,
     string? MotivoResolucion,
     string? ResolucionDescripcion,
     string? CerradaPor,
     DateTime CreadaEn,
     DateTime? CerradaEn
 );
-// ── Response completo con datos del guardia y resolución ──────────────────
+
 public record AlertaDetalleDto(
     int Id,
     string UsuarioId,
@@ -47,7 +61,7 @@ public record AlertaDetalleDto(
     double Longitud,
     string Zona,
     string Estado,
-    List<string> GuardiasInvolucrados,   // deserializado desde el JSON del modelo
+    List<string> GuardiasInvolucrados,
     string? MotivoResolucion,
     string? ResolucionDescripcion,
     string? CerradaPor,
@@ -55,7 +69,6 @@ public record AlertaDetalleDto(
     DateTime? CerradaEn
 );
 
-// ── Response paginado para GET /api/alertas ───────────────────────────────
 public record AlertasPagedDto(
     List<AlertaDetalleDto> Items,
     int Total,
@@ -63,16 +76,33 @@ public record AlertasPagedDto(
     int TamañoPagina
 );
 
-// ── Mensaje WebSocket broadcast ───────────────────────────────────────────
 public record WsEventoDto(
-    string Tipo,       // NUEVA_ALERTA | ALERTA_ASUMIDA | ALERTA_CERRADA
+    string Tipo,
     AlertaDetalleDto Data,
     DateTime Timestamp
 );
 
-// ── Respuesta del endpoint /ws/ping ───────────────────────────────────────
 public record WsPingResponse(
     string Status,
     int ConexionesActivas,
     DateTime ServerTime
+);
+
+public record AlertaConHistorialDto(
+    int Id,
+    string NombreUsuario,
+    string Motivo,
+    string Zona,
+    string Estado,
+    string? GuardiaResponsableId,
+    string? NombreGuardiaResponsable,
+    DateTime CreadaEn,
+    DateTime? CerradaEn,
+    List<AlertaHistorialDto> Historial
+);
+
+public record AlertaHistorialDto(
+    string Accion,
+    string NombreGuardia,
+    DateTime FechaHora
 );

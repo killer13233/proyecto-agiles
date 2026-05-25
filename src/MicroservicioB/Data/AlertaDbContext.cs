@@ -8,6 +8,7 @@ public class AlertaDbContext : DbContext
     public AlertaDbContext(DbContextOptions<AlertaDbContext> options) : base(options) { }
 
     public DbSet<Alerta> Alertas => Set<Alerta>();
+    public DbSet<AlertaHistorial> Historial => Set<AlertaHistorial>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
