@@ -38,15 +38,10 @@ const ModalMotivo: React.FC<Props> = ({ visible, onConfirmar, onCancelar }) => {
 
   if (!visible) return null;
 
-  const handleConfirmar = () => {
-    if (!seleccionado) return;
-    if (seleccionado === "Otro" && descripcion.trim() === "") {
-      setErrorDesc(true);
-      textareaRef.current?.focus();
-      return;
-    }
-    onConfirmar(seleccionado, seleccionado === "Otro" ? descripcion.trim() : undefined);
-  };
+const handleConfirmar = () => {
+  if (!seleccionado) return;
+  onConfirmar(seleccionado, seleccionado === "Otro" ? descripcion.trim() : undefined);
+};
 
   return (
     <div className="modal-overlay" onClick={onCancelar}>
@@ -82,20 +77,17 @@ const ModalMotivo: React.FC<Props> = ({ visible, onConfirmar, onCancelar }) => {
 
           {seleccionado === "Otro" && (
             <div className="otro-container">
-              <textarea
+             <textarea
                 ref={textareaRef}
-                className={`otro-input ${errorDesc ? "input-error" : ""}`}
+               className="otro-input"
                 placeholder="Describe brevemente el incidente..."
-                value={descripcion}
-                onChange={(e) => { setDescripcion(e.target.value); setErrorDesc(false); }}
-                rows={3}
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+               rows={3}
                 maxLength={200}
-              />
-              {errorDesc && (
-                <p className="error-text">Por favor describe brevemente el incidente</p>
-              )}
-            </div>
-          )}
+               />
+               </div>
+        )}
 
           <button
             className={`confirmar-btn ${!seleccionado ? "disabled" : ""}`}
