@@ -160,12 +160,28 @@ const getEstadoBadgeClass = (estado) => {
           <tbody>
             {alertas.map(alerta => {
               const titulo    = alerta.motivo     || alerta.Motivo    || 'Sin título';
+              const motivoTipo = alerta.motivo || alerta.Motivo || '';
+              const tipoMap = {
+                  'Robo':        'Seguridad',
+                  'Arma blanca': 'Seguridad',
+                  'Acoso':       'Seguridad',
+                  'Accidente':   'Médica',
+                  'Otro':        'Otro',
+              };
+              const prioridadMap = {
+                  'Robo':        'Alta',
+                  'Arma blanca': 'Crítica',
+                  'Acoso':       'Alta',
+                  'Accidente':   'Alta',
+                  'Otro':        'Media',
+              };
+              
               const estado    = alerta.estado     || alerta.Estado    || 'Desconocido';
               const zona      = alerta.zona       || alerta.Zona      || 'Sin zona';
               const fecha     = alerta.creadaEn   || alerta.CreadaEn;
               const fechaCierre = alerta.cerradaEn || alerta.CerradaEn;
-              const tipo      = alerta.tipo       || 'General';
-              const prioridad = alerta.prioridad  || 'Media';
+              const tipo      = alerta.tipo      || tipoMap[motivoTipo]      || 'General';
+              const prioridad = alerta.prioridad || prioridadMap[motivoTipo] || 'Media';
 
               const guardiasIds    = extraerGuardiasIds(alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados);
               const guardiasNombres = idsANombres(guardiasIds);
