@@ -56,9 +56,30 @@ const getEstadoBadgeClass = (estado) => {
   };
 
   const getTipoIcon = (tipo) => {
-    const iconos = { 'Seguridad': '🛡️', 'Médica': '🚑', 'Mantenimiento': '🔧', 'Incendio': '🔥', 'Otro': '⚠️' };
-    return iconos[tipo] || '📢';
+  const iconos = {
+    'Robo': '🚫',
+    'Arma blanca': '⚠️',
+    'Acoso': '🙍',
+    'Accidente': '💥',
+    'Emergencia': '🚨',
+    'Seguridad': '🛡️',
+    'Médica': '🚑',
+    'Incendio': '🔥',
+    'Otro': '⚠️'
   };
+  return iconos[tipo] || '📢';
+};
+const getTipoBadgeClass = (tipo) => {
+  const clases = {
+    'Robo':        'tipo-robo',
+    'Arma blanca': 'tipo-arma',
+    'Acoso':       'tipo-acoso',
+    'Accidente':   'tipo-accidente',
+    'Emergencia':  'tipo-emergencia',
+    'Otro':        'tipo-otro',
+  };
+  return clases[tipo] || 'tipo-general';
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -164,7 +185,7 @@ const getEstadoBadgeClass = (estado) => {
               const zona      = alerta.zona       || alerta.Zona      || 'Sin zona';
               const fecha     = alerta.creadaEn   || alerta.CreadaEn;
               const fechaCierre = alerta.cerradaEn || alerta.CerradaEn;
-              const tipo      = alerta.tipo       || 'General';
+              const tipo = alerta.motivo || alerta.Motivo || alerta.tipo || 'General';
               const prioridad = alerta.prioridad  || 'Media';
 
               const guardiasIds    = extraerGuardiasIds(alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados);
@@ -178,7 +199,7 @@ const getEstadoBadgeClass = (estado) => {
                       {titulo}
                     </div>
                   </td>
-                  <td><span className="tipo-badge">{tipo}</span></td>
+                  <td><span className={`tipo-badge ${getTipoBadgeClass(tipo)}`}>{tipo}</span></td>
                   <td><span className={`badge ${getPrioridadBadgeClass(prioridad)}`}>{prioridad}</span></td>
                   <td><span className={`badge ${getEstadoBadgeClass(estado)}`}>{estado}</span></td>
                   <td className="ubicacion-cell">
@@ -209,11 +230,7 @@ const getEstadoBadgeClass = (estado) => {
                           👤 Asignar
                         </button>
                       )}
-                     {estado === 'Asumida' && (  // ← antes decía 'Asignada'
-  <button className="btn-accion btn-cerrar" onClick={() => handleCerrar(alerta)}>
-    ✅ Cerrar
-  </button>
-)}
+                     
                       {estado === 'Cerrada' && (
                         <span className="accion-completada">✅ Completada</span>
                       )}

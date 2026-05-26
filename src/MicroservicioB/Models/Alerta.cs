@@ -17,6 +17,7 @@ public EstadoAlerta Estado { get; set; } = EstadoAlerta.Activa;
     public string? CerradaPor { get; set; }
     public DateTime CreadaEn { get; set; }
     public DateTime? CerradaEn { get; set; }
+      public string Prioridad { get; set; } = "Media"; // ← agregar
 }
 
 public record AlertaDto(
@@ -25,6 +26,7 @@ public record AlertaDto(
     string NombreUsuario,
     string RolUsuario,
     string Motivo,
+    string Prioridad,
     double Latitud,
     double Longitud,
     string Zona,

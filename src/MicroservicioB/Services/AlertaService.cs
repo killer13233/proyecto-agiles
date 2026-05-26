@@ -36,14 +36,23 @@ public class AlertaService : IAlertaService
         string usuarioId, string nombreUsuario, string rolUsuario,
         CrearAlertaRequest req)
     {
+        
         var zona = await ConsultarZonaAsync(req.Latitud, req.Longitud);
-
+        var prioridad = req.Motivo switch
+{
+    "Arma blanca" => "Crítica",
+    "Robo"        => "Alta",
+    "Acoso"       => "Alta",
+    "Accidente"   => "Alta",
+    _             => "Media"
+};
         var alerta = new Alerta
 {
     UsuarioId     = usuarioId,
     NombreUsuario = nombreUsuario,
     RolUsuario    = rolUsuario,
     Motivo        = req.Motivo,
+    Prioridad     = prioridad,
     Latitud       = req.Latitud,
     Longitud      = req.Longitud,
     Zona          = zona,
@@ -154,6 +163,7 @@ public class AlertaService : IAlertaService
     a.NombreUsuario,
     a.RolUsuario,
     a.Motivo,
+     a.Prioridad,     // ← agregar
     a.Latitud,
     a.Longitud,
     a.Zona,
