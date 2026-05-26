@@ -8,28 +8,27 @@ namespace MicroservicioB.Services;
 public interface IAlertaService
 {
     Task<Alerta> CrearAsync(string usuarioId, string nombreUsuario, string rolUsuario, CrearAlertaRequest req);
-    Task<(bool ok, string? error)> AsumirAsync(int alertaId, string guardiaId, string nombreGuardia);
+    Task<bool> AsumirAsync(int alertaId, AsumirAlertaRequest req);
     Task<(bool ok, string? error)> CerrarAsync(int alertaId, string guardiaId, CerrarAlertaRequest req);
     Task<IEnumerable<AlertaDto>> ListarAsync(string? zona, string? estado);
-    Task<AlertaConHistorialDto?> ObtenerPorIdAsync(int alertaId);
 }
 
 public class AlertaService : IAlertaService
 {
     private readonly AlertaDbContext _db;
     private readonly IWebSocketManager _ws;
-    private readonly IHttpClientFactory _httpFactory;
+    private readonly IHttpClientFactory _httpFactory;   // ← corregido
     private readonly string _microCUrl;
 
     public AlertaService(
         AlertaDbContext db,
         IWebSocketManager ws,
         IConfiguration config,
-        IHttpClientFactory httpFactory)
+        IHttpClientFactory httpFactory)                 // ← corregido
     {
         _db          = db;
         _ws          = ws;
-        _httpFactory = httpFactory;
+        _httpFactory = httpFactory;                     // ← corregido
         _microCUrl   = config["MicroservicioC:BaseUrl"] ?? "http://microservicio-c:8083";
     }
 
@@ -40,29 +39,19 @@ public class AlertaService : IAlertaService
         var zona = await ConsultarZonaAsync(req.Latitud, req.Longitud);
 
         var alerta = new Alerta
-        {
-            UsuarioId     = usuarioId,
-            NombreUsuario = nombreUsuario,
-            RolUsuario    = rolUsuario,
-            Motivo        = req.Motivo,
-            Latitud       = req.Latitud,
-            Longitud      = req.Longitud,
-            Zona          = zona,
-            Estado        = EstadoAlerta.Activa,
-            CreadaEn      = DateTime.UtcNow
-        };
+{
+    UsuarioId     = usuarioId,
+    NombreUsuario = nombreUsuario,
+    RolUsuario    = rolUsuario,
+    Motivo        = req.Motivo,
+    Latitud       = req.Latitud,
+    Longitud      = req.Longitud,
+    Zona          = zona,
+    Estado        = EstadoAlerta.Activa,
+    CreadaEn      = DateTime.UtcNow
+};
 
         _db.Alertas.Add(alerta);
-        await _db.SaveChangesAsync();
-
-        _db.Historial.Add(new AlertaHistorial
-        {
-            AlertaId      = alerta.Id,
-            Accion        = "creada",
-            GuardiaId     = usuarioId,
-            NombreGuardia = nombreUsuario,
-            FechaHora     = DateTime.UtcNow
-        });
         await _db.SaveChangesAsync();
 
         await _ws.BroadcastGuardiasAsync(new
@@ -81,58 +70,43 @@ public class AlertaService : IAlertaService
         return alerta;
     }
 
-    public async Task<(bool ok, string? error)> AsumirAsync(int alertaId, string guardiaId, string nombreGuardia)
+    public async Task<bool> AsumirAsync(int alertaId, AsumirAlertaRequest req)
     {
         var alerta = await _db.Alertas.FindAsync(alertaId);
-        if (alerta is null)                        return (false, "Alerta no encontrada.");
-        if (alerta.Estado == EstadoAlerta.Cerrada) return (false, "La alerta ya está cerrada.");
+        if (alerta is null || alerta.Estado == EstadoAlerta.Cerrada) return false;
 
-        if (alerta.GuardiaResponsableId is not null && alerta.GuardiaResponsableId != guardiaId)
-            return (false, $"CONFLICT:La alerta ya fue asumida por {alerta.NombreGuardiaResponsable}.");
-
-        if (alerta.GuardiaResponsableId == guardiaId)
-            return (true, null);
+        if (string.IsNullOrWhiteSpace(req.GuardiaId)) return false;
 
         var guardias = JsonSerializer.Deserialize<List<string>>(alerta.GuardiasInvolucrados)
             ?? new List<string>();
 
-        if (!guardias.Contains(guardiaId))
-            guardias.Add(guardiaId);
-
-        alerta.GuardiasInvolucrados     = JsonSerializer.Serialize(guardias);
-        alerta.Estado                   = EstadoAlerta.Asumida;
-        alerta.GuardiaResponsableId     = guardiaId;
-        alerta.NombreGuardiaResponsable = nombreGuardia;
-
-        _db.Historial.Add(new AlertaHistorial
+        if (!guardias.Contains(req.GuardiaId))
         {
-            AlertaId      = alertaId,
-            Accion        = "asumida",
-            GuardiaId     = guardiaId,
-            NombreGuardia = nombreGuardia,
-            FechaHora     = DateTime.UtcNow
-        });
-
-        await _db.SaveChangesAsync();
+            guardias.Add(req.GuardiaId);
+            alerta.GuardiasInvolucrados = JsonSerializer.Serialize(guardias);
+            alerta.Estado = EstadoAlerta.Asumida;
+            await _db.SaveChangesAsync();
+        }
 
         await _ws.BroadcastGuardiasAsync(new
         {
-            tipo               = "alerta_actualizada",
+            tipo          = "alerta_asumida",
             alertaId,
-            nuevoEstado        = "Asumida",
-            guardiaResponsable = new { id = guardiaId, nombre = nombreGuardia }
+            guardiaId     = req.GuardiaId,
+            nombreGuardia = req.NombreGuardia
         });
 
-        return (true, null);
+        return true;
     }
 
     public async Task<(bool ok, string? error)> CerrarAsync(
         int alertaId, string guardiaId, CerrarAlertaRequest req)
     {
         var alerta = await _db.Alertas.FindAsync(alertaId);
-        if (alerta is null)                        return (false, "Alerta no encontrada.");
-        if (alerta.Estado == EstadoAlerta.Cerrada) return (false, "La alerta ya está cerrada.");
+        if (alerta is null)                          return (false, "Alerta no encontrada.");
+        if (alerta.Estado == EstadoAlerta.Cerrada)   return (false, "La alerta ya está cerrada.");
 
+        // Asegurar que el guardia que cierra la alerta también figure como involucrado
         var guardias = JsonSerializer.Deserialize<List<string>>(alerta.GuardiasInvolucrados)
             ?? new List<string>();
         if (!guardias.Contains(guardiaId))
@@ -146,17 +120,8 @@ public class AlertaService : IAlertaService
         alerta.ResolucionDescripcion = req.ResolucionDescripcion;
         alerta.CerradaPor            = guardiaId;
         alerta.CerradaEn             = DateTime.UtcNow;
-
-        _db.Historial.Add(new AlertaHistorial
-        {
-            AlertaId      = alertaId,
-            Accion        = "cerrada",
-            GuardiaId     = guardiaId,
-            NombreGuardia = guardiaId,
-            FechaHora     = DateTime.UtcNow
-        });
-
         await _db.SaveChangesAsync();
+
 
         await _ws.BroadcastGuardiasAsync(new
         {
@@ -183,58 +148,32 @@ public class AlertaService : IAlertaService
 
         return await query
             .OrderByDescending(a => a.CreadaEn)
-            .Select(a => new AlertaDto(
-                a.Id,
-                a.UsuarioId,
-                a.NombreUsuario,
-                a.RolUsuario,
-                a.Motivo,
-                a.Latitud,
-                a.Longitud,
-                a.Zona,
-                a.Estado.ToString(),
-                a.GuardiasInvolucrados,
-                a.GuardiaResponsableId,
-                a.NombreGuardiaResponsable,
-                a.MotivoResolucion,
-                a.ResolucionDescripcion,
-                a.CerradaPor,
-                a.CreadaEn,
-                a.CerradaEn
-            ))
+           .Select(a => new AlertaDto(
+    a.Id,
+    a.UsuarioId,
+    a.NombreUsuario,
+    a.RolUsuario,
+    a.Motivo,
+    a.Latitud,
+    a.Longitud,
+    a.Zona,
+    a.Estado.ToString(),
+    a.GuardiasInvolucrados,
+    a.MotivoResolucion,
+    a.ResolucionDescripcion,
+    a.CerradaPor,
+    a.CreadaEn,
+    a.CerradaEn
+))
             .ToListAsync();
     }
 
-    public async Task<AlertaConHistorialDto?> ObtenerPorIdAsync(int alertaId)
-    {
-        var alerta = await _db.Alertas.FindAsync(alertaId);
-        if (alerta is null) return null;
-
-        var historial = await _db.Historial
-            .Where(h => h.AlertaId == alertaId)
-            .OrderBy(h => h.FechaHora)
-            .Select(h => new AlertaHistorialDto(h.Accion, h.NombreGuardia, h.FechaHora))
-            .ToListAsync();
-
-        return new AlertaConHistorialDto(
-            alerta.Id,
-            alerta.NombreUsuario,
-            alerta.Motivo,
-            alerta.Zona,
-            alerta.Estado.ToString(),
-            alerta.GuardiaResponsableId,
-            alerta.NombreGuardiaResponsable,
-            alerta.CreadaEn,
-            alerta.CerradaEn,
-            historial
-        );
-    }
-
+    // ── Privado ───────────────────────────────────────────────────────────────
     private async Task<string> ConsultarZonaAsync(double lat, double lon)
     {
         try
         {
-            var http = _httpFactory.CreateClient();
+            var http = _httpFactory.CreateClient();         // ← corregido
             http.Timeout = TimeSpan.FromSeconds(2);
             var res = await http.GetAsync(
                 $"{_microCUrl}/api/zonas/punto?lat={lat}&lon={lon}");

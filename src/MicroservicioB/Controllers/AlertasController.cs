@@ -33,29 +33,12 @@ public class AlertasController : ControllerBase
         return Ok(alertas);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> ObtenerPorId(int id)
-    {
-        var alerta = await _svc.ObtenerPorIdAsync(id);
-        if (alerta is null) return NotFound();
-        return Ok(alerta);
-    }
-
     [HttpPatch("{id:int}/asumir")]
     [Authorize(Roles = "Guardia,Administrador")]
-    public async Task<IActionResult> Asumir(int id)
+    public async Task<IActionResult> Asumir(int id, [FromBody] AsumirAlertaRequest req)
     {
-        var guardiaId     = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-        var nombreGuardia = User.FindFirstValue("nombre") ?? guardiaId;
-
-        var (ok, error) = await _svc.AsumirAsync(id, guardiaId, nombreGuardia);
-
-        if (!ok && error!.StartsWith("CONFLICT:"))
-            return Conflict(new { mensaje = error["CONFLICT:".Length..] });
-
-        if (!ok)
-            return BadRequest(new { mensaje = error });
-
+        var ok = await _svc.AsumirAsync(id, req);
+        if (!ok) return BadRequest(new { mensaje = "No se pudo asumir la alerta." });
         return NoContent();
     }
 
@@ -107,6 +90,7 @@ public class WebSocketController : ControllerBase
         using var socket = await HttpContext.WebSockets.AcceptWebSocketAsync();
         _wsManager.Agregar(userId, rol, socket);
 
+        // ← CAMBIO 1: Si es admin, enviarle los estados actuales de disponibilidad
         if (rol == "Administrador")
         {
             await _wsManager.EnviarEstadosAAdmin(userId);
@@ -148,6 +132,8 @@ public class WebSocketController : ControllerBase
                         if (tipo == "disponibilidad")
                         {
                             var disponible = json.RootElement.GetProperty("disponible").GetBoolean();
+
+                            // ← CAMBIO 2: Guardar el estado de disponibilidad
                             _wsManager.ActualizarDisponibilidad(userId, disponible);
 
                             var payload = System.Text.Json.JsonSerializer.Serialize(new
