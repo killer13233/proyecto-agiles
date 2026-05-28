@@ -78,7 +78,7 @@ app.UseSwaggerUI(c =>
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AlertaDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.UseCors("UtaPolicy");

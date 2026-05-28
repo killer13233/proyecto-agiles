@@ -93,16 +93,24 @@ public class AlertaService : IAlertaService
         {
             guardias.Add(req.GuardiaId);
             alerta.GuardiasInvolucrados = JsonSerializer.Serialize(guardias);
-            alerta.Estado = EstadoAlerta.Asumida;
-            await _db.SaveChangesAsync();
         }
+
+        var asumidaEn = DateTime.UtcNow;
+        alerta.Estado = EstadoAlerta.Asumida;
+        alerta.AsumidaPor = req.GuardiaId;
+        alerta.NombreGuardiaAsumio = req.NombreGuardia;
+        alerta.AsumidaEn = alerta.AsumidaEn ?? asumidaEn;
+        await _db.SaveChangesAsync();
 
         await _ws.BroadcastGuardiasAsync(new
         {
-            tipo          = "alerta_asumida",
+            tipo                  = "alerta_asumida",
             alertaId,
-            guardiaId     = req.GuardiaId,
-            nombreGuardia = req.NombreGuardia
+            guardiaId             = req.GuardiaId,
+            nombreGuardia         = req.NombreGuardia,
+            asumidaPor            = req.GuardiaId,
+            asumidaPorNombre      = req.NombreGuardia,
+            asumidaEn             = alerta.AsumidaEn
         });
 
         return true;
@@ -173,7 +181,10 @@ public class AlertaService : IAlertaService
     a.ResolucionDescripcion,
     a.CerradaPor,
     a.CreadaEn,
-    a.CerradaEn
+    a.CerradaEn,
+    a.AsumidaPor,
+    a.NombreGuardiaAsumio,
+    a.AsumidaEn
 ))
             .ToListAsync();
     }

@@ -22,7 +22,8 @@ const Home: React.FC = () => {
 
       if (data.tipo === 'alerta_asumida') {
         title = "ALERTA ASUMIDA";
-        body = `El guardia <strong>${data.nombreGuardia}</strong> se dirige al lugar.`;
+        const nombreGuardia = data.nombreGuardia || data.asumidaPorNombre || "Guardia";
+        body = `Guardia: <strong>${nombreGuardia}</strong> se dirige al lugar.`;
         color = "#f59e0b";
       }
 

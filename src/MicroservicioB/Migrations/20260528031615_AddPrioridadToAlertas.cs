@@ -10,12 +10,10 @@ namespace MicroservicioB.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Prioridad",
-                table: "Alertas",
-                type: "nvarchar(max)",
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Alertas', 'Prioridad') IS NULL
+                    ALTER TABLE [Alertas] ADD [Prioridad] nvarchar(max) NOT NULL DEFAULT N'';
+            ");
         }
 
         /// <inheritdoc />
