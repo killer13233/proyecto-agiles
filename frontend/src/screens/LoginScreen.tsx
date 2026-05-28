@@ -51,10 +51,20 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
 
     const rol =
-    decoded.role ||
-    decoded.rol ||
-    decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
-    "";
+      decoded.role ||
+      decoded.rol ||
+      decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+      "";
+
+    const rolNormalizado = rol.toLowerCase();
+
+    if (rolNormalizado.includes("administrador") || rolNormalizado.includes("admin")) {
+      setError(true);
+      setMensaje("Usuario administrador no puede iniciar sesión desde la vista celular.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("rol");
+      return;
+    }
 
     console.log("ROL LOGIN:", rol);
     localStorage.setItem("rol", rol);

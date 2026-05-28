@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import LoginScreen from "../screens/LoginScreen";
 import PerfilScreen from "../screens/PerfilScreen";
 import HomeScreen from "../screens/HomeScreen";
-import AdminDashboard from "../screens/AdminDashboard";
 import GuardiaScreen from "../screens/GuardiaScreen";
 import GuardiaInfoScreen from "../screens/GuardiaInfoScreen";
 import NotificacionAlerta from "../components/NotificacionAlerta";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { wsService } from "../services/wsService";
 
 const Home: React.FC = () => {
   const [pantalla, setPantalla] = useState<string | null>(null); // null = cargando
@@ -47,55 +45,10 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  // ✅ Al cargar, verificar si ya hay sesión
+  // ✅ Siempre iniciar en login para evitar abrir el dashboard por sesión anterior
   useEffect(() => {
-    const initAuthAndWS = async () => {
-      const token = localStorage.getItem("token");
-      const rol = localStorage.getItem("rol");
-      const lastScreen = localStorage.getItem("last_screen");
-
-      if (!token || !rol) {
-        setPantalla("login");
-        return;
-      }
-
-      const rolNormalizado = rol.toLowerCase();
-      
-      if (rolNormalizado === "administrador") {
-        setPantalla("admin");
-      } else if (rolNormalizado === "guardia") {
-        if (lastScreen === "guardia" || lastScreen === "guardia-info") {
-          setPantalla(lastScreen);
-        } else {
-          setPantalla("guardia-info");
-        }
-        // Conectamos el socket después de definir la pantalla
-        setTimeout(async () => {
-          try {
-            await wsService.connect();
-            console.log("WS conectado globalmente en Home");
-              wsService.send({ tipo: "disponibilidad", disponible: true });
-          } catch (e) {
-            console.error("Error conectando WS:", e);
-          }
-        }, 500);
-      } else {
-        if (lastScreen === "perfil" || lastScreen === "home") {
-          setPantalla(lastScreen);
-        } else {
-          setPantalla("home");
-        }
-      }
-    };
-
-    initAuthAndWS();
-
-    return () => {
-      const rol = localStorage.getItem("rol");
-      if (rol?.toLowerCase() === "guardia") {
-        wsService.disconnect();
-      }
-    };
+    localStorage.removeItem("last_screen");
+    setPantalla("login");
   }, []);
 
 
@@ -109,24 +62,32 @@ const Home: React.FC = () => {
 
   // ✅ Guardar rol al hacer login
   const handleLoginSuccess = (rol: string) => {
-    console.log("ROL RECIBIDO EN HOME:", rol);
+    const rolNormalizado = String(rol || "").trim().toLowerCase();
+    console.log("ROL RECIBIDO EN HOME:", rol, "=>", rolNormalizado);
+
     localStorage.setItem("rol", rol);
-    if (rol === "Administrador") setPantalla("admin");
-    else if (rol === "Guardia") setPantalla("guardia-info");
-    else setPantalla("perfil");
+    localStorage.removeItem("last_screen");
+
+    if (rolNormalizado.includes("guardia") || rolNormalizado.includes("guard")) {
+      setPantalla("guardia-info");
+      return;
+    }
+
+    setPantalla("perfil");
   };
 
   // ✅ Limpiar al cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("rol");
+    localStorage.removeItem("last_screen");
     setPantalla("login");
   };
  
   // ✅ Función para redirigir a la alerta desde la notificación
   const irAAlerta = () => {
-    const rol = localStorage.getItem("rol");
-    if (rol === "Guardia") {
+    const rol = localStorage.getItem("rol") || "";
+    if (rol.toLowerCase().includes("guardia")) {
       setPantalla("guardia");
     } else {
       alert("Solo los guardias pueden gestionar alertas.");
@@ -146,7 +107,6 @@ const Home: React.FC = () => {
         onVerDetalles={irAAlerta} 
       />
       {pantalla === "login" && <LoginScreen onLoginSuccess={handleLoginSuccess} />}
-      {pantalla === "admin" && <AdminDashboard />}
       {pantalla === "guardia-info" && (
         <GuardiaInfoScreen 
           onVerAlertas={() => setPantalla("guardia")} 
