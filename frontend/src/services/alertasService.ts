@@ -2,7 +2,7 @@ import axios from "axios";
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
  
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.100.14:8090";
  
 const getToken = async () => {
   if (Capacitor.isNativePlatform()) {

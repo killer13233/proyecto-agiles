@@ -2,7 +2,7 @@ import axios from "axios";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.0.104:8090";
+const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.100.14:8090";
 
 const getToken = async (): Promise<string> => {
   // En móvil usar Preferences, en web usar localStorage
