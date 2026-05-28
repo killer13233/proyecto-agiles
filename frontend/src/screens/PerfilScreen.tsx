@@ -1,10 +1,8 @@
 import { IonButton, IonContent, IonPage } from "@ionic/react";
-import { Preferences } from "@capacitor/preferences";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar";
 import "./PerfilScreen.css";
-
 
 type Props = {
   onIrInicio: () => void;
@@ -22,37 +20,74 @@ type TokenData = {
 };
 
 const PerfilScreen: React.FC<Props> = ({
-    onIrInicio,
-    onIrAlarma,
-    }) => {
+  onIrInicio,
+  onIrAlarma,
+}) => {
   const [user, setUser] = useState<TokenData | null>(null);
   const [expired, setExpired] = useState(false);
+  const [ultimoAcceso, setUltimoAcceso] = useState<string>("");
+  const [expiraEn, setExpiraEn] = useState<string>("");
+
   const rolUsuario =
-  user?.role ||
-  user?.rol ||
-  (user as any)?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
-  "Sin rol";
-  const esEstudiante = rolUsuario.toLowerCase() === "estudiante";
+    user?.role ||
+    user?.rol ||
+    (user as any)?.[
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+    ] ||
+    "Sin rol";
+
+  const esEstudiante =
+    rolUsuario.toLowerCase().includes("estudiante");
+
   useEffect(() => {
     const cargarToken = () => {
-      const value = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-      if (!value) {
+      if (!token) {
         setExpired(true);
         return;
       }
 
       try {
-        const decoded = jwtDecode<TokenData>(value);
-        console.log("Token decodificado en Perfil:", decoded);
+        const decoded = jwtDecode<TokenData>(token);
+
+        console.log("Token decodificado:", decoded);
+
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           setExpired(true);
           return;
         }
 
         setUser(decoded);
-      } catch (e) {
-        console.error("Error decodificando token en Perfil:", e);
+
+        // Fecha acceso actual
+        const ahora = new Date();
+
+        const hora = ahora.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        setUltimoAcceso(`Hoy, ${hora}`);
+
+        // Tiempo restante del token
+        if (decoded.exp) {
+          const tiempoRestante =
+            decoded.exp * 1000 - Date.now();
+
+          const horas = Math.floor(
+            tiempoRestante / (1000 * 60 * 60)
+          );
+
+          const minutos = Math.floor(
+            (tiempoRestante % (1000 * 60 * 60)) /
+              (1000 * 60)
+          );
+
+          setExpiraEn(`${horas} h ${minutos} min`);
+        }
+      } catch (error) {
+        console.error("Error token:", error);
         setExpired(true);
       }
     };
@@ -60,12 +95,11 @@ const PerfilScreen: React.FC<Props> = ({
     cargarToken();
   }, []);
 
-  const cerrarSesion = async () => {
+  const cerrarSesion = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("rol");
     window.location.reload();
   };
-  
 
   if (expired) {
     return (
@@ -74,16 +108,21 @@ const PerfilScreen: React.FC<Props> = ({
           <div className="profile-phone">
             <div className="profile-header">
               <Avatar nombre="?" />
-              <h2>Sesión no válida</h2>
-            </div>
 
-            <div className="expired-box">
-              🔒 Sesión expirada. Por favor inicie sesión nuevamente.
-            </div>
+              <h2>Sesión expirada</h2>
 
-            <IonButton expand="block" className="primary-btn" onClick={cerrarSesion}>
-              Ir al inicio de sesión
-            </IonButton>
+              <div className="expired-box">
+                🔒 Debe iniciar sesión nuevamente
+              </div>
+
+              <IonButton
+                expand="block"
+                className="primary-btn"
+                onClick={cerrarSesion}
+              >
+                Ir al login
+              </IonButton>
+            </div>
           </div>
         </IonContent>
       </IonPage>
@@ -94,22 +133,44 @@ const PerfilScreen: React.FC<Props> = ({
     <IonPage>
       <IonContent className="profile-bg">
         <div className="profile-phone">
+
+          {/* HEADER */}
           <div className="profile-header">
             <p className="back" onClick={onIrInicio}>
-            ← Inicio
+              ← Inicio
             </p>
+
             <h2>Mi perfil</h2>
 
             <Avatar nombre={user?.nombre || "?"} />
 
             <h3>{user?.nombre}</h3>
-            <p>{user?.email || user?.correo}</p>
 
-        <span className={`role-badge ${rolUsuario.toLowerCase()}`}>
-            {rolUsuario}
-        </span>         
-        </div>
+            <p className="profile-email">
+              {user?.email ||
+                user?.correo ||
+                "Sin correo"}
+            </p>
 
+            <span
+              className={`role-badge ${rolUsuario.toLowerCase()}`}
+            >
+              {rolUsuario}
+            </span>
+          </div>
+
+          {/* BOTÓN ALARMA */}
+          {esEstudiante && (
+            <IonButton
+              expand="block"
+              className="primary-btn"
+              onClick={onIrAlarma}
+            >
+              ALARMA
+            </IonButton>
+          )}
+
+          {/* DATOS */}
           <div className="info-card">
             <h4>DATOS PERSONALES</h4>
 
@@ -120,12 +181,16 @@ const PerfilScreen: React.FC<Props> = ({
 
             <div className="row">
               <span>Correo institucional</span>
-             <b>{user?.email || user?.correo || (user as any)?.["email"] || "Sin correo"}</b>
+              <b>
+                {user?.email ||
+                  user?.correo ||
+                  "Sin correo"}
+              </b>
             </div>
 
             <div className="row">
               <span>Rol</span>
-              <b>{user?.role || user?.rol}</b>
+              <b>{rolUsuario}</b>
             </div>
 
             <div className="row">
@@ -135,37 +200,36 @@ const PerfilScreen: React.FC<Props> = ({
 
             <div className="row">
               <span>Zona asignada</span>
-              <b>{user?.zona || "Sin zona"}</b>
+              <b>
+                {user?.zona || "Zona A — Ingeniería"}
+              </b>
             </div>
           </div>
 
+          {/* SESIÓN */}
           <div className="info-card">
             <h4>SESIÓN</h4>
 
             <div className="row">
               <span>Último acceso</span>
-              <b>Hoy</b>
+              <b>{ultimoAcceso}</b>
             </div>
 
             <div className="row">
               <span>Token expira en</span>
-              <b>Activo</b>
+              <b>{expiraEn || "Activo"}</b>
             </div>
           </div>
 
-          {esEstudiante && (
-            <IonButton
-              expand="block"
-              className="primary-btn"
-              onClick={onIrAlarma}
-            >
-              Alarma
-            </IonButton>
-          )}
-
-            <IonButton expand="block" className="logout-btn" onClick={cerrarSesion}>
+          {/* CERRAR SESIÓN */}
+          <IonButton
+            expand="block"
+            className="logout-btn"
+            onClick={cerrarSesion}
+          >
             Cerrar sesión
-            </IonButton>
+          </IonButton>
+
         </div>
       </IonContent>
     </IonPage>
