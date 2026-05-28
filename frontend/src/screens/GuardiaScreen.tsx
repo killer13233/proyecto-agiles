@@ -740,11 +740,11 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
                         <>
                           <div>
                             <span>
-                              Asumida por:
+                              Guardia:
                             </span>
 
                             <b>
-                              {alerta.asumidaPorNombre || alerta.nombreGuardiaAsumio || "Guardia sin nombre"}
+                              {alerta.asumidaPorNombre || alerta.nombreGuardiaAsumio || "Guardia"}
                             </b>
                           </div>
 
