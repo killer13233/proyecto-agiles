@@ -17,7 +17,10 @@ public EstadoAlerta Estado { get; set; } = EstadoAlerta.Activa;
     public string? CerradaPor { get; set; }
     public DateTime CreadaEn { get; set; }
     public DateTime? CerradaEn { get; set; }
-      public string Prioridad { get; set; } = "Media"; // ← agregar
+    public string? AsumidaPor { get; set; }
+    public string? NombreGuardiaAsumio { get; set; }
+    public DateTime? AsumidaEn { get; set; }
+    public string Prioridad { get; set; } = "Media"; // ← agregar
 }
 
 public record AlertaDto(
@@ -36,7 +39,10 @@ public record AlertaDto(
     string? ResolucionDescripcion,
     string? CerradaPor,
     DateTime CreadaEn,
-    DateTime? CerradaEn
+    DateTime? CerradaEn,
+    string? AsumidaPor,
+    string? NombreGuardiaAsumio,
+    DateTime? AsumidaEn
 );
 // ── Response completo con datos del guardia y resolución ──────────────────
 public record AlertaDetalleDto(
@@ -54,7 +60,10 @@ public record AlertaDetalleDto(
     string? ResolucionDescripcion,
     string? CerradaPor,
     DateTime CreadaEn,
-    DateTime? CerradaEn
+    DateTime? CerradaEn,
+    string? AsumidaPor,
+    string? NombreGuardiaAsumio,
+    DateTime? AsumidaEn
 );
 
 // ── Response paginado para GET /api/alertas ───────────────────────────────

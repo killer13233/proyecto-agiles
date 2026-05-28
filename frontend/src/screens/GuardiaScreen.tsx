@@ -37,12 +37,18 @@ interface Alerta {
   latitud: number;
   longitud: number;
   guardiasInvolucrados: string;
+  asumidaPorNombre?: string;
+  nombreGuardiaAsumio?: string;
+  asumidaEn?: string | null;
 }
 
 interface TokenData {
   sub?: string;
   nombre?: string;
   zona?: string;
+  role?: string;
+  rol?: string;
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"?: string;
 }
 
 interface GuardiaProps {
@@ -114,6 +120,19 @@ const getMiIdActual = (): string => {
 
     return "";
   }
+};
+
+const formatearFecha = (fecha?: string | null) => {
+  if (!fecha) return "—";
+
+  const fechaDate = new Date(fecha);
+
+  if (Number.isNaN(fechaDate.getTime())) return "—";
+
+  return fechaDate.toLocaleString("es-EC", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
 };
 
 const GuardiaScreen: React.FC<GuardiaProps> = ({
@@ -333,7 +352,10 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
 
           return {
             ...a,
-            guardiasInvolucrados: guardiasNorm
+            guardiasInvolucrados: guardiasNorm,
+            asumidaPorNombre: a.asumidaPorNombre ?? a.nombreGuardiaAsumio ?? null,
+            nombreGuardiaAsumio: a.nombreGuardiaAsumio ?? a.asumidaPorNombre ?? null,
+            asumidaEn: a.asumidaEn ?? null,
           };
         });
 
@@ -429,6 +451,9 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
             estado: "Asumida",
             guardiasInvolucrados:
               JSON.stringify(guardias),
+            asumidaPorNombre: data.asumidaPorNombre || data.nombreGuardia || a.asumidaPorNombre,
+            nombreGuardiaAsumio: data.nombreGuardia || data.asumidaPorNombre || a.nombreGuardiaAsumio,
+            asumidaEn: data.asumidaEn || new Date().toISOString(),
           };
         })
       );
@@ -475,6 +500,20 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
 
       const decoded =
         jwtDecode<TokenData>(token);
+      const rol = String(
+        localStorage.getItem("rol") ||
+        decoded.role ||
+        decoded.rol ||
+        decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+        ""
+      ).toLowerCase();
+
+      if (!rol.includes("guardia") && !rol.includes("admin")) {
+        alert(
+          "Solo las cuentas de Guardia pueden asumir alertas. Inicia sesión con un usuario Guardia."
+        );
+        return;
+      }
 
       await asumirAlerta(
         alerta.id,
@@ -482,12 +521,21 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
         decoded.nombre || ""
       );
 
-    } catch (err) {
+    } catch (err: any) {
 
       console.error(err);
 
+      const status = err?.response?.status;
+
+      if (status === 403) {
+        alert(
+          "No tienes permisos para asumir alertas. Usa una cuenta de Guardia."
+        );
+        return;
+      }
+
       alert(
-        "Error al asumir alerta"
+        "No se pudo asumir la alerta. Intenta nuevamente."
       );
     }
   };
@@ -688,6 +736,30 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
                         </b>
                       </div>
 
+                      {alerta.estado === "Asumida" && (
+                        <>
+                          <div>
+                            <span>
+                              Asumida por:
+                            </span>
+
+                            <b>
+                              {alerta.asumidaPorNombre || alerta.nombreGuardiaAsumio || "Guardia sin nombre"}
+                            </b>
+                          </div>
+
+                          <div>
+                            <span>
+                              Hora de asunción:
+                            </span>
+
+                            <b>
+                              {formatearFecha(alerta.asumidaEn)}
+                            </b>
+                          </div>
+                        </>
+                      )}
+
                     </div>
 
                     <div className="alerta-actions">
@@ -717,11 +789,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({
                         }
                         disabled={
                           !disponible ||
-                          alerta.estado === "Cerrada" ||
-                          (
-                            yaRespiendo &&
-                            !yoAsumiEsta
-                          )
+                          alerta.estado === "Cerrada"
                         }
                       >
                         {yoAsumiEsta
