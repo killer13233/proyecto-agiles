@@ -131,10 +131,13 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
 
   // ─── Carga usuario y setea miId ───────────────────────────
   const cargarUsuario = async (): Promise<TokenData | null> => {
-    const { value: token } = await Preferences.get({ key: "token" });
+    const tokenLocal = localStorage.getItem("token") || "";
+    const tokenPref = (await Preferences.get({ key: "token" })).value || "";
+    const token = tokenLocal || tokenPref;
+
     if (token) {
       const decoded = jwtDecode<TokenData>(token);
-      setMiId(decoded.sub || ""); // ← aquí sí, fuera de cualquier función anidada
+      setMiId(decoded.sub || "");
       return decoded;
     }
     return null;
@@ -199,23 +202,16 @@ const alertasLista = [
           return { ...a, guardiasInvolucrados: guardiasNorm };
         });
 
-      const guardiaZonaAsignada = usuario?.zona || "";
+      const alertasOrdenadas = [...alertasFiltradas].sort((a: any, b: any) => {
+        const fechaA = new Date(a.creadaEn || a.CreadaEn || 0).getTime();
+        const fechaB = new Date(b.creadaEn || b.CreadaEn || 0).getTime();
 
-      const alertasOrdenadas = alertasFiltradas.sort((a: any, b: any) => {
-        if (a.estado === "Asumida" && b.estado !== "Asumida") return -1;
-        if (b.estado === "Asumida" && a.estado !== "Asumida") return 1;
+        if (fechaA !== fechaB) return fechaB - fechaA;
 
-        const aEnZonaActual = a.zona === zonaActual;
-        const bEnZonaActual = b.zona === zonaActual;
-        if (aEnZonaActual && !bEnZonaActual) return -1;
-        if (!aEnZonaActual && bEnZonaActual) return 1;
+        if ((a.estado || a.Estado) === "Asumida" && (b.estado || b.Estado) !== "Asumida") return -1;
+        if ((b.estado || b.Estado) === "Asumida" && (a.estado || a.Estado) !== "Asumida") return 1;
 
-        const aEnZonaAsignada = a.zona === guardiaZonaAsignada;
-        const bEnZonaAsignada = b.zona === guardiaZonaAsignada;
-        if (aEnZonaAsignada && !bEnZonaAsignada) return -1;
-        if (!aEnZonaAsignada && bEnZonaAsignada) return 1;
-
-        return 0;
+        return String(a.id || a.Id).localeCompare(String(b.id || b.Id));
       });
 
       setAlertas(alertasOrdenadas);
