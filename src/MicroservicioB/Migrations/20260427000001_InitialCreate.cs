@@ -21,6 +21,7 @@ namespace MicroservicioB.Migrations
                     NombreUsuario = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RolUsuario = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Motivo = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Prioridad = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "Media"),
                     Latitud = table.Column<double>(type: "float", nullable: false),
                     Longitud = table.Column<double>(type: "float", nullable: false),
                     Zona = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
