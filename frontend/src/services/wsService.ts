@@ -1,4 +1,4 @@
-const WS_BASE = import.meta.env.VITE_WS_URL || "ws://192.168.100.14:8082";
+const WS_BASE = import.meta.env.VITE_WS_URL;
  
 type WsEvent = "nueva_alerta" | "alerta_asumida" | "alerta_cerrada" | "guardia_disponibilidad";
 type Handler = (data: any) => void;
