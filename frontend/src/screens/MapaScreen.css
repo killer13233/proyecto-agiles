@@ -14,14 +14,14 @@
 }
 
 .loading-container ion-spinner {
-  --color: primary;
+  --color: var(--app-primary);
   width: 50px;
   height: 50px;
 }
 
 .loading-container ion-text {
   font-size: 16px;
-  color: var(--ion-color-medium);
+  color: var(--app-text-secondary);
 }
 
 .info-card {
@@ -34,7 +34,7 @@
   max-width: 400px;
   z-index: 1000;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--app-shadow);
 }
 
 .info-card ion-card-content {
@@ -47,13 +47,13 @@
 
 .info-text {
   font-size: 14px;
-  color: var(--ion-color-medium);
+  color: var(--app-text-secondary);
   line-height: 1.4;
 }
 
 .error-text {
   font-size: 13px;
-  color: var(--ion-color-danger);
+  color: var(--app-danger);
   margin: 8px 0;
   display: flex;
   align-items: center;
@@ -62,7 +62,7 @@
 
 .success-text {
   font-size: 13px;
-  color: var(--ion-color-success);
+  color: var(--app-success);
   margin: 8px 0;
   display: flex;
   align-items: center;
@@ -71,26 +71,24 @@
 
 .warning-text {
   font-size: 13px;
-  color: var(--ion-color-warning);
+  color: var(--app-warning);
   margin: 8px 0;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .info-card {
     width: 95%;
     bottom: 16px;
   }
-  
+
   .info-card ion-card-content {
     padding: 12px;
   }
 }
 
-/* Mapa fullscreen en móvil */
 @media (max-width: 576px) {
   .map-container {
     height: calc(100vh - 56px);

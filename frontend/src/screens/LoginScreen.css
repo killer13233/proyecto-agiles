@@ -1,5 +1,5 @@
 .login-bg {
-  --background: #eef2f8;
+  --background: var(--app-bg);
 }
 
 .phone-card {
@@ -10,8 +10,8 @@
 }
 
 .login-header {
-  background: #183f75;
-  color: white;
+  background: var(--app-bg);
+  color: var(--app-text);
   text-align: center;
   padding: 45px 20px;
   border-radius: 0 0 28px 28px;
@@ -20,8 +20,8 @@
 .logo-circle {
   width: 75px;
   height: 75px;
-  background: white;
-  color: #183f75;
+  background: var(--app-card);
+  color: var(--app-primary);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -38,43 +38,43 @@
 .login-header p {
   margin: 0;
   font-size: 13px;
-  color: #dbe7f5;
+  color: var(--app-text-secondary);
 }
 
 .login-box {
-  background: white;
+  background: var(--app-card);
   margin-top: 28px;
   padding: 24px;
   border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(28, 52, 84, 0.12);
+  box-shadow: var(--app-shadow);
 }
 
 .login-box h3 {
   margin: 0 0 24px;
-  color: #1b2b40;
+  color: var(--app-text);
   font-size: 18px;
 }
 
 .login-box label {
   display: block;
   margin: 14px 0 8px;
-  color: #687386;
+  color: var(--app-text-secondary);
   font-size: 13px;
 }
 
 .input-box,
 .input-error {
-  --background: #f7f9fc;
+  --background: var(--app-input);
   --border-radius: 10px;
   --padding-start: 12px;
   margin-bottom: 10px;
   border-radius: 10px;
-  border: 1px solid #e0e6ef;
+  border: 1px solid var(--app-border);
 }
 
 .input-error {
-  --background: #fff3f3;
-  border: 1px solid #ff8d8d;
+  --background: var(--app-input);
+  border: 1px solid var(--app-danger);
 }
 
 .icon {
@@ -83,7 +83,7 @@
 
 .login-btn {
   margin-top: 22px;
-  --background: #183f75;
+  --background: var(--app-primary);
   --border-radius: 10px;
   height: 50px;
   font-weight: 700;
@@ -92,15 +92,15 @@
 
 .login-help {
   text-align: center;
-  color: #9aa4b2;
+  color: var(--app-text-muted);
   font-size: 12px;
   margin-top: 18px;
 }
 
 .alert-error {
-  background: #fff0f0;
-  color: #d93030;
-  border: 1px solid #ff9d9d;
+  background: var(--app-card);
+  color: var(--app-danger);
+  border: 1px solid var(--app-danger);
   padding: 12px;
   border-radius: 10px;
   font-size: 13px;
@@ -108,9 +108,9 @@
 }
 
 .alert-success {
-  background: #effaf3;
-  color: #1f8f45;
-  border: 1px solid #87d99e;
+  background: var(--app-card);
+  color: var(--app-success);
+  border: 1px solid var(--app-success);
   padding: 12px;
   border-radius: 10px;
   font-size: 13px;

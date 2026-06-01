@@ -1,2 +1,65 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* Ionic CSS Variables + App Dark Theme */
+:root {
+  --app-bg: #0a0a0f;
+  --app-bg-secondary: #12121a;
+  --app-card: #1c1c2e;
+  --app-card-hover: #26263e;
+  --app-elevated: #2a2a40;
+  --app-input: #12121a;
+
+  --app-text: #e8e8f0;
+  --app-text-secondary: #9494b0;
+  --app-text-muted: #6b6b8a;
+
+  --app-primary: #4f8cff;
+  --app-primary-hover: #3a78f0;
+  --app-secondary: #7c6cf0;
+  --app-success: #2ed573;
+  --app-warning: #ffa502;
+  --app-danger: #ff4757;
+  --app-info: #17a2b8;
+
+  --app-border: #2a2a45;
+  --app-border-light: #1e1e35;
+
+  --app-radius-sm: 6px;
+  --app-radius: 10px;
+  --app-radius-lg: 16px;
+  --app-radius-xl: 24px;
+
+  --app-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --app-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --app-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ion-background-color: var(--app-bg);
+  --ion-background-color-rgb: 10, 10, 15;
+  --ion-text-color: var(--app-text);
+  --ion-text-color-rgb: 232, 232, 240;
+  --ion-color-primary: #4f8cff;
+  --ion-color-primary-rgb: 79, 140, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #3a78f0;
+  --ion-color-primary-tint: #6ba0ff;
+  --ion-color-secondary: #7c6cf0;
+  --ion-color-secondary-rgb: 124, 108, 240;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-shade: #6a5ad4;
+  --ion-color-secondary-tint: #9080f2;
+  --ion-color-tertiary: #17a2b8;
+  --ion-color-success: #2ed573;
+  --ion-color-warning: #ffa502;
+  --ion-color-danger: #ff4757;
+  --ion-color-medium: #9494b0;
+  --ion-color-light: #2a2a40;
+  --ion-toolbar-background: var(--app-bg-secondary);
+  --ion-toolbar-color: var(--app-text);
+  --ion-card-background: var(--app-card);
+  --ion-card-color: var(--app-text);
+  --ion-item-background: var(--app-bg-secondary);
+  --ion-item-color: var(--app-text);
+  --ion-border-color: var(--app-border);
+  --ion-tab-bar-background: var(--app-bg-secondary);
+  --ion-tab-bar-color: var(--app-text-muted);
+  --ion-tab-bar-color-selected: var(--app-primary);
+}

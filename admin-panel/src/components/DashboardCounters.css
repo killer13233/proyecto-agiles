@@ -9,23 +9,23 @@
 }
 
 .counter-card {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   padding: 1.5rem;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .counter-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .counter-icon {
   width: 48px;
   height: 48px;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,7 +33,7 @@
 }
 
 .usuarios-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   color: white;
 }
 
@@ -49,7 +49,7 @@
 
 .counter-content h3 {
   margin: 0 0 1rem 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -57,7 +57,7 @@
 .counter-number {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -75,40 +75,39 @@
 }
 
 .detail-label {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .detail-value {
-  color: #374151;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .detail-value.positive {
-  color: #10b981;
+  color: var(--accent-success);
 }
 
 .detail-value.negative {
-  color: #ef4444;
+  color: var(--accent-danger);
 }
 
 .detail-value.alert-active {
-  color: #f59e0b;
+  color: var(--accent-warning);
 }
 
 .detail-value.alert-assigned {
-  color: #2563eb;
+  color: var(--accent-primary);
 }
 
 .detail-value.alert-closed {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .detail-value.alert-critical {
-  color: #dc2626;
+  color: var(--accent-danger);
 }
 
-/* Responsive */
 @media (max-width: 1200px) {
   .counters-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));

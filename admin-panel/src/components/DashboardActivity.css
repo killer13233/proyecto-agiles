@@ -4,7 +4,7 @@
 
 .activity-container h3 {
   margin: 0 0 1rem 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -22,15 +22,15 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 1rem;
-  border-radius: 0.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   transition: all 0.2s;
 }
 
 .activity-item:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .activity-indicator {
@@ -60,13 +60,13 @@
 
 .activity-description {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.4;
 }
 
 .activity-time {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.75rem;
   white-space: nowrap;
 }
@@ -78,38 +78,36 @@
 }
 
 .activity-user {
-  color: #2563eb;
+  color: var(--accent-primary);
   font-weight: 500;
   font-size: 0.875rem;
 }
 
 .activity-info {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1.4;
 }
 
-/* Scrollbar styling */
 .activity-list::-webkit-scrollbar {
   width: 6px;
 }
 
 .activity-list::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   border-radius: 3px;
 }
 
 .activity-list::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--border);
   border-radius: 3px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-light);
 }
 
 .activity-list::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--text-muted);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .activity-container {
     padding: 0.5rem;

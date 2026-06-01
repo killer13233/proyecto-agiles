@@ -5,7 +5,7 @@
 
 .guardia-header h2 {
     font-size: 1.5rem;
-    color: #333;
+    color: var(--app-text);
     margin-bottom: 5px;
 }
 
@@ -15,39 +15,35 @@
     justify-content: center;
     gap: 10px;
     margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--app-card);
     padding: 10px;
     border-radius: 20px;
 }
 
 .status-label {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--app-text-secondary);
 }
 
-/* ── Card base ── */
 .alerta-card {
-    background: white;
+    background: var(--app-card);
     border-radius: 15px;
     padding: 15px;
     margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-left: 5px solid #ef4444; /* rojo por defecto (Activa) */
+    box-shadow: var(--app-shadow-sm);
+    border-left: 5px solid var(--app-danger);
 }
 
-/* ── Asumida POR MÍ → fondo amarillo suave ── */
 .alerta-card.asumida-yo {
-    background: #fffbeb;
-    border-left-color: #f59e0b;
+    background: var(--app-card);
+    border-left-color: var(--app-warning);
 }
 
-/* ── Asumida POR OTRO → fondo azul suave ── */
 .alerta-card.asumida-otro {
-    background: #eff6ff;
-    border-left-color: #3b82f6;
+    background: var(--app-card);
+    border-left-color: var(--app-primary);
 }
 
-/* ── Badges ── */
 .alerta-badge {
     font-size: 0.7rem;
     padding: 3px 8px;
@@ -57,11 +53,10 @@
     color: white;
 }
 
-.badge-activa       { background-color: #ef4444; }
-.badge-asumida-yo   { background-color: #f59e0b; }
-.badge-asumida-otro { background-color: #3b82f6; }
+.badge-activa       { background-color: var(--app-danger); }
+.badge-asumida-yo   { background-color: var(--app-warning); }
+.badge-asumida-otro { background-color: var(--app-primary); }
 
-/* ── Cabecera de la alerta ── */
 .alerta-header {
     display: flex;
     justify-content: space-between;
@@ -72,13 +67,12 @@
 .alerta-title {
     font-weight: bold;
     font-size: 0.95rem;
-    color: #333;
+    color: var(--app-text);
 }
 
-/* ── Info ── */
 .alerta-info {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--app-text-secondary);
     margin-bottom: 12px;
 }
 
@@ -88,7 +82,6 @@
     margin-bottom: 4px;
 }
 
-/* ── Botones ── */
 .alerta-actions {
     display: flex;
     gap: 10px;
@@ -106,19 +99,336 @@
 }
 
 .btn-asumir {
-    background-color: #f59e0b;
+    background-color: var(--app-warning);
     color: white;
 }
 
 .btn-cerrar {
-    background-color: #ef4444;
+    background-color: var(--app-danger);
     color: white;
 }
 
-/* Deshabilitado genérico */
 .action-btn:disabled {
-    background-color: #d1d5db;
-    color: #9ca3af;
+    background-color: var(--app-elevated);
+    color: var(--app-text-muted);
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+/* --- Floating alert panel over map --- */
+
+.alertas-floating-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.alertas-floating-panel > * {
+  pointer-events: auto;
+}
+
+.alerta-floating-card {
+  background: rgba(28, 28, 46, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(42, 42, 69, 0.6);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 220px;
+  max-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.alerta-floating-card:hover {
+  border-color: var(--app-primary, #4f8cff);
+}
+
+.alerta-floating-card.selected {
+  border-color: var(--app-primary, #4f8cff);
+  box-shadow: 0 0 0 2px var(--app-primary, #4f8cff), 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.afc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.afc-motivo {
+  font-weight: 600;
+  color: var(--app-text, #e8e8f0);
+  font-size: 0.85rem;
+}
+
+.afc-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.afc-badge.badge-activa {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.afc-badge.badge-asumida-yo {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.afc-badge.badge-asumida-otro {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.afc-details {
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+.afc-detail-row {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0;
+  line-height: 1.3;
+}
+
+.afc-label {
+  color: var(--app-text-muted, #6b6b8a);
+  flex-shrink: 0;
+  min-width: 50px;
+}
+
+.afc-value {
+  color: var(--app-text, #e8e8f0);
+  word-break: break-word;
+}
+
+.afc-guardia-nombre {
+  white-space: nowrap;
+}
+
+.afc-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.afc-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.afc-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.afc-btn-asumir {
+  background: var(--app-primary, #4f8cff);
+  color: white;
+}
+
+.afc-btn-cerrar {
+  background: var(--app-danger, #ef4444);
+  color: white;
+}
+
+.afc-btn-detalles {
+  background: rgba(79, 140, 255, 0.15);
+  color: var(--app-primary, #4f8cff);
+  border: 1px solid rgba(79, 140, 255, 0.3);
+}
+
+/* Detail modal */
+.detalle-alerta-modal {
+  --width: 90%;
+  --max-width: 420px;
+  --height: 60vh;
+  --min-height: 300px;
+  --border-radius: 16px;
+}
+
+.detalle-alerta-modal ion-content {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --overflow: auto;
+}
+
+.da-container {
+  padding: 20px;
+  min-height: 100px;
+}
+
+.da-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.da-emoji {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79, 140, 255, 0.1);
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.da-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.2rem;
+  color: var(--app-text, #e8e8f0);
+}
+
+.da-badge {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.da-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.da-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.da-label {
+  min-width: 85px;
+  color: var(--app-text-muted, #6b6b8a);
+  font-size: 0.85rem;
+}
+
+.da-value {
+  color: var(--app-text, #e8e8f0);
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.da-divider {
+  height: 1px;
+  background: var(--app-border, #2a2a45);
+  margin: 4px 0;
+}
+
+@media (max-width: 480px) {
+  .detalle-alerta-modal {
+    --width: 95%;
+    --height: 75vh;
+    --border-radius: 12px;
+  }
+
+  .da-container {
+    padding: 16px;
+  }
+
+  .da-emoji {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+  }
+
+  .da-header h2 {
+    font-size: 1rem;
+  }
+
+  .da-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .da-label {
+    min-width: 0;
+    font-size: 0.75rem;
+  }
+
+  .da-value {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .afc-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .afc-btn {
+    font-size: 0.7rem;
+    padding: 5px 6px;
+  }
+
+  .alerta-floating-card {
+    min-width: 170px;
+    max-width: 200px;
+    padding: 6px 8px;
+  }
+
+  .afc-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+
+  .afc-motivo {
+    font-size: 0.75rem;
+  }
+}
+
+/* Responsive: mobile */
+@media (max-width: 600px) {
+  .alertas-floating-panel {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    max-width: 100%;
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .alerta-floating-card {
+    min-width: 200px;
+    max-width: 240px;
+    flex-shrink: 0;
+    padding: 8px 10px;
+  }
+
+  .afc-detail-row {
+    font-size: 0.7rem;
+  }
 }

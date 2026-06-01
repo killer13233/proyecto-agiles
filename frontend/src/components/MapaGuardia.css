@@ -1,0 +1,116 @@
+.mapa-guardia-full {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-bg, #0a0a0f);
+}
+
+.mapa-guardia-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--app-bg-secondary, #12121a);
+  border-bottom: 1px solid var(--app-border, #2a2a45);
+  flex-shrink: 0;
+}
+
+.mapa-guardia-toolbar h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--app-text, #e8e8f0);
+}
+
+.mapa-guardia-close {
+  background: none;
+  border: none;
+  color: var(--app-text, #e8e8f0);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.mapa-guardia-close:hover {
+  background: var(--app-card, #1c1c2e);
+}
+
+.mapa-guardia-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.mapa-guardia-body .mapa-guardia {
+  width: 100%;
+  height: 100%;
+}
+
+.mapa-guardia {
+  width: 100%;
+  height: 100%;
+}
+
+.mapa-guardia .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.guard-marker {
+  background: none !important;
+  border: none !important;
+}
+
+.guard-marker-inner {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.mg-popup {
+  min-width: 180px;
+}
+
+.mg-popup strong {
+  color: var(--app-text, #e8e8f0);
+  font-size: 0.9rem;
+}
+
+.mg-popup .mg-asumida {
+  color: var(--app-warning, #ffa502);
+  font-weight: bold;
+}
+
+.mg-popup .mg-tipo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--app-text, #e8e8f0);
+  margin-bottom: 6px;
+}
+
+.mg-popup p {
+  margin: 3px 0;
+  color: var(--app-text-secondary, #9494b0);
+  font-size: 0.85rem;
+}
+
+.mapa-guardia .leaflet-popup-content-wrapper {
+  background: var(--app-elevated, #2a2a40) !important;
+  color: var(--app-text, #e8e8f0) !important;
+  border-radius: 10px;
+  box-shadow: var(--app-shadow, 0 4px 16px rgba(0,0,0,0.5));
+}
+
+.mapa-guardia .leaflet-popup-tip {
+  background: var(--app-elevated, #2a2a40) !important;
+}
+
+.mapa-guardia .leaflet-popup-content {
+  margin: 10px 14px;
+}

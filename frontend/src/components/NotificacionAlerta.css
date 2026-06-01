@@ -15,14 +15,14 @@
 }
 
 .notificacion-content {
-    background: white;
+    background: var(--app-card);
     border-radius: 15px;
     padding: 15px;
     display: flex;
     align-items: center;
     gap: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    border-left: 6px solid #ef4444;
+    box-shadow: var(--app-shadow-lg);
+    border-left: 6px solid var(--app-danger);
 }
 
 .notificacion-icon {
@@ -36,20 +36,20 @@
 .notificacion-title {
     font-weight: bold;
     font-size: 0.8rem;
-    color: #ef4444;
+    color: var(--app-danger);
     margin: 0;
     text-transform: uppercase;
 }
 
 .notificacion-body {
     font-size: 0.9rem;
-    color: #333;
+    color: var(--app-text);
     margin: 4px 0;
 }
 
 .notificacion-zona {
     font-size: 0.8rem;
-    color: #666;
+    color: var(--app-text-secondary);
     margin: 0;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .btn-detalles {
-    --background: #3b82f6;
+    --background: var(--app-primary);
     --color: white;
     font-weight: bold;
     height: 30px;
@@ -68,7 +68,7 @@
 }
 
 .btn-cerrar {
-    --color: #999;
+    --color: var(--app-text-muted);
     font-size: 0.8rem;
     height: 20px;
     margin: 0;

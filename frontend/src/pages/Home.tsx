@@ -6,7 +6,7 @@ import GuardiaScreen from "../screens/GuardiaScreen";
 import GuardiaInfoScreen from "../screens/GuardiaInfoScreen";
 import NotificacionAlerta from "../components/NotificacionAlerta";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-
+import { wsService } from "../services/wsService";
 const Home: React.FC = () => {
   const [pantalla, setPantalla] = useState<string | null>(null); // null = cargando
   const [notificacion, setNotificacion] = useState<any | null>(null);
@@ -27,6 +27,12 @@ const Home: React.FC = () => {
         color = "#f59e0b";
       }
 
+      if (data.tipo === 'alerta_cerrada') {
+        title = "ALERTA CERRADA";
+        body = `El caso <strong>#${data.alertaId}</strong> ha sido cerrado.`;
+        color = "#22c55e";
+      }
+
       // 1. Vibración (Haptic Feedback)
       Haptics.impact({ style: ImpactStyle.Heavy });
       
@@ -40,16 +46,37 @@ const Home: React.FC = () => {
 
     window.addEventListener('app-nueva-alerta', handleNuevaAlerta);
     window.addEventListener('app-alerta-asumida', handleNuevaAlerta);
+    window.addEventListener('app-alerta-cerrada', handleNuevaAlerta);
     return () => {
       window.removeEventListener('app-nueva-alerta', handleNuevaAlerta);
       window.removeEventListener('app-alerta-asumida', handleNuevaAlerta);
+      window.removeEventListener('app-alerta-cerrada', handleNuevaAlerta);
     };
   }, []);
 
-  // ✅ Siempre iniciar en login para evitar abrir el dashboard por sesión anterior
+  // ✅ Restaurar sesión si hay token guardado
   useEffect(() => {
-    localStorage.removeItem("last_screen");
-    setPantalla("login");
+  const token = localStorage.getItem("token");
+  if (token) {
+    const rol = localStorage.getItem("rol") || "";
+    if (rol.toLowerCase().includes("guardia")) {
+      wsService.reset();
+      wsService.connect();
+    }
+      const last = localStorage.getItem("last_screen");
+      if (last) {
+        setPantalla(last);
+      } else {
+        const rol = localStorage.getItem("rol") || "";
+        if (rol.toLowerCase().includes("guardia")) {
+          setPantalla("guardia");
+        } else {
+          setPantalla("perfil");
+        }
+      }
+    } else {
+      setPantalla("login");
+    }
   }, []);
 
 
@@ -79,11 +106,12 @@ const Home: React.FC = () => {
 
   // ✅ Limpiar al cerrar sesión
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    localStorage.removeItem("last_screen");
-    setPantalla("login");
-  };
+  wsService.disconnect(); // ← agregar
+  localStorage.removeItem("token");
+  localStorage.removeItem("rol");
+  localStorage.removeItem("last_screen");
+  setPantalla("login");
+};
  
   // ✅ Función para redirigir a la alerta desde la notificación
   const irAAlerta = () => {

@@ -1,6 +1,6 @@
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,16 +8,16 @@
 }
 
 .login-card {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   max-width: 400px;
   width: 100%;
 }
 
 .login-header {
-  background: #2563eb;
+  background: var(--accent-primary);
   padding: 2rem;
   text-align: center;
 }
@@ -57,32 +57,33 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   transition: border-color 0.2s;
-  background: white;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
 }
 
 .form-input.error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  border-color: var(--accent-danger);
+  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
 }
 
 .field-error {
-  color: #dc2626;
+  color: var(--accent-danger);
   font-size: 0.875rem;
   margin-top: 0.25rem;
   display: block;
@@ -90,11 +91,11 @@
 
 .login-button {
   width: 100%;
-  background: #2563eb;
+  background: var(--accent-primary);
   color: white;
   border: none;
   padding: 0.875rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -106,7 +107,7 @@
 }
 
 .login-button:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-primary-hover);
 }
 
 .login-button:disabled {
@@ -115,11 +116,11 @@
 }
 
 .error-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
@@ -150,6 +151,6 @@
 }
 
 .login-footer p {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }

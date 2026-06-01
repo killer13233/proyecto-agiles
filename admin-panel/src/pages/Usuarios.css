@@ -12,7 +12,7 @@
 
 .usuarios-header h1 {
   margin: 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 600;
 }
@@ -25,25 +25,27 @@
 
 .search-input {
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   min-width: 300px;
   transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
 }
 
 .error-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -55,36 +57,35 @@
 }
 
 .table-container {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
 }
 
-/* Scrollbar styling for Usuarios table */
 .usuarios-table::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .usuarios-table::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   border-radius: 4px;
 }
 
 .usuarios-table::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--border);
   border-radius: 4px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-light);
 }
 
 .usuarios-table::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--text-muted);
 }
 
 .usuarios-table::-webkit-scrollbar-corner {
-  background: #f1f5f9;
+  background: var(--bg-secondary);
 }
 
 .usuarios-table {
@@ -93,22 +94,22 @@
 }
 
 .usuarios-table th {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
 }
 
 .usuarios-table td {
   padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  color: #1f2937;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
 }
 
 .usuarios-table tbody tr:hover {
-  background: #f8fafc;
+  background: var(--bg-card-hover);
 }
 
 .usuarios-table tbody tr:last-child td {
@@ -124,42 +125,42 @@
 }
 
 .badge-admin {
-  background: #dc2626;
+  background: var(--accent-danger);
   color: white;
 }
 
 .badge-guardia {
-  background: #059669;
+  background: var(--accent-success);
   color: white;
 }
 
 .badge-docente {
-  background: #2563eb;
+  background: var(--accent-primary);
   color: white;
 }
 
 .badge-administrativo {
-  background: #7c3aed;
+  background: var(--accent-secondary);
   color: white;
 }
 
 .badge-estudiante {
-  background: #6b7280;
+  background: var(--text-muted);
   color: white;
 }
 
 .badge-activo {
-  background: #10b981;
+  background: var(--accent-success);
   color: white;
 }
 
 .badge-inactivo {
-  background: #ef4444;
+  background: var(--accent-danger);
   color: white;
 }
 
 .badge-default {
-  background: #6b7280;
+  background: var(--text-muted);
   color: white;
 }
 
@@ -180,7 +181,7 @@
 
 .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .btn:disabled {
@@ -190,48 +191,48 @@
 }
 
 .btn-rol {
-  background: #2563eb;
+  background: var(--accent-primary);
   color: white;
 }
 
 .btn-rol:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-primary-hover);
 }
 
 .btn-activar {
-  background: #10b981;
+  background: var(--accent-success);
   color: white;
 }
 
 .btn-activar:hover:not(:disabled) {
-  background: #059669;
+  background: #26b863;
 }
 
 .btn-desactivar {
-  background: #ef4444;
+  background: var(--accent-danger);
   color: white;
 }
 
 .btn-desactivar:hover:not(:disabled) {
-  background: #dc2626;
+  background: #e8404f;
 }
 
 .btn-cancelar {
-  background: #6b7280;
+  background: var(--text-muted);
   color: white;
 }
 
 .btn-cancelar:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--text-secondary);
 }
 
 .btn-confirmar {
-  background: #10b981;
+  background: var(--accent-success);
   color: white;
 }
 
 .btn-confirmar:hover:not(:disabled) {
-  background: #059669;
+  background: #26b863;
 }
 
 .pagination {
@@ -244,16 +245,17 @@
 
 .pagination-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #2563eb;
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
 }
 
 .pagination-btn:disabled {
@@ -262,18 +264,17 @@
 }
 
 .pagination-info {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,9 +282,9 @@
 }
 
 .modal {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
@@ -295,12 +296,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -310,7 +311,7 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 0;
   width: 2rem;
   height: 2rem;
@@ -322,7 +323,7 @@
 }
 
 .modal-close:hover {
-  background: #f3f4f6;
+  background: var(--bg-card-hover);
 }
 
 .modal-body {
@@ -331,28 +332,30 @@
 
 .modal-body p {
   margin: 0 0 1rem 0;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .current-value {
   font-weight: 600;
-  color: #2563eb;
+  color: var(--accent-primary);
 }
 
 .modal-select {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   margin-top: 0.5rem;
   transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .modal-select:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
 }
 
 .modal-footer {
@@ -360,11 +363,10 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f8fafc;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
 }
 
-/* Loading Styles */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -377,8 +379,8 @@
 .spinner {
   width: 3rem;
   height: 3rem;
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #2563eb;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--accent-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -388,7 +390,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive */
 @media (max-width: 1200px) {
   .usuarios-container {
     padding: 1.5rem;

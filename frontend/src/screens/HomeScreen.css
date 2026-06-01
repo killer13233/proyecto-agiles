@@ -1,5 +1,5 @@
 .home-bg {
-  --background: #eef2f8;
+  --background: var(--app-bg);
 }
 
 .home-phone {
@@ -10,8 +10,8 @@
 }
 
 .home-header {
-  background: #183f75;
-  color: white;
+  background: var(--app-bg-secondary);
+  color: var(--app-text);
   padding: 24px 20px;
   border-radius: 0 0 20px 20px;
   display: flex;
@@ -27,32 +27,32 @@
 .home-header p {
   margin: 5px 0 0;
   font-size: 12px;
-  color: #dbe7f5;
+  color: var(--app-text-secondary);
 }
 
 .home-header span {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--app-elevated);
   padding: 7px 14px;
   border-radius: 20px;
   font-size: 12px;
 }
 
 .info-mini-card {
-  background: white;
+  background: var(--app-card);
   margin-top: 16px;
   padding: 14px;
   border-radius: 12px;
   font-size: 13px;
-  box-shadow: 0 5px 18px rgba(28, 52, 84, 0.08);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .info-mini-card p {
   margin: 5px 0 0 22px;
-  color: #6b7280;
+  color: var(--app-text-secondary);
 }
 .info-mini-card h4 {
   margin: 0 0 14px;
-  color: #8a94a6;
+  color: var(--app-text-muted);
   font-size: 12px;
   letter-spacing: 1px;
 }
@@ -61,7 +61,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1b2b40;
+  color: var(--app-text);
 }
 
 .perfil-btn {
@@ -70,9 +70,9 @@
   padding: 14px;
   border: none;
   border-radius: 12px;
-  background: #183f75;
+  background: var(--app-primary);
   color: white;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 6px 18px rgba(24, 63, 117, 0.25);
+  box-shadow: var(--app-shadow);
 }

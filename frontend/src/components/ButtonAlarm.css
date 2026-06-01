@@ -10,7 +10,7 @@
 }
 
 .alarm-title {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 14px;
   margin-bottom: 25px;
 }
@@ -20,9 +20,9 @@
   height: 155px;
   border-radius: 50%;
   border: none;
-  background: white;
-  color: #e33434;
-  box-shadow: 0 8px 25px rgba(28, 52, 84, 0.18);
+  background: var(--app-card);
+  color: var(--app-danger);
+  box-shadow: var(--app-shadow-lg);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -46,7 +46,7 @@
 }
 
 .alarm-button.presionando {
-  color: #ef4444;
+  color: var(--app-danger);
 }
 
 .alarm-button.presionando::before {
@@ -54,7 +54,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(#ef4444 var(--progress), transparent 0deg);
+  background: conic-gradient(var(--app-danger) var(--progress), transparent 0deg);
   animation: cargar 3s linear forwards;
 
   mask: radial-gradient(
@@ -81,8 +81,8 @@
 }
 
 .alarm-button.enviado {
-  color: #059669;
-  background: #dcfce7;
+  color: var(--app-success);
+  background: var(--app-card);
 }
 
 .alarm-button.enviado::before {
@@ -90,7 +90,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 6px solid #10b981;
+  border: 6px solid var(--app-success);
 }
 
 .alarm-button.gps-error,
@@ -100,16 +100,16 @@
 
 .gps-error-box {
   margin-top: 30px;
-  background: #fff7ed;
-  color: #b45309;
-  border: 1px solid #f59e0b;
+  background: var(--app-card);
+  color: var(--app-warning);
+  border: 1px solid var(--app-warning);
   padding: 14px;
   border-radius: 12px;
   font-size: 13px;
 }
 
 .cooldown-text {
-  color: #6b7280;
+  color: var(--app-text-secondary);
   font-size: 13px;
   margin-top: 20px;
 }
