@@ -1,102 +1,196 @@
 import { useState, useEffect } from 'react';
-import { getAlertas, asignarAlerta, cerrarAlerta, getTiposAlerta, getPrioridadesAlerta, getEstadosAlerta } from '../services/alertasService';
-import TablaAlertas from '../components/TablaAlertas';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { getAlertas, asignarAlerta } from '../services/alertasService';
+import { getZonas } from '../services/zonasService';
+import { getGuardias } from '../services/usuariosService';
+import { adminWsService } from '../services/wsService';
 import './Alertas.css';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+const CAMPUS_CENTER = [-1.269451, -78.623277];
+
+const ALERT_EMOJI = {
+  'Robo': '🔫',
+  'Arma blanca': '🔪',
+  'Acoso': '🙍',
+  'Accidente': '💥',
+};
+
+const getMotivoEmoji = (motivo) => ALERT_EMOJI[motivo] || '🚨';
+
+const getMarkerIcon = (alerta, seleccionada) => {
+  const borderColor = alerta.estado === 'Activa' ? '#ef4444' : alerta.estado === 'Asumida' ? '#f59e0b' : '#6b7280';
+  const emoji = getMotivoEmoji(alerta.motivo);
+  const size = seleccionada ? 64 : 52;
+  const shadow = seleccionada ? '0 0 0 4px rgba(79,140,255,0.5), 0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.5)';
+  return new L.DivIcon({
+    className: '',
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-size:${seleccionada ? 32 : 26}px;background:rgba(10,10,15,0.80);border:3px solid ${borderColor};border-radius:50%;box-shadow:${shadow};transition:all 0.2s;">${emoji}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+};
+
+const MapResizer = ({ resizeKey }) => {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    return () => clearTimeout(t);
+  }, [map, resizeKey]);
+  return null;
+};
+
+const MapFocusController = ({ focusedAlerta, focusKey }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (focusedAlerta && focusedAlerta.latitud != null && focusedAlerta.longitud != null) {
+      map.invalidateSize(true);
+      map.setView([focusedAlerta.latitud, focusedAlerta.longitud], 21, { animate: true, duration: 0.5 });
+    }
+  }, [focusKey, focusedAlerta, map]);
+  return null;
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Fecha inválida';
+  return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const extraerGuardiasIds = (raw) => {
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed.filter(id => id && String(id).trim() !== '') : [];
+  } catch { return []; }
+};
+
+const parsePolygon = (poligono) => {
+  try {
+    const parsed = JSON.parse(poligono || '[]');
+    const coords = parsed.coordinates ? parsed.coordinates[0] : parsed;
+    if (Array.isArray(coords)) return coords.map((c) => [c[1], c[0]]);
+  } catch {}
+  return [];
+};
 
 const Alertas = () => {
   const [alertas, setAlertas] = useState([]);
+  const [zonas, setZonas] = useState([]);
+  const [guardias, setGuardias] = useState([]);
+  const [disponibilidadGuardias, setDisponibilidadGuardias] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filtros, setFiltros] = useState({
-    estado: '',
-    tipo: '',
-    prioridad: '',
-    usuario: '',
-    fechaDesde: ''
-  });
-  const [debouncedFiltros, setDebouncedFiltros] = useState(filtros);
+  const [alertaFocusada, setAlertaFocusada] = useState(null);
+  const [focusKey, setFocusKey] = useState(0);
+  const [resizeKey, setResizeKey] = useState(0);
 
-  const tiposAlerta = getTiposAlerta();
-  const prioridadesAlerta = getPrioridadesAlerta();
-  const estadosAlerta = getEstadosAlerta();
+  const [panelVisible, setPanelVisible] = useState(true);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedFiltros(filtros);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [filtros]);
+  const [modalAsignar, setModalAsignar] = useState(false);
+  const [modalDetalles, setModalDetalles] = useState(false);
+  const [alertaSeleccionada, setAlertaSeleccionada] = useState(null);
+  const [guardiaSeleccionado, setGuardiaSeleccionado] = useState('');
 
-  useEffect(() => {
-    cargarAlertas(false); // primera carga → muestra spinner
-    const interval = setInterval(() => {
-      cargarAlertas(true); // refresco automático → silencioso
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [debouncedFiltros]);
-
-  // silencioso=false → muestra spinner | silencioso=true → recarga sin spinner
-  const cargarAlertas = async (silencioso = false) => {
+  const cargarDatos = async (silencioso = false) => {
     if (!silencioso) setLoading(true);
     setError('');
     try {
-      const resultado = await getAlertas(debouncedFiltros);
-      if (resultado.success) {
-        setAlertas(Array.isArray(resultado.data) ? resultado.data : (resultado.data.alertas || []));
-      } else {
-        setError(resultado.error);
-      }
-    } catch (err) {
-      setError('Error al cargar las alertas');
+      const [resAlertas, resZonas, resGuardias] = await Promise.all([
+        getAlertas({}),
+        getZonas(),
+        getGuardias(),
+      ]);
+      if (resAlertas.success) setAlertas(Array.isArray(resAlertas.data) ? resAlertas.data : []);
+      if (resZonas.success) setZonas(Array.isArray(resZonas.data) ? resZonas.data : []);
+      if (resGuardias.success) setGuardias(Array.isArray(resGuardias.data) ? resGuardias.data : []);
+    } catch {
+      setError('Error al cargar datos');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({ ...prev, [campo]: valor }));
+  useEffect(() => {
+    cargarDatos(false);
+    const interval = setInterval(() => cargarDatos(true), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    adminWsService.on('nueva_alerta', () => cargarDatos(true));
+    adminWsService.on('alerta_asumida', () => cargarDatos(true));
+    adminWsService.on('alerta_cerrada', () => cargarDatos(true));
+    return () => {
+      adminWsService.on('nueva_alerta', null);
+      adminWsService.on('alerta_asumida', null);
+      adminWsService.on('alerta_cerrada', null);
+    };
+  }, []);
+  useEffect(() => {
+  adminWsService.on('guardia_disponibilidad', (data) => {
+    console.log('[Admin] Disponibilidad recibida:', data);
+    setDisponibilidadGuardias(prev => ({ 
+      ...prev, 
+      [String(data.guardiaId)]: data.disponible 
+    }));
+  });
+}, []);
+
+
+  const alertasFiltradas = alertas.filter(a => a.estado !== 'Cerrada');
+
+  const seleccionarAlerta = (alerta) => {
+    setAlertaFocusada(alerta);
+    setFocusKey(k => k + 1);
   };
 
-  const limpiarFiltros = () => {
-    setFiltros({ estado: '', tipo: '', prioridad: '', usuario: '', fechaDesde: '' });
-  };
+  const idsANombres = (ids) =>
+    ids.map(id => {
+      const g = guardias.find(gd => String(gd.id) === String(id));
+      return g ? g.nombre : `[ID: ${id}]`;
+    });
 
-  const handleAsignar = async (idAlerta, guardiaId, nombreGuardia) => {
-    try {
-      const resultado = await asignarAlerta(idAlerta, guardiaId, nombreGuardia);
-      if (resultado.success) {
-        alert('✅ Alerta asignada correctamente a ' + nombreGuardia);
-        await cargarAlertas(true); // silencioso
-      } else {
-        alert('❌ Error al asignar: ' + resultado.error);
-        setError(resultado.error);
-      }
-    } catch (err) {
-      alert('❌ Error crítico al asignar la alerta');
-      setError('Error al asignar la alerta');
+  const handleAsignar = async () => {
+    if (!alertaSeleccionada || !guardiaSeleccionado) {
+      alert('Por favor, selecciona un guardia válido');
+      return;
+    }
+    const estaOcupado = alertas.some(a => {
+      if (a.estado === 'Cerrada') return false;
+      const ids = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+      return ids.includes(String(guardiaSeleccionado));
+    });
+    if (estaOcupado) {
+      alert('❌ Este guardia ya está atendiendo una alerta activa.');
+      return;
+    }
+    const g = guardias.find(gd => String(gd.id) === String(guardiaSeleccionado));
+    const resultado = await asignarAlerta(alertaSeleccionada.id, guardiaSeleccionado, g?.nombre || 'Guardia');
+    if (resultado.success) {
+      alert(`✅ Alerta asignada a ${g?.nombre || 'Guardia'}`);
+      setModalAsignar(false);
+      setGuardiaSeleccionado('');
+      setAlertaSeleccionada(null);
+      setResizeKey(k => k + 1);
+      await cargarDatos(true);
+    } else {
+      alert('❌ Error al asignar: ' + resultado.error);
     }
   };
-
-  const handleCerrar = async (idAlerta, motivo) => {
-    try {
-      const resultado = await cerrarAlerta(idAlerta, motivo);
-      if (resultado.success) {
-        await cargarAlertas(true); // silencioso
-      } else {
-        setError(resultado.error);
-      }
-    } catch (err) {
-      setError('Error al cerrar la alerta');
-    }
-  };
-
-  const getAlertasActivas   = () => alertas.filter(a => a.estado === 'Activa').length;
-  const getAlertasAsignadas = () => alertas.filter(a => a.estado === 'Asumida').length; // ← antes 'Asignada'
-  const getAlertasCerradas  = () => alertas.filter(a => a.estado === 'Cerrada').length;
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="alertas-mapa-loading">
         <div className="spinner"></div>
         <p>Cargando alertas...</p>
       </div>
@@ -104,76 +198,202 @@ const Alertas = () => {
   }
 
   return (
-    <div className="alertas-container">
-      <div className="alertas-header">
-        <h1>Gestión de Alertas</h1>
-        <div className="estadisticas">
-          <div className="stat-card">
-            <span className="stat-number">{getAlertasActivas()}</span>
-            <span className="stat-label">Activas</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{getAlertasAsignadas()}</span>
-            <span className="stat-label">Asignadas</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">{getAlertasCerradas()}</span>
-            <span className="stat-label">Cerradas</span>
-          </div>
-        </div>
+    <div className="alertas-mapa-root">
+
+      {/* Mapa fullscreen */}
+      <div className="alertas-mapa-container">
+        <MapContainer center={CAMPUS_CENTER} zoom={18} maxZoom={21} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+          <MapResizer resizeKey={resizeKey} />
+          <MapFocusController focusedAlerta={alertaFocusada} focusKey={focusKey} />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxNativeZoom={19}
+            maxZoom={21}
+          />
+          {zonas.map(zona => {
+            const vertices = parsePolygon(zona.poligono);
+            if (!vertices.length) return null;
+            const color = zona.color || '#2ed573';
+            return (
+              <Polygon key={zona.id} positions={vertices} pathOptions={{ color, fillColor: color, fillOpacity: 0.18, weight: 2 }}>
+                <Popup><strong>{zona.nombre}</strong></Popup>
+              </Polygon>
+            );
+          })}
+          {alertasFiltradas.filter(a => a.latitud && a.longitud).map(alerta => (
+            <Marker
+              key={`a-${alerta.id}`}
+              position={[alerta.latitud, alerta.longitud]}
+              icon={getMarkerIcon(alerta, alertaFocusada?.id === alerta.id)}
+              eventHandlers={{ click: () => seleccionarAlerta(alerta) }}
+            >
+              <Popup>
+                <div className="mg-popup">
+                  <div className="mg-tipo">{getMotivoEmoji(alerta.motivo)} {alerta.motivo}</div>
+                  <p><strong>Usuario:</strong> {alerta.nombreUsuario}</p>
+                  <p><strong>Zona:</strong> {alerta.zona}</p>
+                  <p><strong>Estado:</strong> {alerta.estado}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
       </div>
 
-      <div className="filtros-section">
-        <h3>Filtros</h3>
-        <div className="filtros-grid">
-          <div className="filtro-group">
-            <label htmlFor="estado">Estado</label>
-            <select id="estado" value={filtros.estado} onChange={(e) => handleFiltroChange('estado', e.target.value)} className="filtro-select">
-              <option value="">Todos los estados</option>
-              {estadosAlerta.map(estado => <option key={estado} value={estado}>{estado}</option>)}
-            </select>
-          </div>
-          <div className="filtro-group">
-            <label htmlFor="tipo">Tipo</label>
-            <select id="tipo" value={filtros.tipo} onChange={(e) => handleFiltroChange('tipo', e.target.value)} className="filtro-select">
-              <option value="">Todos los tipos</option>
-              {tiposAlerta.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
-            </select>
-          </div>
-          <div className="filtro-group">
-            <label htmlFor="prioridad">Prioridad</label>
-            <select id="prioridad" value={filtros.prioridad} onChange={(e) => handleFiltroChange('prioridad', e.target.value)} className="filtro-select">
-              <option value="">Todas las prioridades</option>
-              {prioridadesAlerta.map(prioridad => <option key={prioridad} value={prioridad}>{prioridad}</option>)}
-            </select>
-          </div>
-          <div className="filtro-group">
-            <label htmlFor="usuario">Usuario</label>
-            <input type="text" id="usuario" value={filtros.usuario} onChange={(e) => handleFiltroChange('usuario', e.target.value)} placeholder="Buscar por usuario..." className="filtro-input" />
-          </div>
-          <div className="filtro-group">
-            <label htmlFor="fechaDesde">Desde</label>
-            <input type="date" id="fechaDesde" value={filtros.fechaDesde} onChange={(e) => handleFiltroChange('fechaDesde', e.target.value)} className="filtro-input" />
-          </div>
-          <button className="btn btn-limpiar" onClick={limpiarFiltros}>🗑️ Limpiar Filtros</button>
+      {/* Floating alert cards */}
+      {error && <div className="alertas-error-floating">⚠️ {error}</div>}
+      <div className="alertas-floating-wrapper">
+        <button className="afp-toggle" onClick={() => setPanelVisible(v => !v)} title={panelVisible ? "Ocultar panel" : "Mostrar panel"}>
+          {panelVisible ? '▶' : '◀'}
+        </button>
+        {panelVisible && (
+        <div className="alertas-floating-panel">
+          {alertasFiltradas.length === 0 ? (
+            <div className="afp-empty">No hay alertas activas</div>
+          ) : (alertasFiltradas.map(alerta => {
+            const guardiasIds = extraerGuardiasIds(alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados);
+            const guardiasNombres = idsANombres(guardiasIds);
+            const esFocusada = alertaFocusada?.id === alerta.id;
+
+            return (
+              <div
+                key={alerta.id}
+                id={`card-alerta-${alerta.id}`}
+                className={`alerta-floating-card ${esFocusada ? 'selected' : ''}`}
+                onClick={() => seleccionarAlerta(alerta)}
+              >
+                <div className="afc-header">
+                  <span className="afc-motivo">{getMotivoEmoji(alerta.motivo)} {alerta.motivo || 'Sin motivo'}</span>
+                  <span className={`afc-badge ${alerta.estado === 'Activa' ? 'badge-activa' : 'badge-asumida-otro'}`}>
+                    {alerta.estado}
+                  </span>
+                </div>
+                <div className="afc-details">
+                  <div className="afc-detail-row">
+                    <span className="afc-label">Usuario:</span>
+                    <span className="afc-value">{alerta.nombreUsuario || 'Desconocido'}</span>
+                  </div>
+                  <div className="afc-detail-row">
+                    <span className="afc-label">Zona:</span>
+                    <span className="afc-value">{alerta.zona || 'Sin zona'}</span>
+                  </div>
+                  {guardiasNombres.length > 0 && (
+                    <div className="afc-detail-row">
+                      <span className="afc-label">Guardias:</span>
+                      <span className="afc-value">
+                        {guardiasNombres.map((n, i) => (
+                          <span key={i} className="afc-guardia-nombre">👮 {n}{i < guardiasNombres.length - 1 ? ', ' : ''}</span>
+                        ))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="afc-actions" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="afc-btn afc-btn-detalles"
+                    onClick={() => { setAlertaSeleccionada(alerta); setModalDetalles(true); }}
+                  >
+                    📋 Detalles
+                  </button>
+                  {alerta.estado === 'Activa' && (
+                    <button
+                      className="afc-btn afc-btn-asumir"
+                      onClick={() => { setAlertaSeleccionada(alerta); setModalAsignar(true); }}
+                    >
+                      👤 Asignar
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          }))}
         </div>
+        )}
       </div>
 
-      {error && (
-        <div className="error-message">
-          <span className="error-icon">⚠️</span>
-          {error}
+      {/* Modal Asignar */}
+      {modalAsignar && alertaSeleccionada && (
+        <div className="modal-overlay" onClick={() => { setModalAsignar(false); setResizeKey(k => k + 1); }}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Asignar Alerta</h3>
+              <button className="modal-close" onClick={() => { setModalAsignar(false); setResizeKey(k => k + 1); }}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="alerta-detalle">
+                <h4>{getMotivoEmoji(alertaSeleccionada.motivo)} {alertaSeleccionada.motivo}</h4>
+                <p><strong>Zona:</strong> {alertaSeleccionada.zona || 'Sin zona'}</p>
+                <p><strong>Reportado por:</strong> {alertaSeleccionada.nombreUsuario || 'Desconocido'}</p>
+              </div>
+              <div className="guardia-selection">
+                <label htmlFor="guardia">Seleccionar guardia:</label>
+                <select
+                  id="guardia"
+                  value={guardiaSeleccionado}
+                  onChange={e => setGuardiaSeleccionado(e.target.value)}
+                  className="guardia-select"
+                >
+                  <option value="">-- Seleccionar guardia --</option>
+                  {guardias.map(guardia => {
+                    const estaOcupado = alertas.some(a => {
+                      if (a.estado === 'Cerrada') return false;
+                      const ids = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+                      return ids.includes(String(guardia.id));
+                    });
+                    const estaNoDisponible = disponibilidadGuardias[String(guardia.id)] === false;
+                    return (
+                      <option key={guardia.id} value={guardia.id} disabled={estaOcupado || estaNoDisponible}>
+                        {guardia.nombre} {estaNoDisponible ? '⛔ No disponible' : estaOcupado ? '🔴 Ocupado' : '🟢 Disponible'}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancelar" onClick={() => { setModalAsignar(false); setResizeKey(k => k + 1); }}>Cancelar</button>
+              <button className="btn btn-confirmar" onClick={handleAsignar}>Confirmar Asignación</button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="tabla-section">
-        <TablaAlertas
-          alertas={alertas}
-          loading={loading}
-          onAsignar={handleAsignar}
-          onCerrar={handleCerrar}
-        />
-      </div>
+      {/* Modal Detalles */}
+      {modalDetalles && alertaSeleccionada && (
+        <div className="modal-overlay" onClick={() => { setModalDetalles(false); setResizeKey(k => k + 1); }}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Detalles de Alerta</h3>
+              <button className="modal-close" onClick={() => { setModalDetalles(false); setResizeKey(k => k + 1); }}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="alerta-detalle">
+                <p><strong>Motivo:</strong> {getMotivoEmoji(alertaSeleccionada.motivo)} {alertaSeleccionada.motivo}</p>
+                <p><strong>Estado:</strong> <span className={`afc-badge ${alertaSeleccionada.estado === 'Activa' ? 'badge-activa' : 'badge-asumida-otro'}`}>{alertaSeleccionada.estado}</span></p>
+                <p><strong>Zona:</strong> {alertaSeleccionada.zona || 'Sin zona'}</p>
+                <p><strong>Coordenadas:</strong> {alertaSeleccionada.latitud?.toFixed(6)}, {alertaSeleccionada.longitud?.toFixed(6)}</p>
+                <p><strong>Reportado por:</strong> {alertaSeleccionada.nombreUsuario}</p>
+                <p><strong>Rol:</strong> {alertaSeleccionada.rolUsuario}</p>
+                {(() => {
+                  const ids = extraerGuardiasIds(alertaSeleccionada.guardiasInvolucrados);
+                  const nombres = idsANombres(ids);
+                  return nombres.length > 0
+                    ? <p><strong>Guardia(s):</strong> {nombres.join(', ')}</p>
+                    : null;
+                })()}
+                <p><strong>Fecha creación:</strong> {formatDate(alertaSeleccionada.creadaEn)}</p>
+                {alertaSeleccionada.cerradaEn && <p><strong>Fecha cierre:</strong> {formatDate(alertaSeleccionada.cerradaEn)}</p>}
+                {alertaSeleccionada.motivoResolucion && <p><strong>Motivo resolución:</strong> {alertaSeleccionada.motivoResolucion}</p>}
+                {alertaSeleccionada.resolucionDescripcion && <p><strong>Resolución:</strong> {alertaSeleccionada.resolucionDescripcion}</p>}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancelar" onClick={() => { setModalDetalles(false); setResizeKey(k => k + 1); }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

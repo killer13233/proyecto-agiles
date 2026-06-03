@@ -18,11 +18,6 @@ function App() {
 
     if (token && rol === 'Administrador') {
       adminWsService.connect(token);
-
-      adminWsService.on('guardia_disponibilidad', (data) => {
-        console.log('[Admin] Guardia disponibilidad:', data);
-        window.dispatchEvent(new CustomEvent('guardia-disponibilidad', { detail: data }));
-      });
     }
 
     return () => adminWsService.disconnect();

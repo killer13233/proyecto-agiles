@@ -21,9 +21,15 @@ export const getDashboardData = async () => {
     const resZonas    = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
 
     const usuarios = resUsuarios.data?.items || resUsuarios.data || [];
-    const alertas  = Array.isArray(resAlertas.data?.alertas || resAlertas.data) 
+    const alertasRaw = Array.isArray(resAlertas.data?.alertas || resAlertas.data)
       ? (resAlertas.data?.alertas || resAlertas.data) : [];
     const zonas    = resZonas.data?.zonas || resZonas.data || [];
+
+    console.log('[DashboardService] API raw alertas:', resAlertas.data);
+    console.log('[DashboardService] alertas array length:', alertasRaw.length);
+    console.log('[DashboardService] alertasRaw[0] sample:', alertasRaw[0]);
+
+    const alertas = alertasRaw;
 
     // ── Usuarios por rol ──────────────────────────────────────────
     const usuariosPorRolMap = {};
@@ -39,6 +45,13 @@ export const getDashboardData = async () => {
       alertasPorTipoMap[tipo] = (alertasPorTipoMap[tipo] || 0) + 1;
     });
 
+    // ── Alertas por zona ──────────────────────────────────────────
+    const alertasPorZonaMap = {};
+    alertas.forEach(a => {
+      const zona = a.zona || a.Zona || 'Desconocida';
+      alertasPorZonaMap[zona] = (alertasPorZonaMap[zona] || 0) + 1;
+    });
+
     // ── Alertas por día (últimos 7 días) ──────────────────────────
     const alertasPorDia = [];
     for (let i = 6; i >= 0; i--) {
@@ -52,8 +65,26 @@ export const getDashboardData = async () => {
       alertasPorDia.push({ dia, count });
     }
 
+    // ── Tiempo promedio de resolución ─────────────────────────────
+    const alertasResueltas = alertas.filter(a => (a.cerradaEn || a.CerradaEn) && (a.creadaEn || a.CreadaEn));
+    let tiempoResolucionMin = null;
+    if (alertasResueltas.length > 0) {
+      const totalMs = alertasResueltas.reduce((sum, a) => {
+        const creada = new Date(a.creadaEn || a.CreadaEn);
+        const cerrada = new Date(a.cerradaEn || a.CerradaEn);
+        return sum + (cerrada - creada);
+      }, 0);
+      tiempoResolucionMin = Math.round(totalMs / alertasResueltas.length / 60000);
+    }
+
     // ── Alertas nuevas hoy ────────────────────────────────────────
     const hoy = new Date().toDateString();
+    console.log('[DashboardService] HOY =', hoy);
+    alertas.forEach((a, i) => {
+      const raw = a.creadaEn ?? a.CreadaEn;
+      const f = new Date(raw);
+      console.log(`  alerta[${i}]: creadaEn=${JSON.stringify(raw)}, parsed=${f}, toDateStr=${f.toDateString()}, match=${f.toDateString() === hoy}`);
+    });
     const nuevasHoy = alertas.filter(a => {
       const f = new Date(a.creadaEn || a.CreadaEn);
       return f.toDateString() === hoy;
@@ -81,7 +112,8 @@ export const getDashboardData = async () => {
           cerradas:  alertas.filter(a => a.estado === 'Cerrada'  || a.Estado === 'Cerrada').length,
           criticas:  0,
           nuevasHoy,
-          resueltasHoy
+          resueltasHoy,
+          tiempoResolucionMin
         },
         zonas: {
           total:     zonas.length,
@@ -104,6 +136,10 @@ export const getDashboardData = async () => {
         estadisticas: {
           alertasPorDia,
           alertasPorTipo:  Object.entries(alertasPorTipoMap).map(([tipo, cantidad])  => ({ tipo, cantidad })),
+          alertasPorZona:  Object.entries(alertasPorZonaMap)
+            .map(([zona, cantidad]) => ({ zona, cantidad }))
+            .sort((a, b) => b.cantidad - a.cantidad)
+            .slice(0, 8),
           usuariosPorRol:  Object.entries(usuariosPorRolMap).map(([rol, cantidad])   => ({ rol, cantidad }))
         }
       }

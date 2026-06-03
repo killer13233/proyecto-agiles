@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const Sidebar = ({ collapsed: controlledCollapsed, onToggle }) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+  const setIsCollapsed = onToggle || setInternalCollapsed;
   const { user, logout, hasRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();

@@ -90,6 +90,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [detalleAlerta, setDetalleAlerta] = useState<Alerta | null>(null);
   const [detalleVisible, setDetalleVisible] = useState(false);
   const [userPosition, setUserPosition] = useState<{ latitud: number; longitud: number } | null>(null);
+  const [panelVisible, setPanelVisible] = useState(true);
 
   useEffect(() => {
     let cancelado = false;
@@ -324,8 +325,15 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
           focusKey={focusKey}
           onAlertaClick={(alerta) => { setFocusedAlerta(alerta); setFocusKey(k => k + 1); }}
         />
-        <div className="alertas-floating-panel">
-          {alertas.map((alerta) => {
+        <div className="alertas-floating-wrapper">
+          <button className="afp-toggle" onClick={() => setPanelVisible(v => !v)} title={panelVisible ? "Ocultar panel" : "Mostrar panel"}>
+            {panelVisible ? '◀' : '▶'}
+          </button>
+          {panelVisible && (
+          <div className="alertas-floating-panel">
+            {alertas.length === 0 ? (
+              <div className="afp-empty">No hay alertas activas</div>
+            ) : (alertas.map((alerta) => {
             const idActual = miId || getMiIdActual();
             let yoAsumiEsta = false;
             let guardiasNombres: string[] = [];
@@ -390,7 +398,9 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
                 </div>
               </div>
             );
-          })}
+          }))}
+        </div>
+        )}
         </div>
       </div>
 
