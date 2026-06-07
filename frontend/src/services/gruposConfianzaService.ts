@@ -154,3 +154,38 @@ export const buscarUsuarios = async (grupoId: number, query: string) => {
     };
   }
 };
+
+// ── Listar Invitaciones Pendientes ───────────────────────────────────────
+export const listarInvitaciones = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/gruposconfianza/invitaciones`,
+      { headers: getHeaders() }
+    );
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error("Error al listar invitaciones:", error);
+    return {
+      success: false,
+      error: error.response?.data?.mensaje || "Error al cargar invitaciones",
+    };
+  }
+};
+
+// ── Responder a Invitación ──────────────────────────────────────────────
+export const responderInvitacion = async (grupoId: number, aceptar: boolean) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE}/api/gruposconfianza/${grupoId}/invitaciones/responder?aceptar=${aceptar}`,
+      {},
+      { headers: getHeaders() }
+    );
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error("Error al responder invitación:", error);
+    return {
+      success: false,
+      error: error.response?.data?.mensaje || "Error al responder invitación",
+    };
+  }
+};

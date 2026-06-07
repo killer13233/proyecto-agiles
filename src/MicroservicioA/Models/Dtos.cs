@@ -44,6 +44,7 @@ public record MiembroDto(
     string Nombre,
     string Correo,
     string Rol,
+    string Estado,
     DateTime AgregadoEn
 );
 

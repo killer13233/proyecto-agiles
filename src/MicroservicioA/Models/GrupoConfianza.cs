@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MicroservicioA.Models;
 
 /// <summary>
@@ -20,6 +22,13 @@ public class GrupoConfianza
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum EstadoMiembro
+{
+    Pendiente,
+    Aceptado
+}
+
 /// <summary>
 /// Relación muchos-a-muchos entre grupos de confianza y usuarios.
 /// </summary>
@@ -32,6 +41,8 @@ public class MiembroGrupoConfianza
 
     public int UsuarioId { get; set; }
     public Usuario Usuario { get; set; } = null!;
+
+    public EstadoMiembro Estado { get; set; } = EstadoMiembro.Pendiente;
 
     public DateTime AgregadoEn { get; set; } = DateTime.UtcNow;
 }

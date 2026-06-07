@@ -42,6 +42,8 @@ public class AppDbContext : DbContext
 
             // Un usuario solo puede estar una vez en un grupo
             e.HasIndex(m => new { m.GrupoConfianzaId, m.UsuarioId }).IsUnique();
+            
+            e.Property(m => m.Estado).HasConversion<string>();
 
             e.HasOne(m => m.GrupoConfianza)
              .WithMany(g => g.Miembros)

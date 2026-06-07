@@ -22,6 +22,7 @@ type MiembroPreview = {
   nombre: string;
   correo: string;
   rol: string;
+  estado?: string;
   agregadoEn: string;
 };
 
@@ -633,6 +634,9 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
                             <div className="grupos-miembro-details">
                               <div className="grupos-miembro-name">
                                 {m.nombre}
+                                {m.estado === "Pendiente" && (
+                                  <span style={{ fontSize: '0.75rem', color: '#f59e0b', marginLeft: '6px' }}>(Pendiente)</span>
+                                )}
                               </div>
                               <div className="grupos-miembro-role">{m.rol}</div>
                             </div>

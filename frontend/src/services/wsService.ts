@@ -58,6 +58,12 @@ else if (data.tipo === 'ubicacion_usuario')
 else if (data.tipo === 'ubicacion_guardia')
   window.dispatchEvent(new CustomEvent('app-ubicacion-guardia', { detail: data }));
 
+else if (data.tipo === 'nueva_invitacion')
+  window.dispatchEvent(new CustomEvent('app-nueva-invitacion', { detail: data }));
+
+else if (data.tipo === 'alerta_confianza')
+  window.dispatchEvent(new CustomEvent('app-alerta-confianza', { detail: data }));
+
 const handler = this.handlers[data.tipo as WsEvent];
 if (handler) handler(data);
       } catch (err) { console.error("WS parse error", err); }

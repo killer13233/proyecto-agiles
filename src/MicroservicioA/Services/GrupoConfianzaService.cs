@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MicroservicioA.Data;
 using MicroservicioA.Models;
+using System.Net.Http.Json;
 
 namespace MicroservicioA.Services;
 
@@ -15,16 +16,26 @@ public interface IGrupoConfianzaService
     Task<(bool ok, string? error)> AgregarMiembroAsync(int grupoId, int userId, string rol, int miembroId);
     Task<(bool ok, string? error)> QuitarMiembroAsync(int grupoId, int userId, string rol, int miembroId);
     Task<List<BuscarUsuarioDto>> BuscarUsuariosAsync(string query, int grupoId);
+    Task<(bool ok, string? error)> ResponderInvitacionAsync(int grupoId, int userId, bool aceptar);
+    Task<List<GrupoConfianzaDto>> ListarInvitacionesPendientesAsync(int userId);
+    Task<List<int>> ObtenerContactosConfianzaAsync(int userId);
 }
 
-public class GrupoConfianzaService : IGrupoConfianzaService
+    public class GrupoConfianzaService : IGrupoConfianzaService
 {
     private readonly AppDbContext _db;
+    private readonly IHttpClientFactory _httpFactory;
+    private readonly string _microBUrl;
     private const int MaxGruposPorUsuario = 5;
     private const int MaxMiembrosPorGrupo = 20;
     private const int PreviewMiembros = 3;
 
-    public GrupoConfianzaService(AppDbContext db) => _db = db;
+    public GrupoConfianzaService(AppDbContext db, IHttpClientFactory httpFactory, IConfiguration config)
+    {
+        _db = db;
+        _httpFactory = httpFactory;
+        _microBUrl = config["MicroservicioB:BaseUrl"] ?? "http://microservicio-b:8082";
+    }
 
     // ── Listar grupos del usuario autenticado ──────────────────────────────
     public async Task<List<GrupoConfianzaResumenDto>> ListarPorUsuarioAsync(int propietarioId)
@@ -74,6 +85,7 @@ public class GrupoConfianzaService : IGrupoConfianzaService
             grupo.Miembros.Select(m => new MiembroDto(
                 m.Id, m.UsuarioId, m.Usuario.Nombre,
                 m.Usuario.Correo, m.Usuario.Rol.ToString(),
+                m.Estado.ToString(),
                 m.AgregadoEn
             )).ToList(),
             grupo.CreadoEn
@@ -174,20 +186,47 @@ public class GrupoConfianzaService : IGrupoConfianzaService
 
         // Validar que no esté ya en el grupo
         if (grupo.Miembros.Any(m => m.UsuarioId == miembroId))
-            return (false, "El usuario ya es miembro de este grupo.");
+            return (false, "El usuario ya es miembro de este grupo (o tiene invitación pendiente).");
 
         // Validar límite
         if (grupo.Miembros.Count >= MaxMiembrosPorGrupo)
             return (false, $"El grupo ha alcanzado el límite de {MaxMiembrosPorGrupo} miembros.");
 
-        grupo.Miembros.Add(new MiembroGrupoConfianza
+        var miembro = new MiembroGrupoConfianza
         {
             GrupoConfianzaId = grupoId,
-            UsuarioId = miembroId
-        });
+            UsuarioId = miembroId,
+            Estado = EstadoMiembro.Pendiente
+        };
+        grupo.Miembros.Add(miembro);
 
         await _db.SaveChangesAsync();
+
+        // Notificar por WebSocket mediante Microservicio B
+        _ = NotificarInvitacionAsync(miembroId, grupo.Nombre);
+
         return (true, null);
+    }
+
+    private async Task NotificarInvitacionAsync(int usuarioId, string grupoNombre)
+    {
+        try
+        {
+            var http = _httpFactory.CreateClient();
+            var res = await http.PostAsJsonAsync($"{_microBUrl}/api/wsnotificaciones/invitacion", new
+            {
+                UsuarioId = usuarioId,
+                GrupoNombre = grupoNombre
+            });
+            if (!res.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[GrupoConfianzaService] Error al notificar invitación a MS B. StatusCode: {res.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GrupoConfianzaService] Excepción al notificar invitación a MS B: {ex.Message}");
+        }
     }
 
     // ── Quitar miembro ─────────────────────────────────────────────────────
@@ -238,6 +277,67 @@ public class GrupoConfianzaService : IGrupoConfianzaService
         return usuarios;
     }
 
+    // ── Responder Invitación ────────────────────────────────────────────────
+    public async Task<(bool ok, string? error)> ResponderInvitacionAsync(int grupoId, int userId, bool aceptar)
+    {
+        var miembro = await _db.MiembrosGrupoConfianza
+            .FirstOrDefaultAsync(m => m.GrupoConfianzaId == grupoId && m.UsuarioId == userId);
+
+        if (miembro is null)
+            return (false, "No se encontró la invitación al grupo.");
+
+        if (miembro.Estado == EstadoMiembro.Aceptado)
+            return (false, "Ya eres miembro de este grupo.");
+
+        if (aceptar)
+        {
+            miembro.Estado = EstadoMiembro.Aceptado;
+        }
+        else
+        {
+            _db.MiembrosGrupoConfianza.Remove(miembro);
+        }
+
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
+    // ── Listar Invitaciones Pendientes ──────────────────────────────────────
+    public async Task<List<GrupoConfianzaDto>> ListarInvitacionesPendientesAsync(int userId)
+    {
+        var membresias = await _db.MiembrosGrupoConfianza
+            .Include(m => m.GrupoConfianza)
+                .ThenInclude(g => g.Propietario)
+            .Where(m => m.UsuarioId == userId && m.Estado == EstadoMiembro.Pendiente)
+            .ToListAsync();
+
+        return membresias.Select(m => new GrupoConfianzaDto(
+            m.GrupoConfianza.Id,
+            m.GrupoConfianza.Nombre,
+            m.GrupoConfianza.Descripcion,
+            m.GrupoConfianza.PropietarioId,
+            m.GrupoConfianza.Propietario.Nombre,
+            0,
+            new List<MiembroDto>(), // No enviamos miembros para la vista de invitación
+            m.GrupoConfianza.CreadoEn
+        )).ToList();
+    }
+
+    // ── Obtener Contactos Confianza (Para Emergencias) ──────────────────────
+    public async Task<List<int>> ObtenerContactosConfianzaAsync(int userId)
+    {
+        // Obtener a todos los miembros de todos los grupos de confianza del usuario (solo Aceptados)
+        var contactosIds = await _db.GruposConfianza
+            .Where(g => g.PropietarioId == userId)
+            .SelectMany(g => g.Miembros)
+            .Where(m => m.Estado == EstadoMiembro.Aceptado)
+            .Select(m => m.UsuarioId)
+            .Distinct()
+            .ToListAsync();
+
+        return contactosIds;
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
     private static bool EsAdmin(string rol) =>
         rol.Equals("Administrador", StringComparison.OrdinalIgnoreCase);
@@ -255,6 +355,7 @@ public class GrupoConfianzaService : IGrupoConfianzaService
             .Select(m => new MiembroDto(
                 m.Id, m.UsuarioId, m.Usuario.Nombre,
                 m.Usuario.Correo, m.Usuario.Rol.ToString(),
+                m.Estado.ToString(),
                 m.AgregadoEn
             )).ToList(),
         g.CreadoEn

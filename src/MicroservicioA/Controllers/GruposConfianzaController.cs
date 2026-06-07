@@ -129,6 +129,41 @@ public class GruposConfianzaController : ControllerBase
         return Ok(usuarios);
     }
 
+    /// <summary>
+    /// Lista las invitaciones pendientes del usuario autenticado.
+    /// GET /api/gruposconfianza/invitaciones
+    /// </summary>
+    [HttpGet("invitaciones")]
+    public async Task<IActionResult> ListarInvitaciones()
+    {
+        var invitaciones = await _svc.ListarInvitacionesPendientesAsync(GetUserId());
+        return Ok(invitaciones);
+    }
+
+    /// <summary>
+    /// Responde a una invitación de un grupo.
+    /// PUT /api/gruposconfianza/{id}/invitaciones/responder?aceptar=true
+    /// </summary>
+    [HttpPut("{id:int}/invitaciones/responder")]
+    public async Task<IActionResult> ResponderInvitacion(int id, [FromQuery] bool aceptar)
+    {
+        var (ok, error) = await _svc.ResponderInvitacionAsync(id, GetUserId(), aceptar);
+        if (!ok) return BadRequest(new ErrorResponse(error!));
+        return Ok(new { mensaje = aceptar ? "Invitación aceptada." : "Invitación rechazada." });
+    }
+
+    /// <summary>
+    /// Obtiene los IDs de los contactos de confianza del usuario (solo uso interno entre microservicios).
+    /// GET /api/gruposconfianza/usuario/{id}/contactos
+    /// </summary>
+    [HttpGet("usuario/{id:int}/contactos")]
+    [AllowAnonymous] // Opcional: Proteger con API Key o Policy para MS
+    public async Task<IActionResult> ObtenerContactos(int id)
+    {
+        var contactos = await _svc.ObtenerContactosConfianzaAsync(id);
+        return Ok(contactos);
+    }
+
     // ── Helpers para extraer claims del token JWT ──────────────────────────
     private int GetUserId()
     {

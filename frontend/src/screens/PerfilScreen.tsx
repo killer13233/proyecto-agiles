@@ -28,12 +28,23 @@ const PerfilScreen: React.FC<Props> = ({
     }) => {
   const [user, setUser] = useState<TokenData | null>(null);
   const [expired, setExpired] = useState(false);
+  const [invitaciones, setInvitaciones] = useState<any[]>([]);
+
   const rolUsuario =
   user?.role ||
   user?.rol ||
   (user as any)?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
   "Sin rol";
   const mostrarAlarma = rolUsuario.toLowerCase() === "estudiante" || rolUsuario.toLowerCase() === "docente";
+
+  const cargarInvitaciones = async () => {
+    import("../services/gruposConfianzaService").then(async (module) => {
+        const res = await module.listarInvitaciones();
+        if (res.success) {
+            setInvitaciones(res.data);
+        }
+    });
+  };
 
   useEffect(() => {
     const cargarToken = () => {
@@ -53,6 +64,7 @@ const PerfilScreen: React.FC<Props> = ({
         }
 
         setUser(decoded);
+        cargarInvitaciones();
       } catch (e) {
         console.error("Error decodificando token en Perfil:", e);
         setExpired(true);
@@ -61,6 +73,17 @@ const PerfilScreen: React.FC<Props> = ({
 
     cargarToken();
   }, []);
+
+  const responderInv = async (grupoId: number, aceptar: boolean) => {
+    import("../services/gruposConfianzaService").then(async (module) => {
+        const res = await module.responderInvitacion(grupoId, aceptar);
+        if (res.success) {
+            cargarInvitaciones();
+        } else {
+            alert(res.error || "Error al responder invitación");
+        }
+    });
+  };
 
   const cerrarSesion = async () => {
     localStorage.removeItem("token");
@@ -130,6 +153,25 @@ const PerfilScreen: React.FC<Props> = ({
               <b>{user?.zona || "Sin zona"}</b>
             </div>
           </div>
+
+          {/* Invitaciones Pendientes */}
+          {invitaciones.length > 0 && (
+            <div className="perfil-card invitaciones-card">
+              <h4>INVITACIONES PENDIENTES ({invitaciones.length})</h4>
+              {invitaciones.map((inv) => (
+                <div key={inv.id} className="invitacion-row">
+                  <div className="inv-info">
+                    <span className="inv-group-name">{inv.nombre}</span>
+                    <span className="inv-owner">Prop: {inv.propietarioNombre}</span>
+                  </div>
+                  <div className="inv-actions">
+                    <IonButton color="success" size="small" onClick={() => responderInv(inv.id, true)}>✓</IonButton>
+                    <IonButton color="danger" size="small" onClick={() => responderInv(inv.id, false)}>✕</IonButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Grupos de Confianza */}
           <div className="perfil-card" style={{ cursor: onIrGrupos ? 'pointer' : 'default' }} onClick={onIrGrupos}>

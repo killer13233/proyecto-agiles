@@ -45,13 +45,39 @@ const Home: React.FC = () => {
       setNotificacion({ ...data, title, body, color });
     };
 
+    const handleInvitacion = (e: any) => {
+        const data = e.detail;
+        setNotificacion({
+            title: "NUEVA INVITACIÓN",
+            body: `Te invitaron al grupo: <strong>${data.grupoNombre}</strong>`,
+            color: "#3b82f6"
+        });
+        Haptics.impact({ style: ImpactStyle.Medium });
+    };
+
+    const handleAlertaConfianza = (e: any) => {
+        const data = e.detail;
+        setNotificacion({
+            title: "EMERGENCIA DE CONTACTO",
+            body: `<strong>${data.nombreUsuario}</strong> tiene una emergencia: <strong>${data.motivo}</strong>`,
+            color: "#9333ea" // Purple for trust contact emergency
+        });
+        Haptics.impact({ style: ImpactStyle.Heavy });
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(err => console.log("Audio play blocked by browser"));
+    };
+
     window.addEventListener('app-nueva-alerta', handleNuevaAlerta);
     window.addEventListener('app-alerta-asumida', handleNuevaAlerta);
     window.addEventListener('app-alerta-cerrada', handleNuevaAlerta);
+    window.addEventListener('app-nueva-invitacion', handleInvitacion);
+    window.addEventListener('app-alerta-confianza', handleAlertaConfianza);
     return () => {
       window.removeEventListener('app-nueva-alerta', handleNuevaAlerta);
       window.removeEventListener('app-alerta-asumida', handleNuevaAlerta);
       window.removeEventListener('app-alerta-cerrada', handleNuevaAlerta);
+      window.removeEventListener('app-nueva-invitacion', handleInvitacion);
+      window.removeEventListener('app-alerta-confianza', handleAlertaConfianza);
     };
   }, []);
 
