@@ -21,6 +21,7 @@ import {
 
 import { wsService } from "../services/wsService";
 import { obtenerUbicacion, iniciarSeguimientoGPS } from "../services/gpsService";
+
 import ModalCierre from "../components/ModalCierre";
 import MapaGuardia from "../components/MapaGuardia";
 
@@ -305,16 +306,16 @@ wsService.on("ubicacion_guardia", (data) => {
       }
       await asumirAlerta(alerta.id, decoded.sub || "", decoded.nombre || "");
       rastreoGuardiaRef.current = iniciarSeguimientoGPS(
-  (pos) => {
-    wsService.send({
-      tipo: "ubicacion_guardia",
-      alertaId: alerta.id,
-      latitud: pos.latitud,
-      longitud: pos.longitud
-    });
-  },
-  (err) => console.warn("GPS guardia error:", err)
-);
+        (pos) => {
+          wsService.send({
+            tipo: "ubicacion_guardia",
+            alertaId: alerta.id,
+            latitud: pos.latitud,
+            longitud: pos.longitud
+          });
+        },
+        (err) => console.warn("GPS guardia error:", err)
+      );
     } catch (err: any) {
       console.error(err);
       const status = err?.response?.status;

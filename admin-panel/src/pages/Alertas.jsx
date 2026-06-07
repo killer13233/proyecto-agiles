@@ -102,6 +102,8 @@ const Alertas = () => {
   const [alertaFocusada, setAlertaFocusada] = useState(null);
   const [focusKey, setFocusKey] = useState(0);
   const [resizeKey, setResizeKey] = useState(0);
+  const [ubicacionesUsuarios, setUbicacionesUsuarios] = useState({});
+  const [ubicacionesGuardias, setUbicacionesGuardias] = useState({});
 
   const [panelVisible, setPanelVisible] = useState(true);
 
@@ -153,6 +155,18 @@ const Alertas = () => {
     setDisponibilidadGuardias(prev => ({ 
       ...prev, 
       [String(data.guardiaId)]: data.disponible 
+    }));
+  });
+  adminWsService.on('ubicacion_guardia', (data) => {
+    setUbicacionesGuardias(prev => ({
+      ...prev,
+      [String(data.guardiaId)]: { latitud: data.latitud, longitud: data.longitud, alertaId: data.alertaId }
+    }));
+  });
+  adminWsService.on('ubicacion_usuario', (data) => {
+    setUbicacionesUsuarios(prev => ({
+      ...prev,
+      [String(data.usuarioId)]: { latitud: data.latitud, longitud: data.longitud, alertaId: data.alertaId }
     }));
   });
 }, []);
@@ -208,6 +222,16 @@ const Alertas = () => {
     );
   }
 
+  const usuarioVivoIcon = new L.DivIcon({
+    className: '',
+    html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(239,68,68,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);animation:pulse 1s infinite;">🆘</div>`,
+    iconSize: [40, 40], iconAnchor: [20, 20],
+  });
+  const guardiaVivoIcon = new L.DivIcon({
+    className: '',
+    html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(59,130,246,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🚔</div>`,
+    iconSize: [40, 40], iconAnchor: [20, 20],
+  });
   return (
     <div className="alertas-mapa-root">
 
@@ -262,6 +286,16 @@ const Alertas = () => {
                   <p><strong>Estado:</strong> {alerta.estado}</p>
                 </div>
               </Popup>
+            </Marker>
+          ))}
+          {Object.entries(ubicacionesUsuarios).map(([userId, pos]) => (
+            <Marker key={`u-live-${userId}`} position={[pos.latitud, pos.longitud]} icon={usuarioVivoIcon}>
+              <Popup><strong>🆘 Usuario en peligro</strong><br/>Alerta #{pos.alertaId}</Popup>
+            </Marker>
+          ))}
+          {Object.entries(ubicacionesGuardias).map(([guardiaId, pos]) => (
+            <Marker key={`g-live-${guardiaId}`} position={[pos.latitud, pos.longitud]} icon={guardiaVivoIcon}>
+              <Popup><strong>🚔 Guardia en camino</strong><br/>Alerta #{pos.alertaId}</Popup>
             </Marker>
           ))}
         </MapContainer>
