@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getCamaras } from '../services/zonasService';
+import { getCamaras, eliminarCamara } from '../services/zonasService';
 import './MapaZonas.css';
 
 // Fix para los iconos de Leaflet
@@ -18,14 +18,18 @@ const MapaZonas = ({
    zonaSeleccionada = null, 
    onZonaClick = null,
    onMapClick = null,
+   onCameraClick = null,
    center = [-1.269451, -78.623277],
-    zoom = 18,
+   zoom = 17,
    bounds = [
      [-1.260, -78.640],  // Suroeste amplio
      [-1.220, -78.600]   // Noreste amplio
    ],
-   modoCreacion = false  // Nuevo prop para modo de creación
- }) => {
+   modoCreacion = false,
+    modoCamara = false,
+    camaraRefreshKey = 0,
+    onCamaraEliminada = null
+  }) => {
 
 
   const [mapReady, setMapReady] = useState(false);
@@ -40,7 +44,7 @@ const MapaZonas = ({
       }
     };
     fetchCamaras();
-  }, []);
+  }, [camaraRefreshKey]);
 
   // Componente interno para manejar eventos del mapa
   const MapEvents = () => {
@@ -48,9 +52,14 @@ const MapaZonas = ({
 
     useMapEvents({
       click (e) {
+        const { lat, lng } = e.latlng;
+
+        if (modoCamara && onCameraClick) {
+          onCameraClick(lat, lng);
+          return;
+        }
+
         if (modoCreacion) {
-          const { lat, lng } = e.latlng;
-          
           setTempVertices(prev => {
             const newVertices = [...prev, [lng, lat]];
             
@@ -98,9 +107,27 @@ const MapaZonas = ({
     return () => clearTimeout(timer);
   }, []);
 
+  const CameraPane = () => {
+    const map = useMap();
+    useEffect(() => {
+      const pane = map.createPane('cameraPane');
+      pane.style.zIndex = '650';
+    }, [map]);
+    return null;
+  };
+
   const handlePolygonClick = (zona) => {
     if (onZonaClick) {
       onZonaClick(zona);
+    }
+  };
+
+  const handleEliminarCamara = async (camara) => {
+    if (!window.confirm(`¿Eliminar cámara "${camara.nombre}"?`)) return;
+    const result = await eliminarCamara(camara.id);
+    if (result.success) {
+      setCamaras(prev => prev.filter(c => c.id !== camara.id));
+      if (onCamaraEliminada) onCamaraEliminada(camara.id);
     }
   };
 
@@ -120,6 +147,11 @@ const MapaZonas = ({
           <span>📍 Haz click en el mapa para marcar los vértices. Haz click en el primer punto para cerrar la zona.</span>
         </div>
       )}
+      {modoCamara && (
+        <div className="modo-creacion-indicator" style={{ background: 'rgba(37, 99, 235, 0.9)' }}>
+          <span>📷 Haz click en el mapa dentro de una zona para añadir una cámara</span>
+        </div>
+      )}
         <MapContainer
           center={center}
           zoom={zoom}
@@ -128,6 +160,7 @@ const MapaZonas = ({
           ref={mapRef}
         >
 
+         <CameraPane />
          <MapEvents />
          <TileLayer
 
@@ -136,22 +169,6 @@ const MapaZonas = ({
           maxZoom={21}
         />
         
-        {camaras.map(camara => (
-          <CircleMarker
-            key={camara.id}
-            center={[camara.latitud, camara.longitud]}
-            radius={3}
-            pathOptions={{ color: '#1a1a2e', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }}
-          >
-            <Popup>
-              <div className="popup-content">
-                <h4>{camara.nombre}</h4>
-                <p><strong>Facultad:</strong> {camara.facultad}</p>
-                <p><strong>Posición:</strong> {camara.posicion}</p>
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
         {zonas.map(zona => {
           // Convertir GeoJSON [lon, lat] a formato Leaflet [lat, lon]
           let vertices = [];
@@ -176,25 +193,45 @@ const MapaZonas = ({
             <Polygon
               key={zona.id}
               positions={vertices}
+              interactive={!modoCamara}
               pathOptions={{
                 color: zona.color || (zona.estado === 'Activa' ? '#10b981' : '#ef4444'),
                 fillColor: zona.color || (zona.estado === 'Activa' ? '#10b981' : '#ef4444'),
-                fillOpacity: 0.3,
-                weight: 2
+                fillOpacity: modoCamara ? 0.1 : 0.3,
+                weight: modoCamara ? 1 : 2
               }}
-              eventHandlers={{
+              eventHandlers={!modoCamara ? {
                 click: () => handlePolygonClick(zona)
-              }}
+              } : {}}
             >
-              <Popup>
-                <div className="popup-content">
-                  <h4>{zona.nombre}</h4>
-                  <p><strong>Estado:</strong> {zona.estado || 'Activa'}</p>
-                </div>
-              </Popup>
             </Polygon>
           );
         })}
+        {camaras.map(camara => (
+          <CircleMarker
+            key={camara.id}
+            center={[camara.latitud, camara.longitud]}
+            radius={5}
+            pane="cameraPane"
+            bubblingMouseEvents={false}
+            pathOptions={{ color: '#1a1a2e', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Popup>
+              <div className="popup-content">
+                <h4>{camara.nombre}</h4>
+                <p><strong>Facultad:</strong> {camara.facultad}</p>
+                <p><strong>Posición:</strong> {camara.posicion}</p>
+                <button
+                  className="btn btn-eliminar btn-sm"
+                  onClick={() => handleEliminarCamara(camara)}
+                  style={{ marginTop: '0.5rem', width: '100%' }}
+                >
+                  Eliminar cámara
+                </button>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
       </MapContainer>
     </div>
   );

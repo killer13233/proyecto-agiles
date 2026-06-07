@@ -98,7 +98,10 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
   const [camaras, setCamaras] = useState<Camara[]>([]);
 
   useEffect(() => {
-    obtenerCamaras().then(setCamaras).catch(console.error);
+    const fetch = () => obtenerCamaras().then(setCamaras).catch(console.error);
+    fetch();
+    const interval = setInterval(fetch, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const parsePolygon = (poligono: string): [number, number][] => {
@@ -110,9 +113,19 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
     return [];
   };
 
+  const CameraPane = () => {
+    const map = useMap();
+    useEffect(() => {
+      const pane = map.createPane('cameraPane');
+      pane.style.zIndex = '650';
+    }, [map]);
+    return null;
+  };
+
   return (
     <div className="mapa-guardia">
      <MapContainer center={CAMPUS_CENTER} zoom={18} maxZoom={21} style={{ height: '100%', width: '100%' }}>
+  <CameraPane />
   <MapResizer />
   <MapFocusController focusedAlerta={focusedAlerta || null} focusKey={focusKey} />
   <TileLayer
@@ -132,12 +145,14 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
     );
   })}
   {camaras.map(camara => (
-    <CircleMarker
-      key={`c-${camara.id}`}
-      center={[camara.latitud, camara.longitud]}
-      radius={3}
-      pathOptions={{ color: '#1a1a2e', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }}
-    >
+      <CircleMarker
+        key={`c-${camara.id}`}
+        center={[camara.latitud, camara.longitud]}
+        radius={5}
+        pane="cameraPane"
+        bubblingMouseEvents={false}
+        pathOptions={{ color: '#1a1a2e', weight: 2, fillColor: '#ffffff', fillOpacity: 1 }}
+      >
       <Popup>
         <div className="mg-popup">
           <strong>{camara.nombre}</strong>

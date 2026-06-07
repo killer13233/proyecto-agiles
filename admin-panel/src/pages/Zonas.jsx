@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getZonas, crearZona, actualizarZona, eliminarZona, cambiarEstadoZona } from '../services/zonasService';
+import { getZonas, crearZona, actualizarZona, eliminarZona, cambiarEstadoZona, verificarPuntoEnZona, crearCamara } from '../services/zonasService';
 import MapaZonas from '../components/MapaZonas';
 import './Zonas.css';
 
@@ -13,8 +13,14 @@ const Zonas = () => {
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
   const [accionCargando, setAccionCargando] = useState(false);
   const [modoVista, setModoVista] = useState('mapa'); // 'mapa' o 'lista'
-  const [modoCreacion, setModoCreacion] = useState(false); // Nuevo modo de creación fácil
-  const [colorZonaSeleccionada, setColorZonaSeleccionada] = useState('#10b981'); // Color del círculo
+  const [modoCreacion, setModoCreacion] = useState(false);
+  const [modoCamara, setModoCamara] = useState(false);
+  const [camaraKey, setCamaraKey] = useState(0);
+  const [mostrarModalCamara, setMostrarModalCamara] = useState(false);
+  const [coordenadasCamara, setCoordenadasCamara] = useState({ lat: 0, lng: 0 });
+  const [zonaCamara, setZonaCamara] = useState(null);
+  const [formularioCamara, setFormularioCamara] = useState({ nombre: '', facultad: '', posicion: '' });
+  const [colorZonaSeleccionada, setColorZonaSeleccionada] = useState('#10b981');
 
   // Formulario para crear/editar
   const [formulario, setFormulario] = useState({
@@ -63,6 +69,56 @@ const Zonas = () => {
       setError('Error al cargar las zonas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCameraClick = async (lat, lng) => {
+    setZonaSeleccionada(null);
+    setCoordenadasCamara({ lat, lng });
+    const resultado = await verificarPuntoEnZona(lat, lng);
+    if (resultado.success && resultado.data.dentroDelCampus) {
+      const zonaEncontrada = zonas.find(z => z.nombre === resultado.data.zona);
+      if (zonaEncontrada) {
+        setZonaCamara(zonaEncontrada);
+        setFormularioCamara({ nombre: '', facultad: zonaEncontrada.nombre, posicion: '' });
+        setMostrarModalCamara(true);
+      } else {
+        setError('Zona encontrada pero no está en la lista local');
+        setModoCamara(false);
+      }
+    } else {
+      setError('❌ La cámara debe estar dentro de una zona');
+      setModoCamara(false);
+    }
+  };
+
+  const handleCrearCamara = async () => {
+    if (!formularioCamara.nombre) {
+      setError('Por ingresa un nombre para la cámara');
+      return;
+    }
+    setAccionCargando(true);
+    try {
+      const resultado = await crearCamara({
+        nombre: formularioCamara.nombre,
+        facultad: formularioCamara.facultad,
+        posicion: formularioCamara.posicion || 'S/N',
+        latitud: coordenadasCamara.lat,
+        longitud: coordenadasCamara.lng,
+        zonaId: zonaCamara.id
+      });
+      if (resultado.success) {
+        setMostrarModalCamara(false);
+        setModoCamara(false);
+        setCamaraKey(k => k + 1);
+        setError('');
+      } else {
+        setError(resultado.error);
+      }
+    } catch (err) {
+      setError('Error al crear la cámara');
+    } finally {
+      setAccionCargando(false);
     }
   };
 
@@ -247,8 +303,11 @@ const Zonas = () => {
               zonaSeleccionada={zonaSeleccionada}
               onZonaClick={handleZonaClick}
               onMapClick={handleMapClick}
+              onCameraClick={handleCameraClick}
               modoCreacion={modoCreacion}
+              modoCamara={modoCamara}
               colorZona={colorZonaSeleccionada}
+              camaraRefreshKey={camaraKey}
             />
           </div>
           
@@ -273,19 +332,15 @@ const Zonas = () => {
             <div className="creation-controls">
               <button
                 className={`btn ${modoCreacion ? 'btn-crear-activo' : 'btn-crear'}`}
-                onClick={() => setModoCreacion(!modoCreacion)}
+                onClick={() => { setModoCreacion(!modoCreacion); setModoCamara(false); }}
               >
-                {modoCreacion ? '🛑 Cancelar Creación' : '📍 Crear con Click'}
+                {modoCreacion ? '🛑 Cancelar Creación' : '📍 Crear Zona'}
               </button>
               <button
-                className="btn btn-primary"
-                onClick={() => {
-                  resetFormulario();
-                  setMostrarModalCrear(true);
-                  setModoCreacion(false);
-                }}
+                className={`btn ${modoCamara ? 'btn-crear-activo' : 'btn-primary'}`}
+                onClick={() => { setModoCamara(!modoCamara); setModoCreacion(false); }}
               >
-                ➕ Añadir Manual
+                {modoCamara ? '🛑 Cancelar Cámara' : '📷 Añadir Cámara'}
               </button>
             </div>
             <div className="zonas-list">
@@ -582,6 +637,63 @@ const Zonas = () => {
                 disabled={accionCargando}
               >
                 {accionCargando ? 'Actualizando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Cámara */}
+      {mostrarModalCamara && zonaCamara && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>📷 Añadir Cámara</h3>
+              <button className="modal-close" onClick={() => { setMostrarModalCamara(false); setModoCamara(false); }}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Ubicación: {coordenadasCamara.lat.toFixed(6)}, {coordenadasCamara.lng.toFixed(6)}
+              </p>
+              <p style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Zona detectada: <strong>{zonaCamara.nombre}</strong>
+              </p>
+              <div className="form-group">
+                <label>Nombre de la cámara</label>
+                <input
+                  type="text"
+                  value={formularioCamara.nombre}
+                  onChange={(e) => setFormularioCamara({...formularioCamara, nombre: e.target.value})}
+                  placeholder="Ej: FISEI - Bloque 1 Entrada"
+                  className="modal-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Facultad / Área</label>
+                <input
+                  type="text"
+                  value={formularioCamara.facultad}
+                  onChange={(e) => setFormularioCamara({...formularioCamara, facultad: e.target.value})}
+                  className="modal-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Posición (opcional)</label>
+                <input
+                  type="text"
+                  value={formularioCamara.posicion}
+                  onChange={(e) => setFormularioCamara({...formularioCamara, posicion: e.target.value})}
+                  placeholder="Ej: Bloque 1 Inf-Este"
+                  className="modal-input"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-cancelar" onClick={() => { setMostrarModalCamara(false); setModoCamara(false); }}>
+                Cancelar
+              </button>
+              <button className="btn btn-confirmar" onClick={handleCrearCamara} disabled={accionCargando}>
+                {accionCargando ? 'Creando...' : 'Crear Cámara'}
               </button>
             </div>
           </div>

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar";
 import "./PerfilScreen.css";
 
-
 type Props = {
   onIrInicio: () => void;
   onIrAlarma: () => void;
@@ -32,7 +31,8 @@ const PerfilScreen: React.FC<Props> = ({
   user?.rol ||
   (user as any)?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
   "Sin rol";
-  const esEstudiante = rolUsuario.toLowerCase() === "estudiante";
+  const mostrarAlarma = rolUsuario.toLowerCase() === "estudiante" || rolUsuario.toLowerCase() === "docente";
+
   useEffect(() => {
     const cargarToken = () => {
       const value = localStorage.getItem("token");
@@ -76,11 +76,9 @@ const PerfilScreen: React.FC<Props> = ({
               <Avatar nombre="?" />
               <h2>Sesión no válida</h2>
             </div>
-
             <div className="expired-box">
-              🔒 Sesión expirada. Por favor inicie sesión nuevamente.
+              Sesión expirada. Por favor inicie sesión nuevamente.
             </div>
-
             <IonButton expand="block" className="primary-btn" onClick={cerrarSesion}>
               Ir al inicio de sesión
             </IonButton>
@@ -92,80 +90,71 @@ const PerfilScreen: React.FC<Props> = ({
 
   return (
     <IonPage>
-      <IonContent className="profile-bg">
+     <IonContent className="profile-bg" scrollY={true} forceOverscroll={false}>
         <div className="profile-phone">
-          <div className="profile-header">
-            <p className="back" onClick={onIrInicio}>
-            ← Inicio
-            </p>
-            <h2>Mi perfil</h2>
+          <div className="back-section">
+            <p className="back" onClick={onIrInicio}>← Inicio</p>
+          </div>
 
+          <div className="profile-hero">
             <Avatar nombre={user?.nombre || "?"} />
+            <span className={`role-badge ${rolUsuario.toLowerCase()}`}>
+              {rolUsuario}
+            </span>
+            <h2>{user?.nombre}</h2>
+            <p className="profile-email">{user?.email || user?.correo}</p>
+          </div>
 
-            <h3>{user?.nombre}</h3>
-            <p>{user?.email || user?.correo}</p>
-
-        <span className={`role-badge ${rolUsuario.toLowerCase()}`}>
-            {rolUsuario}
-        </span>         
-        </div>
-
-          <div className="info-card">
+          <div className="perfil-card">
             <h4>DATOS PERSONALES</h4>
-
             <div className="row">
               <span>Nombre completo</span>
               <b>{user?.nombre}</b>
             </div>
-
             <div className="row">
               <span>Correo institucional</span>
-             <b>{user?.email || user?.correo || (user as any)?.["email"] || "Sin correo"}</b>
+              <b>{user?.email || user?.correo || "Sin correo"}</b>
             </div>
-
             <div className="row">
               <span>Rol</span>
               <b>{user?.role || user?.rol}</b>
             </div>
-
             <div className="row">
               <span>Estado</span>
               <b className="active">Activo</b>
             </div>
-
             <div className="row">
               <span>Zona asignada</span>
               <b>{user?.zona || "Sin zona"}</b>
             </div>
           </div>
 
-          <div className="info-card">
+          <div className="perfil-card">
             <h4>SESIÓN</h4>
-
             <div className="row">
               <span>Último acceso</span>
               <b>Hoy</b>
             </div>
-
             <div className="row">
               <span>Token expira en</span>
               <b>Activo</b>
             </div>
           </div>
 
-          {esEstudiante && (
-            <IonButton
-              expand="block"
-              className="primary-btn"
-              onClick={onIrAlarma}
-            >
-              Alarma
-            </IonButton>
+          {mostrarAlarma && (
+            <div className="alarma-section">
+              <IonButton expand="block" className="alarma-btn" onClick={onIrAlarma}>
+                <span className="alarma-icon">SOS</span>
+                Enviar Alarma
+              </IonButton>
+            </div>
           )}
 
-            <IonButton expand="block" className="logout-btn" onClick={cerrarSesion}>
-            Cerrar sesión
+          <div className="bottom-actions">
+            <IonButton expand="block" fill="outline" className="logout-btn" onClick={cerrarSesion}>
+              Cerrar sesión
             </IonButton>
+          </div>
         </div>
       </IonContent>
     </IonPage>

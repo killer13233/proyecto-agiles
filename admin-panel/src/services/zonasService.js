@@ -202,6 +202,26 @@ export const eliminarCamara = async (id) => {
   }
 };
 
+// Verificar si un punto está dentro de alguna zona
+export const verificarPuntoEnZona = async (lat, lon) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/zonas/punto`,
+      { params: { lat, lon }, headers: getHeaders() }
+    );
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al verificar punto:', error);
+    return {
+      success: false,
+      error: 'Error al verificar punto en el servidor'
+    };
+  }
+};
+
 // Cambiar estado de zona
 export const cambiarEstadoZona = async (id, nuevoEstado) => {
   try {
