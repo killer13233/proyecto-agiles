@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getCamaras } from '../services/zonasService';
 import './MapaZonas.css';
 
 // Fix para los iconos de Leaflet
@@ -18,7 +19,7 @@ const MapaZonas = ({
    onZonaClick = null,
    onMapClick = null,
    center = [-1.269451, -78.623277],
-   zoom = 17,
+    zoom = 18,
    bounds = [
      [-1.260, -78.640],  // Suroeste amplio
      [-1.220, -78.600]   // Noreste amplio
@@ -28,7 +29,18 @@ const MapaZonas = ({
 
 
   const [mapReady, setMapReady] = useState(false);
+  const [camaras, setCamaras] = useState([]);
   const mapRef = useRef();
+
+  useEffect(() => {
+    const fetchCamaras = async () => {
+      const result = await getCamaras();
+      if (result.success) {
+        setCamaras(result.data);
+      }
+    };
+    fetchCamaras();
+  }, []);
 
   // Componente interno para manejar eventos del mapa
   const MapEvents = () => {
@@ -111,6 +123,7 @@ const MapaZonas = ({
         <MapContainer
           center={center}
           zoom={zoom}
+          maxZoom={21}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >
@@ -120,8 +133,25 @@ const MapaZonas = ({
 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={21}
         />
         
+        {camaras.map(camara => (
+          <CircleMarker
+            key={camara.id}
+            center={[camara.latitud, camara.longitud]}
+            radius={3}
+            pathOptions={{ color: '#1a1a2e', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }}
+          >
+            <Popup>
+              <div className="popup-content">
+                <h4>{camara.nombre}</h4>
+                <p><strong>Facultad:</strong> {camara.facultad}</p>
+                <p><strong>Posición:</strong> {camara.posicion}</p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
         {zonas.map(zona => {
           // Convertir GeoJSON [lon, lat] a formato Leaflet [lat, lon]
           let vertices = [];

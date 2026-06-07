@@ -28,29 +28,12 @@ const Zonas = () => {
   const normalizeZona = (zona) => {
     if (!zona) return null;
 
-    let lat = 0;
-    let lon = 0;
     let poligonoStr = zona.poligono || zona.Poligono || '[]';
-    
-    try {
-      const vertices = JSON.parse(poligonoStr);
-      if (Array.isArray(vertices) && vertices.length > 0) {
-        // Calcular el centroide simple (promedio de vértices)
-        const sum = vertices.reduce((acc, curr) => [acc[0] + curr[0], acc[1] + curr[1]], [0, 0]);
-        lon = sum[0] / vertices.length;
-        lat = sum[1] / vertices.length;
-      }
-    } catch (e) {
-      console.error('Error calculando centro de la zona:', e);
-    }
 
     return {
       ...zona,
       nombre: zona.nombre || zona.Nombre || 'Sin nombre',
       descripcion: zona.descripcion || zona.Descripcion || 'Sin descripción',
-      latitud: zona.latitud || zona.Latitud || lat,
-      longitud: zona.longitud || zona.Longitud || lon,
-      radio: zona.radio || zona.Radio || 200,
       estado: zona.estado || zona.Estado || 'Activa',
       color: zona.color || zona.Color || '#10b981',
       poligono: poligonoStr,
@@ -130,7 +113,7 @@ const Zonas = () => {
       
       if (resultado.success) {
         setZonas(prev => prev.map(z => 
-          z.id === zonaSeleccionada.id ? normalizeZona(resultado.data) : z
+          z.id === zonaSeleccionada.id ? { ...z, ...formulario } : z
         ));
         setMostrarModalEditar(false);
         setZonaSeleccionada(null);
@@ -247,43 +230,6 @@ const Zonas = () => {
 
   return (
     <div className="zonas-container">
-      <div className="zonas-header">
-        <h1>Gestión de Zonas</h1>
-        <div className="zonas-controls">
-          <div className="view-toggle">
-            <button
-              className={`toggle-btn ${modoVista === 'mapa' ? 'active' : ''}`}
-              onClick={() => setModoVista('mapa')}
-            >
-              🗺️ Mapa
-            </button>
-            <button
-              className={`toggle-btn ${modoVista === 'lista' ? 'active' : ''}`}
-              onClick={() => setModoVista('lista')}
-            >
-              📋 Lista
-            </button>
-          </div>
-          <div className="creation-controls">
-            <button
-              className={`btn ${modoCreacion ? 'btn-crear-activo' : 'btn-crear'}`}
-              onClick={() => setModoCreacion(!modoCreacion)}
-            >
-              {modoCreacion ? '🛑 Cancelar Creación' : '📍 Crear con Click'}
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                resetFormulario();
-                setMostrarModalCrear(true);
-                setModoCreacion(false);
-              }}
-            >
-              ➕ Añadir Manual
-            </button>
-          </div>
-        </div>
-      </div>
 
       {error && (
         <div className="error-message">
@@ -309,6 +255,38 @@ const Zonas = () => {
           <div className="zonas-panel">
             <div className="zonas-panel-header">
               <h3>Zonas Definidas</h3>
+              <div className="view-toggle">
+                <button
+                  className={`toggle-btn ${modoVista === 'mapa' ? 'active' : ''}`}
+                  onClick={() => setModoVista('mapa')}
+                >
+                  🗺️ Mapa
+                </button>
+                <button
+                  className={`toggle-btn ${modoVista === 'lista' ? 'active' : ''}`}
+                  onClick={() => setModoVista('lista')}
+                >
+                  📋 Lista
+                </button>
+              </div>
+            </div>
+            <div className="creation-controls">
+              <button
+                className={`btn ${modoCreacion ? 'btn-crear-activo' : 'btn-crear'}`}
+                onClick={() => setModoCreacion(!modoCreacion)}
+              >
+                {modoCreacion ? '🛑 Cancelar Creación' : '📍 Crear con Click'}
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  resetFormulario();
+                  setMostrarModalCrear(true);
+                  setModoCreacion(false);
+                }}
+              >
+                ➕ Añadir Manual
+              </button>
             </div>
             <div className="zonas-list">
               {zonas.map(zona => (
@@ -335,8 +313,6 @@ const Zonas = () => {
               <div className="zona-seleccionada-info">
                 <h4>{zonaSeleccionada.nombre}</h4>
                  <p><strong>Descripción:</strong> {zonaSeleccionada.descripcion || 'Sin descripción'}</p>
-                 <p><strong>Coordenadas:</strong> {zonaSeleccionada.latitud?.toFixed(6) || '0.000000'}, {zonaSeleccionada.longitud?.toFixed(6) || '0.000000'}</p>
-                 <p><strong>Radio:</strong> {zonaSeleccionada.radio || 0}m</p>
                  <p><strong>Estado:</strong> 
                    <span className={`badge ${zonaSeleccionada.estado === 'Activa' ? 'badge-activo' : 'badge-inactivo'}`}>
                      {zonaSeleccionada.estado || 'Activa'}
@@ -385,6 +361,20 @@ const Zonas = () => {
       {/* Vista de Lista */}
       {modoVista === 'lista' && (
         <div className="lista-zonas">
+          <div className="view-toggle list-view-toggle">
+            <button
+              className={`toggle-btn ${modoVista === 'mapa' ? 'active' : ''}`}
+              onClick={() => setModoVista('mapa')}
+            >
+              🗺️ Mapa
+            </button>
+            <button
+              className={`toggle-btn ${modoVista === 'lista' ? 'active' : ''}`}
+              onClick={() => setModoVista('lista')}
+            >
+              📋 Lista
+            </button>
+          </div>
           <div className="zonas-grid">
             {zonas.map(zona => (
               <div key={zona.id} className="zona-card">
@@ -442,61 +432,16 @@ const Zonas = () => {
               </button>
             </div>
             <div className="modal-body">
-               <div className="form-group">
-                 <label>Nombre de la Zona</label>
-                 <input
-                   type="text"
-                   value={formulario.nombre}
-                   onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-                   placeholder="Ej: Zona A - Facultad de Ingeniería"
-                   className="modal-input"
-                 />
-               </div>
-               <div className="form-group">
-                 <label>Descripción</label>
-                 <textarea
-                   value={formulario.descripcion}
-                   onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
-                   placeholder="Describe el área que cubre esta zona..."
-                   className="modal-textarea"
-                   rows="3"
-                 />
-               </div>
-               <div className="form-group">
-                 <label>Estado</label>
-                 <select
-                   value={formulario.estado}
-                   onChange={(e) => setFormulario({...formulario, estado: e.target.value})}
-                   className="modal-select"
-                 >
-                   <option value="Activa">Activa</option>
-                   <option value="Inactiva">Inactiva</option>
-                 </select>
-               </div>
-
-               <div className="form-group">
-                 <label>Color de la Zona</label>
-                 <div className="color-options-modal">
-                   {[
-                     { color: '#10b981', label: 'Verde' },
-                     { color: '#ef4444', label: 'Rojo' },
-                     { color: '#2563eb', label: 'Azul' },
-                     { color: '#f59e0b', label: 'Amarillo' },
-                     { color: '#8b5cf6', label: 'Morado' },
-                     { color: '#6b7280', label: 'Gris' },
-                   ].map(opt => (
-                     <div 
-                       key={opt.color}
-                       className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
-                       onClick={() => setFormulario({...formulario, color: opt.color})}
-                       title={opt.label}
-                       style={{ backgroundColor: opt.color }}
-                     />
-                   ))}
-                 </div>
-               </div>
-
-
+              <div className="form-group">
+                <label>Nombre de la Zona</label>
+                <input
+                  type="text"
+                  value={formulario.nombre}
+                  onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
+                  placeholder="Ej: Zona A - Facultad de Ingeniería"
+                  className="modal-input"
+                />
+              </div>
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea
@@ -506,51 +451,6 @@ const Zonas = () => {
                   className="modal-textarea"
                   rows="3"
                 />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Latitud</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      value={formulario.latitud}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setFormulario({...formulario, latitud: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
-                </div>
-                <div className="form-group">
-                  <label>Longitud</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      value={formulario.longitud}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setFormulario({...formulario, longitud: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Radio (metros)</label>
-                    <input
-                      type="number"
-                      min="50"
-                      max="1000"
-                      value={formulario.radio}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setFormulario({...formulario, radio: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
               </div>
               <div className="form-group">
                 <label>Estado</label>
@@ -562,6 +462,27 @@ const Zonas = () => {
                   <option value="Activa">Activa</option>
                   <option value="Inactiva">Inactiva</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label>Color de la Zona</label>
+                <div className="color-options-modal">
+                  {[
+                    { color: '#10b981', label: 'Verde' },
+                    { color: '#ef4444', label: 'Rojo' },
+                    { color: '#2563eb', label: 'Azul' },
+                    { color: '#f59e0b', label: 'Amarillo' },
+                    { color: '#8b5cf6', label: 'Morado' },
+                    { color: '#6b7280', label: 'Gris' },
+                  ].map(opt => (
+                    <div 
+                      key={opt.color}
+                      className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
+                      onClick={() => setFormulario({...formulario, color: opt.color})}
+                      title={opt.label}
+                      style={{ backgroundColor: opt.color }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             <div className="modal-footer">
@@ -597,59 +518,15 @@ const Zonas = () => {
               </button>
             </div>
             <div className="modal-body">
-               <div className="form-group">
-                 <label>Nombre de la Zona</label>
-                 <input
-                   type="text"
-                   value={formulario.nombre}
-                   onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
-                   className="modal-input"
-                 />
-               </div>
-               <div className="form-group">
-                 <label>Descripción</label>
-                 <textarea
-                   value={formulario.descripcion}
-                   onChange={(e) => setFormulario({...formulario, descripcion: e.target.value})}
-                   className="modal-textarea"
-                   rows="3"
-                 />
-               </div>
-               <div className="form-group">
-                 <label>Estado</label>
-                 <select
-                   value={formulario.estado}
-                   onChange={(e) => setFormulario({...formulario, estado: e.target.value})}
-                   className="modal-select"
-                 >
-                   <option value="Activa">Activa</option>
-                   <option value="Inactiva">Inactiva</option>
-                 </select>
-               </div>
-
-               <div className="form-group">
-                 <label>Color de la Zona</label>
-                 <div className="color-options-modal">
-                   {[
-                     { color: '#10b981', label: 'Verde' },
-                     { color: '#ef4444', label: 'Rojo' },
-                     { color: '#2563eb', label: 'Azul' },
-                     { color: '#f59e0b', label: 'Amarillo' },
-                     { color: '#8b5cf6', label: 'Morado' },
-                     { color: '#6b7280', label: 'Gris' },
-                   ].map(opt => (
-                     <div 
-                       key={opt.color}
-                       className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
-                       onClick={() => setFormulario({...formulario, color: opt.color})}
-                       title={opt.label}
-                       style={{ backgroundColor: opt.color }}
-                     />
-                   ))}
-                 </div>
-               </div>
-
-
+              <div className="form-group">
+                <label>Nombre de la Zona</label>
+                <input
+                  type="text"
+                  value={formulario.nombre}
+                  onChange={(e) => setFormulario({...formulario, nombre: e.target.value})}
+                  className="modal-input"
+                />
+              </div>
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea
@@ -658,51 +535,6 @@ const Zonas = () => {
                   className="modal-textarea"
                   rows="3"
                 />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Latitud</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      value={formulario.latitud}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setFormulario({...formulario, latitud: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
-                </div>
-                <div className="form-group">
-                  <label>Longitud</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      value={formulario.longitud}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setFormulario({...formulario, longitud: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Radio (metros)</label>
-                    <input
-                      type="number"
-                      min="50"
-                      max="1000"
-                      value={formulario.radio}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setFormulario({...formulario, radio: isNaN(val) ? 0 : val});
-                      }}
-                      className="modal-input"
-                    />
-
               </div>
               <div className="form-group">
                 <label>Estado</label>
@@ -714,6 +546,27 @@ const Zonas = () => {
                   <option value="Activa">Activa</option>
                   <option value="Inactiva">Inactiva</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label>Color de la Zona</label>
+                <div className="color-options-modal">
+                  {[
+                    { color: '#10b981', label: 'Verde' },
+                    { color: '#ef4444', label: 'Rojo' },
+                    { color: '#2563eb', label: 'Azul' },
+                    { color: '#f59e0b', label: 'Amarillo' },
+                    { color: '#8b5cf6', label: 'Morado' },
+                    { color: '#6b7280', label: 'Gris' },
+                  ].map(opt => (
+                    <div 
+                      key={opt.color}
+                      className={`color-option-modal ${formulario.color === opt.color ? 'selected' : ''}`}
+                      onClick={() => setFormulario({...formulario, color: opt.color})}
+                      title={opt.label}
+                      style={{ backgroundColor: opt.color }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             <div className="modal-footer">

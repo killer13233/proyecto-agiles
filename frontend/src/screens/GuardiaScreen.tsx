@@ -133,6 +133,13 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      cargarZonas();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   const cargarUsuario = async (): Promise<TokenData | null> => {
     const token = localStorage.getItem("token") || "";
     if (token) {
@@ -509,6 +516,25 @@ wsService.on("ubicacion_guardia", (data) => {
                   <span className="da-value">{new Date(detalleAlerta.asumidaEn).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" })}</span>
                 </div>
               )}
+              <div className="da-divider" />
+              <div className="da-row">
+                <span className="da-label">Cámaras cercanas</span>
+                <span className="da-value">
+                  {(() => {
+                    let camaras: any[] = [];
+                    try { camaras = JSON.parse(detalleAlerta.camarasCercanas || "[]"); } catch {}
+                    return camaras.length === 0 ? <em>Sin cámaras cercanas</em> : (
+                      <ol style={{ margin: 0, paddingLeft: '1rem' }}>
+                        {camaras.map((c, i) => (
+                          <li key={i} style={{ fontSize: '0.8rem', marginBottom: '0.15rem' }}>
+                            {c.nombre} — <em>{c.distanciaMetros.toFixed(1)}m</em>
+                          </li>
+                        ))}
+                      </ol>
+                    );
+                  })()}
+                </span>
+              </div>
               <div className="da-divider" />
               <div className="da-row">
                 <span className="da-label">Guardias</span>

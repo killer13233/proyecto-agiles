@@ -6,7 +6,9 @@ const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090';
 export interface Zona {
   id: number;
   nombre: string;
+  descripcion?: string;
   color: string;
+  estado?: string;
   poligono: string;
 }
 
@@ -24,6 +26,29 @@ export const obtenerZonas = async (): Promise<Zona[]> => {
     return response.data;
   } catch (error) {
     console.error('Error obteniendo zonas:', error);
+    return [];
+  }
+};
+
+export interface Camara {
+  id: number;
+  nombre: string;
+  facultad: string;
+  posicion: string;
+  latitud: number;
+  longitud: number;
+  zonaId: number | null;
+}
+
+export const obtenerCamaras = async (): Promise<Camara[]> => {
+  try {
+    const response = await axios.get<Camara[]>(
+      `${API_GATEWAY_URL}/api/zonas/camaras`,
+      { timeout: 5000 }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo cámaras:', error);
     return [];
   }
 };

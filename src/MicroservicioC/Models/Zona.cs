@@ -7,15 +7,18 @@ namespace MicroservicioC.Models;
 public class Zona
 {
     public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;   // "Zona A — Ingeniería"
-    public string Color { get; set; } = "#3388ff";        // color hex para el mapa
-    public string Poligono { get; set; } = "[]";          // JSON de coordenadas [[lon,lat],...]
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public string Color { get; set; } = "#3388ff";
+    public string Poligono { get; set; } = "[]";
+    public string Estado { get; set; } = "Activa";
     public DateTime CreadaEn { get; set; } = DateTime.UtcNow;
     public DateTime ActualizadaEn { get; set; } = DateTime.UtcNow;
 }
 
 // ── DTOs ───────────────────────────────────────────────────────────────────
-public record CrearZonaRequest(string Nombre, string Color, string Poligono);
-public record ActualizarZonaRequest(string Nombre, string Color, string Poligono);
-public record ZonaDto(int Id, string Nombre, string Color, string Poligono);
+public record CrearZonaRequest(string Nombre, string Descripcion, string Color, string Estado, string Poligono);
+public record ActualizarZonaRequest(string Nombre, string Descripcion, string Color, string Estado, string Poligono);
+public record ZonaDto(int Id, string Nombre, string Descripcion, string Color, string Estado, string Poligono);
 public record PuntoEnZonaResponse(string Zona, bool DentroDelCampus);
+public record CambiarEstadoRequest(string Estado);

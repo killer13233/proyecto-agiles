@@ -83,6 +83,8 @@ const MapaScreen: React.FC = () => {
     };
 
     cargarZonas();
+    const interval = setInterval(cargarZonas, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -261,7 +263,7 @@ const MapaScreen: React.FC = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {zonas.map((zona: ZonaBackend) => {
+              {zonas.filter((z: ZonaBackend) => z.estado !== 'Inactiva').map((zona: ZonaBackend) => {
                 const vertices = parsePolygon(zona.poligono);
                 if (vertices.length === 0) return null;
 

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getAlertas, asignarAlerta } from '../services/alertasService';
-import { getZonas } from '../services/zonasService';
+import { getZonas, getCamaras } from '../services/zonasService';
 import { getGuardias } from '../services/usuariosService';
 import { adminWsService } from '../services/wsService';
 import './Alertas.css';
@@ -74,6 +74,14 @@ const extraerGuardiasIds = (raw) => {
   } catch { return []; }
 };
 
+const parseCamarasCercanas = (raw) => {
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+};
+
 const parsePolygon = (poligono) => {
   try {
     const parsed = JSON.parse(poligono || '[]');
@@ -86,6 +94,7 @@ const parsePolygon = (poligono) => {
 const Alertas = () => {
   const [alertas, setAlertas] = useState([]);
   const [zonas, setZonas] = useState([]);
+  const [camaras, setCamaras] = useState([]);
   const [guardias, setGuardias] = useState([]);
   const [disponibilidadGuardias, setDisponibilidadGuardias] = useState({});
   const [loading, setLoading] = useState(true);
@@ -105,14 +114,16 @@ const Alertas = () => {
     if (!silencioso) setLoading(true);
     setError('');
     try {
-      const [resAlertas, resZonas, resGuardias] = await Promise.all([
+      const [resAlertas, resZonas, resGuardias, resCamaras] = await Promise.all([
         getAlertas({}),
         getZonas(),
         getGuardias(),
+        getCamaras(),
       ]);
       if (resAlertas.success) setAlertas(Array.isArray(resAlertas.data) ? resAlertas.data : []);
       if (resZonas.success) setZonas(Array.isArray(resZonas.data) ? resZonas.data : []);
       if (resGuardias.success) setGuardias(Array.isArray(resGuardias.data) ? resGuardias.data : []);
+      if (resCamaras.success) setCamaras(Array.isArray(resCamaras.data) ? resCamaras.data : []);
     } catch {
       setError('Error al cargar datos');
     } finally {
@@ -211,7 +222,7 @@ const Alertas = () => {
             maxNativeZoom={19}
             maxZoom={21}
           />
-          {zonas.map(zona => {
+          {zonas.filter(z => z.estado !== 'Inactiva').map(zona => {
             const vertices = parsePolygon(zona.poligono);
             if (!vertices.length) return null;
             const color = zona.color || '#2ed573';
@@ -221,6 +232,21 @@ const Alertas = () => {
               </Polygon>
             );
           })}
+          {camaras.map(camara => (
+            <CircleMarker
+              key={`cam-${camara.id}`}
+              center={[camara.latitud, camara.longitud]}
+              radius={3}
+              pathOptions={{ color: '#1a1a2e', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }}
+            >
+              <Popup>
+                <div className="popup-content">
+                  <strong>{camara.nombre}</strong><br />
+                  {camara.facultad} - {camara.posicion}
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
           {alertasFiltradas.filter(a => a.latitud && a.longitud).map(alerta => (
             <Marker
               key={`a-${alerta.id}`}
@@ -386,6 +412,19 @@ const Alertas = () => {
                 {alertaSeleccionada.cerradaEn && <p><strong>Fecha cierre:</strong> {formatDate(alertaSeleccionada.cerradaEn)}</p>}
                 {alertaSeleccionada.motivoResolucion && <p><strong>Motivo resolución:</strong> {alertaSeleccionada.motivoResolucion}</p>}
                 {alertaSeleccionada.resolucionDescripcion && <p><strong>Resolución:</strong> {alertaSeleccionada.resolucionDescripcion}</p>}
+                {(() => {
+                  const camaras = parseCamarasCercanas(alertaSeleccionada.camarasCercanas);
+                  return camaras.length > 0 ? (
+                    <div className="camaras-cercanas">
+                      <strong>Cámaras cercanas:</strong>
+                      <ol style={{ margin: '0.25rem 0 0 1.25rem', padding: 0, fontSize: '0.85rem' }}>
+                        {camaras.map((c, i) => (
+                          <li key={i}>{c.nombre} — <em>{c.distanciaMetros.toFixed(1)}m</em></li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
             <div className="modal-footer">

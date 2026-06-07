@@ -54,12 +54,58 @@ public class ZonasController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>PATCH /api/zonas/{id}/estado — cambia estado de una zona</summary>
+    [HttpPatch("{id:int}/estado")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest req)
+    {
+        var ok = await _geo.CambiarEstadoZonaAsync(id, req.Estado);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
     /// <summary>DELETE /api/zonas/3</summary>
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Eliminar(int id)
     {
         var ok = await _geo.EliminarZonaAsync(id);
+        if (!ok) return NotFound();
+        return NoContent();
+    }
+
+    // ── Cámaras ─────────────────────────────────────────────────────────
+
+    /// <summary>GET /api/zonas/camaras — lista todas las cámaras (opcional ?zonaId=)</summary>
+    [HttpGet("camaras")]
+    public async Task<IActionResult> ListarCamaras([FromQuery] int? zonaId)
+        => Ok(await _geo.ListarCamarasAsync(zonaId));
+
+    /// <summary>GET /api/zonas/{zonaId}/camaras — lista cámaras de una zona</summary>
+    [HttpGet("{zonaId:int}/camaras")]
+    public async Task<IActionResult> ListarCamarasPorZona(int zonaId)
+        => Ok(await _geo.ListarCamarasPorZonaAsync(zonaId));
+
+    /// <summary>GET /api/zonas/camaras/cercanas?lat=X&lon=Y — cámaras más cercanas ordenadas por distancia</summary>
+    [HttpGet("camaras/cercanas")]
+    public async Task<IActionResult> ObtenerCamarasCercanas([FromQuery] double lat, [FromQuery] double lon)
+        => Ok(await _geo.ObtenerCamarasCercanasAsync(lat, lon));
+
+    /// <summary>POST /api/zonas/camaras — crea una nueva cámara</summary>
+    [HttpPost("camaras")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> CrearCamara([FromBody] CrearCamaraRequest req)
+    {
+        var camara = await _geo.CrearCamaraAsync(req);
+        return CreatedAtAction(nameof(ListarCamaras), new { id = camara.Id }, camara);
+    }
+
+    /// <summary>DELETE /api/zonas/camaras/5</summary>
+    [HttpDelete("camaras/{id:int}")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> EliminarCamara(int id)
+    {
+        var ok = await _geo.EliminarCamaraAsync(id);
         if (!ok) return NotFound();
         return NoContent();
     }

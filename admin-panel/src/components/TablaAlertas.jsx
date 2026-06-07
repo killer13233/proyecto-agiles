@@ -89,6 +89,14 @@ const getTipoBadgeClass = (tipo) => {
   };
 
   // Extrae los IDs de guardiasInvolucrados sin importar el formato
+  const parseCamarasCercanas = (raw) => {
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  };
+
   const extraerGuardiasIds = (raw) => {
     if (!raw) return [];
     try {
@@ -373,6 +381,19 @@ const getTipoBadgeClass = (tipo) => {
                 {alertaSeleccionada.cerradaPor && (
                   <p><strong>Cerrada por ID:</strong> {alertaSeleccionada.cerradaPor}</p>
                 )}
+                {(() => {
+                  const camaras = parseCamarasCercanas(alertaSeleccionada.camarasCercanas);
+                  return camaras.length > 0 ? (
+                    <div className="camaras-cercanas" style={{ marginTop: '0.5rem' }}>
+                      <strong>Cámaras cercanas:</strong>
+                      <ol style={{ margin: '0.25rem 0 0 1.25rem', padding: 0, fontSize: '0.85rem' }}>
+                        {camaras.map((c, i) => (
+                          <li key={i}>{c.nombre} — <em>{c.distanciaMetros.toFixed(1)}m</em></li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
             <div className="modal-footer">

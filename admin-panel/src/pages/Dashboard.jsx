@@ -149,6 +149,7 @@ const Dashboard = () => {
   const maxAlertaCount = Math.max(...alertasPorDia.map(d => d.count), 1);
   const tieneAlertas = alertas.total > 0;
   const tieneUsuarios = usuarios.total > 0;
+  const alertasPorDiaConDatos = alertasPorDia.some(d => d.count > 0);
 
   return (
     <div className="dashboard-container">
@@ -182,7 +183,7 @@ const Dashboard = () => {
           <div>estadisticas keys: {Object.keys(estadisticas).join(', ') || '(ninguna)'}</div>
           <div>dashboardData keys: {Object.keys(dashboardData).join(', ') || '(ninguna)'}</div>
           <div style={{ marginTop: '0.25rem', color: 'var(--accent-warning)' }}>
-            {actividades.length > 0 && alertas.nuevasHoy === 0 ? '⚠️ INCONSISTENCIA: hay actividades pero nuevasHoy=0' : ''}
+            {actividades.length > 0 && alertas.total > 0 && alertas.nuevasHoy === 0 ? 'ℹ️ Actividades de días anteriores (nuevas hoy = 0)' : ''}
           </div>
         </div>
       </details>
@@ -255,8 +256,8 @@ const Dashboard = () => {
         {/* 1 - BarChart: Alertas por Día */}
         <div className="chart-card">
           <h3>Alertas por Día</h3>
-          {!tieneAlertas ? (
-            <EmptyChart msg="No hay alertas registradas" />
+          {!alertasPorDiaConDatos ? (
+            <EmptyChart msg={tieneAlertas ? 'Sin alertas en los últimos 7 días' : 'No hay alertas registradas'} />
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={alertasPorDia}>

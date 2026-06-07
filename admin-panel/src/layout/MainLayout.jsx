@@ -13,30 +13,6 @@ const MainLayout = () => {
       <Sidebar collapsed={sidebarCollapsed} onToggle={setSidebarCollapsed} />
       
       <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        {/* Header */}
-        <header className="main-header">
-          <div className="header-content">
-            <div className="header-left">
-              <span className="header-icon">🛡️</span>
-              <div className="header-title">
-                <h1>Sistema de Seguridad UTA</h1>
-                <p>Panel de Administración</p>
-              </div>
-            </div>
-
-            <div className="header-right">
-              <div className="user-info">
-                <span className="user-name">{user?.nombre || 'Usuario'}</span>
-                <span className="user-role">{user?.rol || 'Sin rol'}</span>
-              </div>
-              <div className="user-avatar">
-                {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
         <main className="content-area">
           <Outlet />
         </main>

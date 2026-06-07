@@ -79,6 +79,17 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AlertaDbContext>();
     db.Database.EnsureCreated();
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Alertas' AND COLUMN_NAME = 'CamarasCercanas')
+                ALTER TABLE Alertas ADD CamarasCercanas NVARCHAR(MAX) NOT NULL DEFAULT '[]'
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] No se pudo agregar columna CamarasCercanas: {ex.Message}");
+    }
 }
 
 app.UseCors("UtaPolicy");

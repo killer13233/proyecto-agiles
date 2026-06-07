@@ -12,6 +12,12 @@ public interface IGeoService
     Task<Zona> CrearZonaAsync(CrearZonaRequest req);
     Task<(bool ok, string? error)> ActualizarZonaAsync(int id, ActualizarZonaRequest req);
     Task<bool> EliminarZonaAsync(int id);
+    Task<bool> CambiarEstadoZonaAsync(int id, string estado);
+    Task<IEnumerable<CamaraDto>> ListarCamarasAsync(int? zonaId = null);
+    Task<IEnumerable<CamaraDto>> ListarCamarasPorZonaAsync(int zonaId);
+    Task<IEnumerable<CamaraCercanaDto>> ObtenerCamarasCercanasAsync(double lat, double lon, int maxResultados = 6);
+    Task<Camara> CrearCamaraAsync(CrearCamaraRequest req);
+    Task<bool> EliminarCamaraAsync(int id);
 }
 
 public class GeoService : IGeoService
@@ -72,7 +78,7 @@ public class GeoService : IGeoService
     // ── CRUD Zonas ─────────────────────────────────────────────────────────
     public async Task<IEnumerable<ZonaDto>> ListarZonasAsync()
         => await _db.Zonas
-            .Select(z => new ZonaDto(z.Id, z.Nombre, z.Color, z.Poligono))
+            .Select(z => new ZonaDto(z.Id, z.Nombre, z.Descripcion, z.Color, z.Estado, z.Poligono))
             .ToListAsync();
 
     public async Task<Zona> CrearZonaAsync(CrearZonaRequest req)
@@ -82,9 +88,11 @@ public class GeoService : IGeoService
 
         var zona = new Zona
         {
-            Nombre   = req.Nombre,
-            Color    = req.Color,
-            Poligono = req.Poligono
+            Nombre      = req.Nombre,
+            Descripcion = req.Descripcion ?? "",
+            Color       = req.Color,
+            Estado      = string.IsNullOrEmpty(req.Estado) ? "Activa" : req.Estado,
+            Poligono    = req.Poligono
         };
         _db.Zonas.Add(zona);
         await _db.SaveChangesAsync();
@@ -99,10 +107,12 @@ public class GeoService : IGeoService
         var zona = await _db.Zonas.FindAsync(id);
         if (zona is null) return (false, "Zona no encontrada.");
 
-        zona.Nombre          = req.Nombre;
-        zona.Color           = req.Color;
-        zona.Poligono        = req.Poligono;
-        zona.ActualizadaEn   = DateTime.UtcNow;
+        zona.Nombre        = req.Nombre;
+        zona.Descripcion   = req.Descripcion ?? "";
+        zona.Color         = req.Color;
+        zona.Estado        = string.IsNullOrEmpty(req.Estado) ? "Activa" : req.Estado;
+        zona.Poligono      = req.Poligono;
+        zona.ActualizadaEn = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return (true, null);
@@ -113,6 +123,97 @@ public class GeoService : IGeoService
         var zona = await _db.Zonas.FindAsync(id);
         if (zona is null) return false;
         _db.Zonas.Remove(zona);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> CambiarEstadoZonaAsync(int id, string estado)
+    {
+        var zona = await _db.Zonas.FindAsync(id);
+        if (zona is null) return false;
+        zona.Estado = estado;
+        zona.ActualizadaEn = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // ── Cámaras cercanas ─────────────────────────────────────────────────
+    private static double CalcularDistancia(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
+    }
+
+    public async Task<IEnumerable<CamaraCercanaDto>> ObtenerCamarasCercanasAsync(double lat, double lon, int maxResultados = 6)
+    {
+        var camaras = await _db.Camaras.ToListAsync();
+
+        var conDistancia = camaras
+            .Select(c => new CamaraCercanaDto(
+                c.Id, c.Nombre, c.Facultad, c.Posicion,
+                c.Latitud, c.Longitud,
+                Math.Round(CalcularDistancia(lat, lon, c.Latitud, c.Longitud), 1)
+            ))
+            .OrderBy(c => c.DistanciaMetros)
+            .ToList();
+
+        // Intentar radio 50m, si hay menos de 3 expandir a 100m
+        var cercanas = conDistancia.Where(c => c.DistanciaMetros <= 50).Take(maxResultados).ToList();
+        if (cercanas.Count < 3)
+            cercanas = conDistancia.Where(c => c.DistanciaMetros <= 100).Take(maxResultados).ToList();
+        if (cercanas.Count < 3)
+            cercanas = conDistancia.Take(maxResultados).ToList();
+
+        return cercanas;
+    }
+
+    // ── Cámaras ─────────────────────────────────────────────────────────
+    public async Task<IEnumerable<CamaraDto>> ListarCamarasAsync(int? zonaId = null)
+    {
+        var query = _db.Camaras.AsQueryable();
+        if (zonaId.HasValue)
+            query = query.Where(c => c.ZonaId == zonaId.Value);
+
+        return await query
+            .OrderBy(c => c.Nombre)
+            .Select(c => new CamaraDto(
+                c.Id, c.Nombre, c.Facultad, c.Posicion,
+                c.Latitud, c.Longitud, c.ZonaId,
+                c.Zona != null ? c.Zona.Nombre : null
+            ))
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<CamaraDto>> ListarCamarasPorZonaAsync(int zonaId)
+        => await ListarCamarasAsync(zonaId);
+
+    public async Task<Camara> CrearCamaraAsync(CrearCamaraRequest req)
+    {
+        var camara = new Camara
+        {
+            Nombre    = req.Nombre,
+            Facultad  = req.Facultad,
+            Posicion  = req.Posicion,
+            Latitud   = req.Latitud,
+            Longitud  = req.Longitud,
+            ZonaId    = req.ZonaId
+        };
+        _db.Camaras.Add(camara);
+        await _db.SaveChangesAsync();
+        return camara;
+    }
+
+    public async Task<bool> EliminarCamaraAsync(int id)
+    {
+        var camara = await _db.Camaras.FindAsync(id);
+        if (camara is null) return false;
+        _db.Camaras.Remove(camara);
         await _db.SaveChangesAsync();
         return true;
     }

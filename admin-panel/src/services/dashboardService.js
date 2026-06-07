@@ -8,6 +8,28 @@ const getHeaders = () => ({
   'Authorization': `Bearer ${getToken()}`
 });
 
+const toDate = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const isSameUTCDay = (a, b) =>
+  a.getUTCFullYear() === b.getUTCFullYear() &&
+  a.getUTCMonth() === b.getUTCMonth() &&
+  a.getUTCDate() === b.getUTCDate();
+
+const utcToday = () => {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+};
+
+const utcDaysAgo = (n) => {
+  const d = utcToday();
+  d.setUTCDate(d.getUTCDate() - n);
+  return d;
+};
+
 export const getDashboardData = async () => {
   try {
     const results = await Promise.allSettled([
@@ -24,10 +46,6 @@ export const getDashboardData = async () => {
     const alertasRaw = Array.isArray(resAlertas.data?.alertas || resAlertas.data)
       ? (resAlertas.data?.alertas || resAlertas.data) : [];
     const zonas    = resZonas.data?.zonas || resZonas.data || [];
-
-    console.log('[DashboardService] API raw alertas:', resAlertas.data);
-    console.log('[DashboardService] alertas array length:', alertasRaw.length);
-    console.log('[DashboardService] alertasRaw[0] sample:', alertasRaw[0]);
 
     const alertas = alertasRaw;
 
@@ -55,12 +73,11 @@ export const getDashboardData = async () => {
     // ── Alertas por día (últimos 7 días) ──────────────────────────
     const alertasPorDia = [];
     for (let i = 6; i >= 0; i--) {
-      const fecha = new Date();
-      fecha.setDate(fecha.getDate() - i);
-      const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+      const fecha = utcDaysAgo(i);
+      const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', timeZone: 'UTC' });
       const count = alertas.filter(a => {
-        const f = new Date(a.creadaEn || a.CreadaEn);
-        return f.toDateString() === fecha.toDateString();
+        const f = toDate(a.creadaEn || a.CreadaEn);
+        return f && isSameUTCDay(f, fecha);
       }).length;
       alertasPorDia.push({ dia, count });
     }
@@ -70,29 +87,23 @@ export const getDashboardData = async () => {
     let tiempoResolucionMin = null;
     if (alertasResueltas.length > 0) {
       const totalMs = alertasResueltas.reduce((sum, a) => {
-        const creada = new Date(a.creadaEn || a.CreadaEn);
-        const cerrada = new Date(a.cerradaEn || a.CerradaEn);
+        const creada = toDate(a.creadaEn || a.CreadaEn);
+        const cerrada = toDate(a.cerradaEn || a.CerradaEn);
         return sum + (cerrada - creada);
       }, 0);
       tiempoResolucionMin = Math.round(totalMs / alertasResueltas.length / 60000);
     }
 
     // ── Alertas nuevas hoy ────────────────────────────────────────
-    const hoy = new Date().toDateString();
-    console.log('[DashboardService] HOY =', hoy);
-    alertas.forEach((a, i) => {
-      const raw = a.creadaEn ?? a.CreadaEn;
-      const f = new Date(raw);
-      console.log(`  alerta[${i}]: creadaEn=${JSON.stringify(raw)}, parsed=${f}, toDateStr=${f.toDateString()}, match=${f.toDateString() === hoy}`);
-    });
+    const hoy = utcToday();
     const nuevasHoy = alertas.filter(a => {
-      const f = new Date(a.creadaEn || a.CreadaEn);
-      return f.toDateString() === hoy;
+      const f = toDate(a.creadaEn || a.CreadaEn);
+      return f && isSameUTCDay(f, hoy);
     }).length;
 
     const resueltasHoy = alertas.filter(a => {
-      const f = new Date(a.cerradaEn || a.CerradaEn);
-      return f.toDateString() === hoy;
+      const f = toDate(a.cerradaEn || a.CerradaEn);
+      return f && isSameUTCDay(f, hoy);
     }).length;
 
     return {
@@ -110,7 +121,7 @@ export const getDashboardData = async () => {
           activas:   alertas.filter(a => a.estado === 'Activa'   || a.Estado === 'Activa').length,
           asignadas: alertas.filter(a => a.estado === 'Asumida'  || a.Estado === 'Asumida').length,
           cerradas:  alertas.filter(a => a.estado === 'Cerrada'  || a.Estado === 'Cerrada').length,
-          criticas:  0,
+          criticas:  alertas.filter(a => (a.prioridad || a.Prioridad) === 'Crítica').length,
           nuevasHoy,
           resueltasHoy,
           tiempoResolucionMin
@@ -164,12 +175,11 @@ export const getAlertasEstadisticas = async (periodo = '7d') => {
 
     const alertasPorDia = [];
     for (let i = 6; i >= 0; i--) {
-      const fecha = new Date();
-      fecha.setDate(fecha.getDate() - i);
-      const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+      const fecha = utcDaysAgo(i);
+      const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', timeZone: 'UTC' });
       const count = alertas.filter(a => {
-        const f = new Date(a.creadaEn || a.CreadaEn);
-        return f.toDateString() === fecha.toDateString();
+        const f = toDate(a.creadaEn || a.CreadaEn);
+        return f && isSameUTCDay(f, fecha);
       }).length;
       alertasPorDia.push({ dia, count });
     }

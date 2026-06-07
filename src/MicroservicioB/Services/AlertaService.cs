@@ -38,6 +38,7 @@ public class AlertaService : IAlertaService
     {
         
         var zona = await ConsultarZonaAsync(req.Latitud, req.Longitud);
+        var camarasCercanas = await ConsultarCamarasCercanasAsync(req.Latitud, req.Longitud);
         var prioridad = req.Motivo switch
 {
     "Arma blanca" => "Crítica",
@@ -48,16 +49,17 @@ public class AlertaService : IAlertaService
 };
         var alerta = new Alerta
 {
-    UsuarioId     = usuarioId,
-    NombreUsuario = nombreUsuario,
-    RolUsuario    = rolUsuario,
-    Motivo        = req.Motivo,
-    Prioridad     = prioridad,
-    Latitud       = req.Latitud,
-    Longitud      = req.Longitud,
-    Zona          = zona,
-    Estado        = EstadoAlerta.Activa,
-    CreadaEn      = DateTime.UtcNow
+    UsuarioId         = usuarioId,
+    NombreUsuario     = nombreUsuario,
+    RolUsuario        = rolUsuario,
+    Motivo            = req.Motivo,
+    Prioridad         = prioridad,
+    Latitud           = req.Latitud,
+    Longitud          = req.Longitud,
+    Zona              = zona,
+    Estado            = EstadoAlerta.Activa,
+    CreadaEn          = DateTime.UtcNow,
+    CamarasCercanas   = camarasCercanas
 };
 
         _db.Alertas.Add(alerta);
@@ -171,12 +173,13 @@ public class AlertaService : IAlertaService
     a.NombreUsuario,
     a.RolUsuario,
     a.Motivo,
-     a.Prioridad,     // ← agregar
+    a.Prioridad,
     a.Latitud,
     a.Longitud,
     a.Zona,
     a.Estado.ToString(),
     a.GuardiasInvolucrados,
+    a.CamarasCercanas,
     a.MotivoResolucion,
     a.ResolucionDescripcion,
     a.CerradaPor,
@@ -190,6 +193,25 @@ public class AlertaService : IAlertaService
     }
 
     // ── Privado ───────────────────────────────────────────────────────────────
+    private async Task<string> ConsultarCamarasCercanasAsync(double lat, double lon)
+    {
+        try
+        {
+            var http = _httpFactory.CreateClient();
+            http.Timeout = TimeSpan.FromSeconds(3);
+            var res = await http.GetAsync(
+                $"{_microCUrl}/api/zonas/camaras/cercanas?lat={lat}&lon={lon}");
+
+            if (res.IsSuccessStatusCode)
+                return await res.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AlertaService] No se pudieron consultar cámaras cercanas: {ex.Message}");
+        }
+        return "[]";
+    }
+
     private async Task<string> ConsultarZonaAsync(double lat, double lon)
     {
         try

@@ -42,8 +42,10 @@ export const crearZona = async (zonaData) => {
   try {
     const payload = {
       nombre: zonaData.nombre,
+      descripcion: zonaData.descripcion || '',
       color: zonaData.color || '#10b981',
-      poligono: zonaData.poligono // Ahora recibe el JSON de coordenadas directamente
+      estado: zonaData.estado || 'Activa',
+      poligono: zonaData.poligono
     };
 
     // Llamar al backend real
@@ -71,8 +73,10 @@ export const actualizarZona = async (id, zonaData) => {
   try {
     const payload = {
       nombre: zonaData.nombre,
+      descripcion: zonaData.descripcion || '',
       color: zonaData.color || '#10b981',
-      poligono: zonaData.poligono // Ahora recibe el JSON de coordenadas directamente
+      estado: zonaData.estado || 'Activa',
+      poligono: zonaData.poligono
     };
 
     // Llamar al backend real
@@ -113,6 +117,87 @@ export const eliminarZona = async (id) => {
     return {
       success: false,
       error: 'Error al eliminar zona del servidor'
+    };
+  }
+};
+
+// Obtener todas las cámaras
+export const getCamaras = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/zonas/camaras`,
+      { headers: getHeaders() }
+    );
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al obtener cámaras:', error);
+    return {
+      success: false,
+      error: 'Error al obtener cámaras del servidor'
+    };
+  }
+};
+
+// Obtener cámaras por zona
+export const getCamarasPorZona = async (id) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/api/zonas/${id}/camaras`,
+      { headers: getHeaders() }
+    );
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al obtener cámaras de la zona:', error);
+    return {
+      success: false,
+      error: 'Error al obtener cámaras de la zona'
+    };
+  }
+};
+
+// Crear cámara
+export const crearCamara = async (camaraData) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/zonas/camaras`,
+      camaraData,
+      { headers: getHeaders() }
+    );
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al crear cámara:', error);
+    return {
+      success: false,
+      error: 'Error al crear cámara en el servidor'
+    };
+  }
+};
+
+// Eliminar cámara
+export const eliminarCamara = async (id) => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE}/api/zonas/camaras/${id}`,
+      { headers: getHeaders() }
+    );
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al eliminar cámara:', error);
+    return {
+      success: false,
+      error: 'Error al eliminar cámara del servidor'
     };
   }
 };

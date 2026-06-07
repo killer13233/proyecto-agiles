@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Camara, obtenerCamaras } from '../services/zonasService';
 import './MapaGuardia.css';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -94,6 +95,12 @@ interface Alerta { id: number; nombreUsuario: string; motivo: string; zona: stri
 const CAMPUS_CENTER: [number, number] = [-1.269451, -78.623277];
 
 const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicacionesGuardias, onAlertaClick, focusedAlerta, focusKey }: MapaGuardiaProps) => {
+  const [camaras, setCamaras] = useState<Camara[]>([]);
+
+  useEffect(() => {
+    obtenerCamaras().then(setCamaras).catch(console.error);
+  }, []);
+
   const parsePolygon = (poligono: string): [number, number][] => {
     try {
       const parsed = JSON.parse(poligono || '[]');
@@ -114,7 +121,7 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
     maxNativeZoom={19}
     maxZoom={21}
   />
-  {zonas.map(zona => {
+  {zonas.filter(z => z.estado !== 'Inactiva').map(zona => {
     const vertices = parsePolygon(zona.poligono);
     if (vertices.length === 0) return null;
     const color = zona.color || '#2ed573';
@@ -124,6 +131,21 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
       </Polygon>
     );
   })}
+  {camaras.map(camara => (
+    <CircleMarker
+      key={`c-${camara.id}`}
+      center={[camara.latitud, camara.longitud]}
+      radius={3}
+      pathOptions={{ color: '#1a1a2e', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }}
+    >
+      <Popup>
+        <div className="mg-popup">
+          <strong>{camara.nombre}</strong>
+          <p>{camara.facultad} - {camara.posicion}</p>
+        </div>
+      </Popup>
+    </CircleMarker>
+  ))}
   {alertas.filter(a => a.latitud && a.longitud).map(alerta => (
     <Marker
       key={`a-${alerta.id}`}

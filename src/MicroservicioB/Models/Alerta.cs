@@ -12,6 +12,7 @@ public class Alerta
     public string Zona { get; set; } = "";
 public EstadoAlerta Estado { get; set; } = EstadoAlerta.Activa;
     public string GuardiasInvolucrados { get; set; } = "[]"; // JSON string
+    public string CamarasCercanas { get; set; } = "[]"; // JSON string [{nombre, distanciaMetros}]
     public string? MotivoResolucion { get; set; }
     public string? ResolucionDescripcion { get; set; }
     public string? CerradaPor { get; set; }
@@ -35,6 +36,7 @@ public record AlertaDto(
     string Zona,
     string Estado,
     string GuardiasInvolucrados,
+    string CamarasCercanas,
     string? MotivoResolucion,
     string? ResolucionDescripcion,
     string? CerradaPor,
@@ -56,6 +58,7 @@ public record AlertaDetalleDto(
     string Zona,
     string Estado,
     List<string> GuardiasInvolucrados,   // deserializado desde el JSON del modelo
+    string CamarasCercanas,
     string? MotivoResolucion,
     string? ResolucionDescripcion,
     string? CerradaPor,
