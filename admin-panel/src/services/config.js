@@ -30,6 +30,19 @@ export const ENDPOINTS = {
     ACTUALIZAR: (id) => `/api/zonas/${id}`,
     ELIMINAR: (id) => `/api/zonas/${id}`,
     DETALLE: (id) => `/api/zonas/${id}`
+  },
+
+  // Microservicio A - Grupos de Confianza
+  GRUPOS_CONFIANZA: {
+    LISTAR: '/api/gruposconfianza',
+    LISTAR_TODOS: '/api/gruposconfianza/todos',
+    CREAR: '/api/gruposconfianza',
+    ACTUALIZAR: (id) => `/api/gruposconfianza/${id}`,
+    ELIMINAR: (id) => `/api/gruposconfianza/${id}`,
+    DETALLE: (id) => `/api/gruposconfianza/${id}`,
+    AGREGAR_MIEMBRO: (grupoId) => `/api/gruposconfianza/${grupoId}/miembros`,
+    QUITAR_MIEMBRO: (grupoId, miembroId) => `/api/gruposconfianza/${grupoId}/miembros/${miembroId}`,
+    BUSCAR_USUARIOS: (grupoId, query) => `/api/gruposconfianza/${grupoId}/buscar-usuarios?q=${encodeURIComponent(query)}`
   }
 };
 

@@ -48,6 +48,7 @@ builder.Services.AddAuthorization();
 // ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IGrupoConfianzaService, GrupoConfianzaService>();
 
 // ─────────────────────────────────────────────────────────────
 // CORS

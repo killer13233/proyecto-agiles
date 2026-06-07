@@ -1,0 +1,654 @@
+/* ═══════════════════════════════════════════════════════════════
+   Grupos de Confianza — Admin Panel
+   Coherente con Usuarios.css (dark theme)
+   ═══════════════════════════════════════════════════════════════ */
+
+.grupos-admin-container {
+  padding: 2rem;
+}
+
+.grupos-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.grupos-admin-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.grupos-admin-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.grupos-admin-search {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  min-width: 300px;
+  transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.grupos-admin-search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+}
+
+/* ── Estadísticas ────────────────────────── */
+.grupos-admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.grupos-stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s;
+}
+
+.grupos-stat-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.grupos-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.grupos-stat-icon.blue {
+  background: rgba(79, 140, 255, 0.15);
+}
+
+.grupos-stat-icon.green {
+  background: rgba(46, 213, 115, 0.15);
+}
+
+.grupos-stat-icon.purple {
+  background: rgba(124, 108, 240, 0.15);
+}
+
+.grupos-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.grupos-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Table ────────────────────────────────── */
+.grupos-table-container {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.grupos-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grupos-admin-table th {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.grupos-admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.grupos-admin-table tbody tr {
+  transition: background 0.15s;
+}
+
+.grupos-admin-table tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+.grupos-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Owner cell ──────────────────────────── */
+.grupos-owner-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.grupos-owner-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.grupos-owner-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ── Members preview ─────────────────────── */
+.grupos-miembros-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.grupos-miembro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border-light);
+}
+
+.grupos-miembro-badge.more {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+/* ── Action buttons ──────────────────────── */
+.grupos-admin-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.grupos-admin-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.grupos-admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.grupos-admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.grupos-admin-btn.ver {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.grupos-admin-btn.ver:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+}
+
+.grupos-admin-btn.editar {
+  background: var(--accent-warning);
+  color: #000;
+}
+
+.grupos-admin-btn.editar:hover:not(:disabled) {
+  background: #e89402;
+}
+
+.grupos-admin-btn.eliminar {
+  background: var(--accent-danger);
+  color: white;
+}
+
+.grupos-admin-btn.eliminar:hover:not(:disabled) {
+  background: #e8404f;
+}
+
+/* ── Modal ────────────────────────────────── */
+.grupos-admin-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: gruposAdminFadeIn 0.2s ease;
+}
+
+@keyframes gruposAdminFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.grupos-admin-modal {
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.grupos-admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.grupos-admin-modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.grupos-admin-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.grupos-admin-modal-close:hover {
+  background: var(--bg-card-hover);
+}
+
+.grupos-admin-modal-body {
+  padding: 1.5rem;
+}
+
+.grupos-admin-modal-body p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+}
+
+.grupos-admin-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+/* ── Form ─────────────────────────────────── */
+.grupos-admin-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.grupos-admin-form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.grupos-admin-input,
+.grupos-admin-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.grupos-admin-input:focus,
+.grupos-admin-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+}
+
+.grupos-admin-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Detail miembros ─────────────────────── */
+.grupos-admin-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.grupos-admin-detail-section h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+}
+
+.grupos-admin-search-area {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.grupos-admin-search-mini {
+  width: 100%;
+  padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.grupos-admin-search-mini:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.grupos-admin-search-area::before {
+  content: '🔍';
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+}
+
+.grupos-admin-result-list {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+.grupos-admin-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.grupos-admin-result-item:hover {
+  background: var(--bg-secondary);
+}
+
+.grupos-admin-result-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.grupos-admin-result-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.grupos-admin-result-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.grupos-admin-result-role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.grupos-admin-add-btn {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.grupos-admin-add-btn:hover {
+  background: var(--accent-primary-hover);
+}
+
+.grupos-admin-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.grupos-admin-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.grupos-admin-member-row:hover {
+  background: var(--bg-secondary);
+}
+
+.grupos-admin-member-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.grupos-admin-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.grupos-admin-member-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.grupos-admin-member-role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.grupos-admin-remove-btn {
+  padding: 0.35rem 0.65rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 71, 87, 0.15);
+  color: var(--accent-danger);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.grupos-admin-remove-btn:hover {
+  background: rgba(255, 71, 87, 0.3);
+}
+
+/* ── Empty & loading ─────────────────────── */
+.grupos-admin-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.grupos-admin-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.grupos-admin-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.grupos-admin-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: gruposAdminSpin 1s linear infinite;
+}
+
+@keyframes gruposAdminSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── Error ────────────────────────────────── */
+.grupos-admin-error {
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 1024px) {
+  .grupos-admin-container {
+    padding: 1rem;
+  }
+
+  .grupos-admin-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grupos-admin-controls {
+    flex-direction: column;
+  }
+
+  .grupos-admin-search {
+    min-width: 100%;
+  }
+
+  .grupos-table-container {
+    overflow-x: auto;
+  }
+
+  .grupos-admin-table {
+    min-width: 700px;
+  }
+
+  .grupos-admin-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .grupos-admin-btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .grupos-admin-container {
+    padding: 0.5rem;
+  }
+
+  .grupos-admin-table th,
+  .grupos-admin-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .grupos-admin-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .grupos-admin-modal-header,
+  .grupos-admin-modal-body,
+  .grupos-admin-modal-footer {
+    padding: 1rem;
+  }
+}

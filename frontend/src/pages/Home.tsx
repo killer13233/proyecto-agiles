@@ -4,6 +4,7 @@ import PerfilScreen from "../screens/PerfilScreen";
 import HomeScreen from "../screens/HomeScreen";
 import GuardiaScreen from "../screens/GuardiaScreen";
 import GuardiaInfoScreen from "../screens/GuardiaInfoScreen";
+import GruposConfianzaScreen from "../screens/GruposConfianzaScreen";
 import NotificacionAlerta from "../components/NotificacionAlerta";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { wsService } from "../services/wsService";
@@ -164,7 +165,11 @@ useEffect(() => {
         <PerfilScreen
           onIrInicio={handleLogout}
           onIrAlarma={() => setPantalla("home")}
+          onIrGrupos={() => setPantalla("grupos-confianza")}
         />
+      )}
+      {pantalla === "grupos-confianza" && (
+        <GruposConfianzaScreen onVolver={() => setPantalla("perfil")} />
       )}
       {pantalla === "home" && <HomeScreen onVerPerfil={() => setPantalla("perfil")} />}
     </>
