@@ -222,4 +222,32 @@
 ion-content.profile-bg::part(scroll) {
   overflow-y: auto !important;
   height: 100% !important;
+}.invitaciones-card {
+  border-left: 4px solid var(--ion-color-warning);
+}
+.invitacion-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.invitacion-row:last-child {
+  border-bottom: none;
+}
+.inv-info {
+  display: flex;
+  flex-direction: column;
+}
+.inv-group-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.inv-owner {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+.inv-actions {
+  display: flex;
+  gap: 8px;
 }

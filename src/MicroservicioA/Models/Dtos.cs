@@ -36,3 +36,47 @@ public record PaginadoResponse<T>(
 
 // ── Error estándar ─────────────────────────────────────────────────────────
 public record ErrorResponse(string Mensaje, string? Detalle = null);
+
+// ── Grupos de Confianza ────────────────────────────────────────────────────
+public record MiembroDto(
+    int Id,
+    int UsuarioId,
+    string Nombre,
+    string Correo,
+    string Rol,
+    string Estado,
+    DateTime AgregadoEn
+);
+
+public record GrupoConfianzaDto(
+    int Id,
+    string Nombre,
+    string? Descripcion,
+    int PropietarioId,
+    string PropietarioNombre,
+    int CantidadMiembros,
+    List<MiembroDto> Miembros,
+    DateTime CreadoEn
+);
+
+public record GrupoConfianzaResumenDto(
+    int Id,
+    string Nombre,
+    string? Descripcion,
+    int PropietarioId,
+    string PropietarioNombre,
+    int CantidadMiembros,
+    List<MiembroDto> MiembrosPreview,
+    DateTime CreadoEn
+);
+
+public record CrearGrupoConfianzaRequest(string Nombre, string? Descripcion);
+public record ActualizarGrupoConfianzaRequest(string Nombre, string? Descripcion);
+public record AgregarMiembroRequest(int UsuarioId);
+
+public record BuscarUsuarioDto(
+    int Id,
+    string Nombre,
+    string Correo,
+    string Rol
+);

@@ -78,18 +78,18 @@ app.UseSwaggerUI(c =>
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AlertaDbContext>();
-    db.Database.EnsureCreated();
+    
     try
     {
-        db.Database.ExecuteSqlRaw(@"
-            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Alertas' AND COLUMN_NAME = 'CamarasCercanas')
-                ALTER TABLE Alertas ADD CamarasCercanas NVARCHAR(MAX) NOT NULL DEFAULT '[]'
-        ");
+        db.Database.ExecuteSqlRaw("SELECT Prioridad FROM Alertas");
     }
-    catch (Exception ex)
+    catch
     {
-        Console.WriteLine($"[DB] No se pudo agregar columna CamarasCercanas: {ex.Message}");
+        Console.WriteLine("[DB] Esquema desactualizado detectado en MS B. Recreando la base de datos...");
+        db.Database.EnsureDeleted();
     }
+
+    db.Database.EnsureCreated();
 }
 
 app.UseCors("UtaPolicy");

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using MicroservicioB.Data;
 using MicroservicioB.Models;
@@ -79,7 +80,46 @@ public class AlertaService : IAlertaService
             camarasCercanas = alerta.CamarasCercanas
         });
 
+        // Notificar a contactos de confianza
+        _ = NotificarContactosDeConfianzaAsync(usuarioId, alerta);
+
         return alerta;
+    }
+
+    private async Task NotificarContactosDeConfianzaAsync(string usuarioId, Alerta alerta)
+    {
+        try
+        {
+            var http = _httpFactory.CreateClient();
+            http.Timeout = TimeSpan.FromSeconds(5);
+            var microAUrl = "http://microservicio-a:8081"; // Obtener de IConfiguration en un caso real
+            
+            var res = await http.GetAsync($"{microAUrl}/api/gruposconfianza/usuario/{usuarioId}/contactos");
+            if (res.IsSuccessStatusCode)
+            {
+                var contactosIds = await res.Content.ReadFromJsonAsync<List<int>>();
+                if (contactosIds != null)
+                {
+                    foreach (var contactoId in contactosIds)
+                    {
+                        await _ws.EnviarAUsuarioAsync(contactoId.ToString(), new
+                        {
+                            tipo = "alerta_confianza",
+                            alertaId = alerta.Id,
+                            nombreUsuario = alerta.NombreUsuario,
+                            motivo = alerta.Motivo,
+                            latitud = alerta.Latitud,
+                            longitud = alerta.Longitud,
+                            creadaEn = alerta.CreadaEn
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AlertaService] No se pudo notificar a contactos de confianza: {ex.Message}");
+        }
     }
 
     public async Task<bool> AsumirAsync(int alertaId, AsumirAlertaRequest req)

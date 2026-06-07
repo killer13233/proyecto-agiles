@@ -14,6 +14,7 @@ const Sidebar = ({ collapsed: controlledCollapsed, onToggle }) => {
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: '📊', roles: ['Administrador', 'Guardia'] },
     { name: 'Usuarios', path: '/usuarios', icon: '👥', roles: ['Administrador'] },
+    { name: 'Grupos', path: '/grupos-confianza', icon: '🤝', roles: ['Administrador'] },
     { name: 'Zonas', path: '/zonas', icon: '📍', roles: ['Administrador', 'Guardia'] },
     { name: 'Alertas', path: '/alertas', icon: '🚨', roles: ['Administrador', 'Guardia', 'Estudiante', 'Docente'] },
   ];

@@ -519,7 +519,7 @@ wsService.on("ubicacion_guardia", (data) => {
               <div className="da-row">
                 <span className="da-label">Creada</span>
                 <span className="da-value">{(() => {
-                  const raw = detalleAlerta.creadaEn || detalleAlerta.CreadaEn;
+                  const raw = detalleAlerta.creadaEn || (detalleAlerta as any).CreadaEn;
                   if (!raw) return 'N/A';
                   const s = raw.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw + 'Z';
                   return new Date(s).toLocaleString("es-EC", { timeZone: "America/Guayaquil", dateStyle: "short", timeStyle: "short" });

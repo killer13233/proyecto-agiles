@@ -8,6 +8,7 @@ import "./PerfilScreen.css";
 type Props = {
   onIrInicio: () => void;
   onIrAlarma: () => void;
+  onIrGrupos?: () => void;
 };
 
 type TokenData = {
@@ -23,6 +24,7 @@ type TokenData = {
 const PerfilScreen: React.FC<Props> = ({
     onIrInicio,
     onIrAlarma,
+    onIrGrupos,
     }) => {
   const [user, setUser] = useState<TokenData | null>(null);
   const [expired, setExpired] = useState(false);
@@ -126,6 +128,15 @@ const PerfilScreen: React.FC<Props> = ({
             <div className="row">
               <span>Zona asignada</span>
               <b>{user?.zona || "Sin zona"}</b>
+            </div>
+          </div>
+
+          {/* Grupos de Confianza */}
+          <div className="perfil-card" style={{ cursor: onIrGrupos ? 'pointer' : 'default' }} onClick={onIrGrupos}>
+            <h4>GRUPOS DE CONFIANZA</h4>
+            <div className="row">
+              <span>🤝 Gestiona tus grupos</span>
+              <b style={{ color: 'var(--app-primary)' }}>→</b>
             </div>
           </div>
 
