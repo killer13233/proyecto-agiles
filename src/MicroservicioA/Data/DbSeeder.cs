@@ -153,13 +153,13 @@ public static class DbSeeder
             PropietarioId = abel.Id,
             Miembros = new List<MiembroGrupoConfianza>
             {
-                new() { UsuarioId = miguel.Id },
-                new() { UsuarioId = camila.Id },
-                new() { UsuarioId = ana.Id },
-                new() { UsuarioId = sheyla.Id },
-                new() { UsuarioId = carlos.Id },
-                new() { UsuarioId = mora.Id },
-                new() { UsuarioId = paredes.Id },
+                new() { UsuarioId = miguel.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = camila.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = ana.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = sheyla.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = carlos.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = mora.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = paredes.Id, Estado = EstadoMiembro.Aceptado },
             }
         };
 
@@ -171,15 +171,15 @@ public static class DbSeeder
             PropietarioId = ana.Id,
             Miembros = new List<MiembroGrupoConfianza>
             {
-                new() { UsuarioId = rosa.Id },
-                new() { UsuarioId = mora.Id },
-                new() { UsuarioId = abel.Id },
-                new() { UsuarioId = sheyla.Id },
-                new() { UsuarioId = carlos.Id },
-                new() { UsuarioId = miguel.Id },
-                new() { UsuarioId = camila.Id },
-                new() { UsuarioId = paredes.Id },
-                new() { UsuarioId = david.Id },
+                new() { UsuarioId = rosa.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = mora.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = abel.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = sheyla.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = carlos.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = miguel.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = camila.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = paredes.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = david.Id, Estado = EstadoMiembro.Aceptado },
             }
         };
 
@@ -191,10 +191,10 @@ public static class DbSeeder
             PropietarioId = carlos.Id,
             Miembros = new List<MiembroGrupoConfianza>
             {
-                new() { UsuarioId = david.Id },
-                new() { UsuarioId = rosa.Id },
-                new() { UsuarioId = abel.Id },
-                new() { UsuarioId = sheyla.Id },
+                new() { UsuarioId = david.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = rosa.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = abel.Id, Estado = EstadoMiembro.Aceptado },
+                new() { UsuarioId = sheyla.Id, Estado = EstadoMiembro.Aceptado },
             }
         };
 

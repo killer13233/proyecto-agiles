@@ -27,6 +27,30 @@ public class GruposConfianzaController : ControllerBase
     }
 
     /// <summary>
+    /// Lista los grupos de confianza a los que pertenece el usuario autenticado.
+    /// GET /api/gruposconfianza/membresias
+    /// </summary>
+    [HttpGet("membresias")]
+    public async Task<IActionResult> ListarMembresias()
+    {
+        var userId = GetUserId();
+        var grupos = await _svc.ListarMembresiasAsync(userId);
+        return Ok(grupos);
+    }
+
+    /// <summary>
+    /// Permite al usuario salirse de un grupo al que pertenece.
+    /// DELETE /api/gruposconfianza/5/salir
+    /// </summary>
+    [HttpDelete("{id:int}/salir")]
+    public async Task<IActionResult> SalirDeGrupo(int id)
+    {
+        var (ok, error) = await _svc.SalirDeGrupoAsync(id, GetUserId());
+        if (!ok) return BadRequest(new ErrorResponse(error!));
+        return NoContent();
+    }
+
+    /// <summary>
     /// Lista TODOS los grupos de confianza. Solo Administradores.
     /// GET /api/gruposconfianza/todos
     /// </summary>

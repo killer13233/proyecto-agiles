@@ -19,6 +19,8 @@ public interface IGrupoConfianzaService
     Task<(bool ok, string? error)> ResponderInvitacionAsync(int grupoId, int userId, bool aceptar);
     Task<List<GrupoConfianzaDto>> ListarInvitacionesPendientesAsync(int userId);
     Task<List<int>> ObtenerContactosConfianzaAsync(int userId);
+    Task<List<GrupoConfianzaResumenDto>> ListarMembresiasAsync(int userId);
+    Task<(bool ok, string? error)> SalirDeGrupoAsync(int grupoId, int userId);
 }
 
     public class GrupoConfianzaService : IGrupoConfianzaService
@@ -49,6 +51,33 @@ public interface IGrupoConfianzaService
             .ToListAsync();
 
         return grupos.Select(MapToResumen).ToList();
+    }
+
+    // ── Listar grupos donde el usuario es miembro (Aceptado) ───────────────
+    public async Task<List<GrupoConfianzaResumenDto>> ListarMembresiasAsync(int userId)
+    {
+        var grupos = await _db.GruposConfianza
+            .Include(g => g.Propietario)
+            .Include(g => g.Miembros)
+                .ThenInclude(m => m.Usuario)
+            .Where(g => g.Miembros.Any(m => m.UsuarioId == userId && m.Estado == EstadoMiembro.Aceptado))
+            .OrderByDescending(g => g.CreadoEn)
+            .ToListAsync();
+
+        return grupos.Select(MapToResumen).ToList();
+    }
+
+    // ── Salir de un grupo ──────────────────────────────────────────────────
+    public async Task<(bool ok, string? error)> SalirDeGrupoAsync(int grupoId, int userId)
+    {
+        var miembro = await _db.MiembrosGrupoConfianza
+            .FirstOrDefaultAsync(m => m.GrupoConfianzaId == grupoId && m.UsuarioId == userId);
+
+        if (miembro is null) return (false, "No eres miembro de este grupo.");
+
+        _db.MiembrosGrupoConfianza.Remove(miembro);
+        await _db.SaveChangesAsync();
+        return (true, null);
     }
 
     // ── Listar todos (solo admin) ──────────────────────────────────────────
