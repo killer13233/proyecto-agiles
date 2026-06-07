@@ -103,8 +103,8 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
     }
   }, []);
 
-  const cargarGrupos = useCallback(async () => {
-    setLoading(true);
+  const cargarGrupos = useCallback(async (silencioso = false) => {
+    if (!silencioso) setLoading(true);
     setError("");
     const res = await listarMisGrupos();
     if (res.success) {
@@ -112,13 +112,19 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
     } else {
       setError(res.error || "Error al cargar grupos");
     }
-    setLoading(false);
+    if (!silencioso) setLoading(false);
   }, []);
 
   useEffect(() => {
     cargarGrupos();
     cargarInvitaciones();
     cargarMembresias();
+    const interval = setInterval(() => {
+      cargarGrupos(true);
+      cargarInvitaciones();
+      cargarMembresias();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [cargarGrupos, cargarInvitaciones, cargarMembresias]);
 
   const handleResponderInv = async (grupoId: number, aceptar: boolean) => {

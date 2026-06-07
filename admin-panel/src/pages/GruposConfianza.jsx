@@ -37,6 +37,8 @@ const GruposConfianza = () => {
   // ── Cargar grupos ───────────────────────────────────────────────────────
   useEffect(() => {
     cargarGrupos();
+    const interval = setInterval(() => cargarGrupos(true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -48,8 +50,8 @@ const GruposConfianza = () => {
     setGruposFiltrados(filtrados);
   }, [busqueda, grupos]);
 
-  const cargarGrupos = async () => {
-    setLoading(true);
+  const cargarGrupos = async (silencioso = false) => {
+    if (!silencioso) setLoading(true);
     setError('');
     try {
       const resultado = await getGruposConfianza();
