@@ -55,29 +55,46 @@ const Home: React.FC = () => {
   }, []);
 
   // ✅ Restaurar sesión si hay token guardado
-  useEffect(() => {
+useEffect(() => {
   const token = localStorage.getItem("token");
   if (token) {
+    // Verificar si el token expiró
+    try {
+      const decoded: any = JSON.parse(atob(token.split('.')[1]));
+      const ahora = Math.floor(Date.now() / 1000);
+      if (decoded.exp && decoded.exp < ahora) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("rol");
+        localStorage.removeItem("last_screen");
+        setPantalla("login");
+        return;
+      }
+    } catch {
+      localStorage.removeItem("token");
+      setPantalla("login");
+      return;
+    }
+
     const rol = localStorage.getItem("rol") || "";
     if (rol.toLowerCase().includes("guardia")) {
       wsService.reset();
       wsService.connect();
     }
-      const last = localStorage.getItem("last_screen");
-      if (last) {
-        setPantalla(last);
-      } else {
-        const rol = localStorage.getItem("rol") || "";
-        if (rol.toLowerCase().includes("guardia")) {
-          setPantalla("guardia");
-        } else {
-          setPantalla("perfil");
-        }
-      }
+
+    const last = localStorage.getItem("last_screen");
+    if (last) {
+      setPantalla(last);
     } else {
-      setPantalla("login");
+      if (rol.toLowerCase().includes("guardia")) {
+        setPantalla("guardia");
+      } else {
+        setPantalla("perfil");
+      }
     }
-  }, []);
+  } else {
+    setPantalla("login");
+  }
+}, []);
 
 
 

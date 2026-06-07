@@ -10,13 +10,41 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
+// Agregar a las interfaces:
+interface UbicacionEnVivo {
+  latitud: number;
+  longitud: number;
+  alertaId: number;
+}
 
+interface MapaGuardiaProps {
+  zonas: Zona[];
+  alertas: Alerta[];
+  userPosition?: { latitud: number; longitud: number } | null;
+  ubicacionesUsuarios?: Record<string, UbicacionEnVivo>;
+  ubicacionesGuardias?: Record<string, UbicacionEnVivo>;
+  onAlertaClick?: (alerta: Alerta) => void;
+  focusedAlerta?: { id: number; latitud: number; longitud: number } | null;
+  focusKey?: number;
+}
 const ALERT_EMOJI: Record<string, string> = {
   'Robo': '🔫',
   'Arma blanca': '🔪',
   'Acoso': '🙍',
   'Accidente': '💥',
 };
+// Íconos para rastreo en vivo:
+const usuarioVivoIcon = new L.DivIcon({
+  className: '',
+  html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(239,68,68,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);animation:pulse 1s infinite;">🆘</div>`,
+  iconSize: [40, 40], iconAnchor: [20, 20],
+});
+
+const guardiaVivoIcon = new L.DivIcon({
+  className: '',
+  html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(59,130,246,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🚔</div>`,
+  iconSize: [40, 40], iconAnchor: [20, 20],
+});
 
 const getMotivoEmoji = (motivo: string): string => {
   return ALERT_EMOJI[motivo] || '🚨';
@@ -61,18 +89,11 @@ const MapFocusController = ({ focusedAlerta, focusKey }: { focusedAlerta: { id: 
 interface Zona { id: number; nombre: string; poligono: string; color?: string; estado?: string; }
 interface Alerta { id: number; nombreUsuario: string; motivo: string; zona: string; estado: string; latitud: number; longitud: number; guardiasInvolucrados: string; }
 
-interface MapaGuardiaProps {
-  zonas: Zona[];
-  alertas: Alerta[];
-  userPosition?: { latitud: number; longitud: number } | null;
-  onAlertaClick?: (alerta: Alerta) => void;
-  focusedAlerta?: { id: number; latitud: number; longitud: number } | null;
-  focusKey?: number;
-}
+
 
 const CAMPUS_CENTER: [number, number] = [-1.269451, -78.623277];
 
-const MapaGuardia = ({ zonas, alertas, userPosition, onAlertaClick, focusedAlerta, focusKey }: MapaGuardiaProps) => {
+const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicacionesGuardias, onAlertaClick, focusedAlerta, focusKey }: MapaGuardiaProps) => {
   const parsePolygon = (poligono: string): [number, number][] => {
     try {
       const parsed = JSON.parse(poligono || '[]');
@@ -84,49 +105,64 @@ const MapaGuardia = ({ zonas, alertas, userPosition, onAlertaClick, focusedAlert
 
   return (
     <div className="mapa-guardia">
-      <MapContainer center={CAMPUS_CENTER} zoom={18} maxZoom={21} style={{ height: '100%', width: '100%' }}>
-        <MapResizer />
-        <MapFocusController focusedAlerta={focusedAlerta || null} focusKey={focusKey} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxNativeZoom={19}
-          maxZoom={21}
-        />
-        {zonas.map(zona => {
-          const vertices = parsePolygon(zona.poligono);
-          if (vertices.length === 0) return null;
-          const color = zona.color || '#2ed573';
-          return (
-            <Polygon key={zona.id} positions={vertices} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2 }}>
-              <Popup><div className="mg-popup"><strong>{zona.nombre}</strong><p>{zona.estado || 'Activa'}</p></div></Popup>
-            </Polygon>
-          );
-        })}
-        {alertas.filter(a => a.latitud && a.longitud).map(alerta => (
-          <Marker
-            key={`a-${alerta.id}`}
-            position={[alerta.latitud, alerta.longitud]}
-            icon={getMarkerIcon(alerta)}
-            eventHandlers={onAlertaClick ? { click: () => onAlertaClick(alerta) } : undefined}
-          >
-            <Popup>
-              <div className="mg-popup">
-                <div className="mg-tipo">{getMotivoEmoji(alerta.motivo)} {alerta.motivo}</div>
-                <p><strong>Usuario:</strong> {alerta.nombreUsuario}</p>
-                <p><strong>Zona:</strong> {alerta.zona}</p>
-                <p><strong>Estado:</strong> {alerta.estado}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-        {userPosition && (
-          <>
-            <CircleMarker center={[userPosition.latitud, userPosition.longitud]} radius={20} pathOptions={{ color: '#4f8cff', fillColor: '#4f8cff', fillOpacity: 0.15, weight: 1 }} />
-            <Marker position={[userPosition.latitud, userPosition.longitud]} icon={guardMarker}><Popup>Tu ubicación</Popup></Marker>
-          </>
-        )}
-      </MapContainer>
+     <MapContainer center={CAMPUS_CENTER} zoom={18} maxZoom={21} style={{ height: '100%', width: '100%' }}>
+  <MapResizer />
+  <MapFocusController focusedAlerta={focusedAlerta || null} focusKey={focusKey} />
+  <TileLayer
+    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    maxNativeZoom={19}
+    maxZoom={21}
+  />
+  {zonas.map(zona => {
+    const vertices = parsePolygon(zona.poligono);
+    if (vertices.length === 0) return null;
+    const color = zona.color || '#2ed573';
+    return (
+      <Polygon key={zona.id} positions={vertices} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2 }}>
+        <Popup><div className="mg-popup"><strong>{zona.nombre}</strong><p>{zona.estado || 'Activa'}</p></div></Popup>
+      </Polygon>
+    );
+  })}
+  {alertas.filter(a => a.latitud && a.longitud).map(alerta => (
+    <Marker
+      key={`a-${alerta.id}`}
+      position={[alerta.latitud, alerta.longitud]}
+      icon={getMarkerIcon(alerta)}
+      eventHandlers={onAlertaClick ? { click: () => onAlertaClick(alerta) } : undefined}
+    >
+      <Popup>
+        <div className="mg-popup">
+          <div className="mg-tipo">{getMotivoEmoji(alerta.motivo)} {alerta.motivo}</div>
+          <p><strong>Usuario:</strong> {alerta.nombreUsuario}</p>
+          <p><strong>Zona:</strong> {alerta.zona}</p>
+          <p><strong>Estado:</strong> {alerta.estado}</p>
+        </div>
+      </Popup>
+    </Marker>
+  ))}
+
+  {/* Usuarios en tiempo real */}
+  {Object.entries(ubicacionesUsuarios || {}).map(([userId, pos]) => (
+    <Marker key={`u-live-${userId}`} position={[pos.latitud, pos.longitud]} icon={usuarioVivoIcon}>
+      <Popup><strong>🆘 Usuario en peligro</strong><br/>Alerta #{pos.alertaId}</Popup>
+    </Marker>
+  ))}
+
+  {/* Guardias en tiempo real */}
+  {Object.entries(ubicacionesGuardias || {}).map(([guardiaId, pos]) => (
+    <Marker key={`g-live-${guardiaId}`} position={[pos.latitud, pos.longitud]} icon={guardiaVivoIcon}>
+      <Popup><strong>🚔 Guardia en camino</strong><br/>Alerta #{pos.alertaId}</Popup>
+    </Marker>
+  ))}
+
+  {userPosition && (
+    <>
+      <CircleMarker center={[userPosition.latitud, userPosition.longitud]} radius={20} pathOptions={{ color: '#4f8cff', fillColor: '#4f8cff', fillOpacity: 0.15, weight: 1 }} />
+      <Marker position={[userPosition.latitud, userPosition.longitud]} icon={guardMarker}><Popup>Tu ubicación</Popup></Marker>
+    </>
+  )}
+</MapContainer>
     </div>
   );
 };

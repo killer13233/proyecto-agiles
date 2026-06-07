@@ -1,6 +1,12 @@
 const WS_BASE = import.meta.env.VITE_WS_URL;
 
-type WsEvent = "nueva_alerta" | "alerta_asumida" | "alerta_cerrada" | "guardia_disponibilidad";
+type WsEvent =
+  | "nueva_alerta"
+  | "alerta_asumida"
+  | "alerta_cerrada"
+  | "guardia_disponibilidad"
+  | "ubicacion_usuario"
+  | "ubicacion_guardia";
 type Handler = (data: any) => void;
 
 class WsService {
@@ -34,11 +40,26 @@ class WsService {
       try {
         const data = JSON.parse(e.data);
         console.log("WS mensaje recibido:", data);
-        if (data.tipo === 'nueva_alerta') window.dispatchEvent(new CustomEvent('app-nueva-alerta', { detail: data }));
-        else if (data.tipo === 'alerta_asumida') window.dispatchEvent(new CustomEvent('app-alerta-asumida', { detail: data }));
-        else if (data.tipo === 'alerta_cerrada') window.dispatchEvent(new CustomEvent('app-alerta-cerrada', { detail: data }));
-        const handler = this.handlers[data.tipo as WsEvent];
-        if (handler) handler(data);
+      if (data.tipo === 'nueva_alerta')
+  window.dispatchEvent(new CustomEvent('app-nueva-alerta', { detail: data }));
+
+else if (data.tipo === 'alerta_asumida')
+  window.dispatchEvent(new CustomEvent('app-alerta-asumida', { detail: data }));
+
+else if (data.tipo === 'alerta_cerrada')
+  window.dispatchEvent(new CustomEvent('app-alerta-cerrada', { detail: data }));
+
+else if (data.tipo === 'guardia_disponibilidad')
+  window.dispatchEvent(new CustomEvent('app-guardia-disponibilidad', { detail: data }));
+
+else if (data.tipo === 'ubicacion_usuario')
+  window.dispatchEvent(new CustomEvent('app-ubicacion-usuario', { detail: data }));
+
+else if (data.tipo === 'ubicacion_guardia')
+  window.dispatchEvent(new CustomEvent('app-ubicacion-guardia', { detail: data }));
+
+const handler = this.handlers[data.tipo as WsEvent];
+if (handler) handler(data);
       } catch (err) { console.error("WS parse error", err); }
     };
 

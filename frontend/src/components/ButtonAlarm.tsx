@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { obtenerUbicacion } from "../services/gpsService";
+import { obtenerUbicacion, iniciarSeguimientoGPS } from "../services/gpsService";
+import { wsService } from "../services/wsService";
 import { enviarAlerta } from "../services/alertService";
 import ModalMotivo, { MotivoEmergencia } from "./ModalMotivo";
 import "./ButtonAlarm.css";
@@ -11,6 +12,8 @@ const BotonAlarma: React.FC = () => {
   const [ubicacionTemp, setUbicacionTemp] = useState<{ latitud: number; longitud: number } | null>(null);
   const timerRef = useRef<any>(null);
   const intervalRef = useRef<any>(null);
+  const rastreoRef = useRef<(() => void) | null>(null);
+const alertaActivaIdRef = useRef<number | null>(null);
 
   const iniciarPresion = () => {
     if (estado === "bloqueado") return;
@@ -45,24 +48,66 @@ const BotonAlarma: React.FC = () => {
     setContador(3);
   };
 
-  const handleConfirmarMotivo = async (motivo: MotivoEmergencia, descripcion?: string) => {
-    setModalVisible(false);
-    if (!ubicacionTemp) return;
+  const handleConfirmarMotivo = async (
+  motivo: MotivoEmergencia,
+  descripcion?: string
+) => {
+  setModalVisible(false);
 
-    const motivoFinal = motivo === "Otro" && descripcion ? descripcion : motivo;
+  if (!ubicacionTemp) return;
 
-    try {
-      await enviarAlerta(ubicacionTemp.latitud, ubicacionTemp.longitud, motivoFinal);
-      setEstado("enviado");
-      setTimeout(() => {
-        setEstado("bloqueado");
-        setTimeout(() => setEstado("normal"), 60000);
-      }, 1500);
-    } catch (error) {
-      console.error(error);
-      setEstado("gps-error");
+  const motivoFinal =
+    motivo === "Otro" && descripcion
+      ? descripcion
+      : motivo;
+
+  try {
+    const response = await enviarAlerta(
+      ubicacionTemp.latitud,
+      ubicacionTemp.longitud,
+      motivoFinal
+    );
+
+    const alertaId = response?.id || response?.Id;
+
+    setEstado("enviado");
+
+    // ← Iniciar rastreo GPS si tenemos el ID de la alerta
+    if (alertaId) {
+      alertaActivaIdRef.current = alertaId;
+
+      rastreoRef.current = iniciarSeguimientoGPS(
+        (pos) => {
+          wsService.send({
+            tipo: "ubicacion_usuario",
+            alertaId,
+            latitud: pos.latitud,
+            longitud: pos.longitud,
+          });
+        },
+        (err) => console.warn("GPS error en rastreo:", err)
+      );
     }
-  };
+
+    setTimeout(() => {
+      setEstado("bloqueado");
+
+      setTimeout(() => {
+        setEstado("normal");
+
+        // Detener rastreo cuando el botón se desbloquea
+        if (rastreoRef.current) {
+          rastreoRef.current();
+          rastreoRef.current = null;
+        }
+      }, 60000);
+    }, 1500);
+
+  } catch (error) {
+    console.error(error);
+    setEstado("gps-error");
+  }
+};
 
   const handleCancelarModal = () => {
     setModalVisible(false);

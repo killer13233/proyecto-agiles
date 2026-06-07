@@ -110,53 +110,127 @@ public class WebSocketController : ControllerBase
         ));
     }
 
-    private async Task EscucharAsync(WebSocket socket, string userId)
+  private async Task EscucharAsync(WebSocket socket, string userId)
+{
+    var buffer = new byte[1024 * 4];
+
+    try
     {
-        var buffer = new byte[1024 * 4];
-        try
+        while (socket.State == WebSocketState.Open)
         {
-            while (socket.State == WebSocketState.Open)
+            var result = await socket.ReceiveAsync(
+                new ArraySegment<byte>(buffer),
+                CancellationToken.None);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+                break;
+
+            if (result.MessageType == WebSocketMessageType.Text)
             {
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Close)
-                    break;
+                var mensaje = System.Text.Encoding.UTF8.GetString(
+                    buffer,
+                    0,
+                    result.Count);
 
-                if (result.MessageType == WebSocketMessageType.Text)
+                try
                 {
-                    var mensaje = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    try
+                    var json = System.Text.Json.JsonDocument.Parse(mensaje);
+                    var tipo = json.RootElement.GetProperty("tipo").GetString();
+
+                    if (tipo == "disponibilidad")
                     {
-                        var json = System.Text.Json.JsonDocument.Parse(mensaje);
-                        var tipo = json.RootElement.GetProperty("tipo").GetString();
+                        var disponible = json.RootElement
+                            .GetProperty("disponible")
+                            .GetBoolean();
 
-                        if (tipo == "disponibilidad")
+                        _wsManager.ActualizarDisponibilidad(
+                            userId,
+                            disponible);
+
+                        var payload = System.Text.Json.JsonSerializer.Serialize(new
                         {
-                            var disponible = json.RootElement.GetProperty("disponible").GetBoolean();
+                            tipo = "guardia_disponibilidad",
+                            guardiaId = userId,
+                            disponible
+                        });
 
-                            // ← CAMBIO 2: Guardar el estado de disponibilidad
-                            _wsManager.ActualizarDisponibilidad(userId, disponible);
-
-                            var payload = System.Text.Json.JsonSerializer.Serialize(new
-                            {
-                                tipo = "guardia_disponibilidad",
-                                guardiaId = userId,
-                                disponible
-                            });
-                            await _wsManager.EnviarAAdminsAsync(payload);
-                        }
+                        await _wsManager.EnviarAAdminsAsync(payload);
                     }
-                    catch { }
+                    else if (tipo == "ubicacion_usuario")
+                    {
+                        var alertaId = json.RootElement
+                            .GetProperty("alertaId")
+                            .GetInt32();
+
+                        var lat = json.RootElement
+                            .GetProperty("latitud")
+                            .GetDouble();
+
+                        var lon = json.RootElement
+                            .GetProperty("longitud")
+                            .GetDouble();
+
+                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            tipo = "ubicacion_usuario",
+                            usuarioId = userId,
+                            alertaId,
+                            latitud = lat,
+                            longitud = lon
+                        });
+
+                        await _wsManager.BroadcastUbicacionUsuarioAsync(payload);
+                    }
+                    else if (tipo == "ubicacion_guardia")
+                    {
+                        var alertaId = json.RootElement
+                            .GetProperty("alertaId")
+                            .GetInt32();
+
+                        var lat = json.RootElement
+                            .GetProperty("latitud")
+                            .GetDouble();
+
+                        var lon = json.RootElement
+                            .GetProperty("longitud")
+                            .GetDouble();
+
+                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            tipo = "ubicacion_guardia",
+                            guardiaId = userId,
+                            alertaId,
+                            latitud = lat,
+                            longitud = lon
+                        });
+
+                        await _wsManager.BroadcastUbicacionGuardiaAsync(payload);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error procesando mensaje: {ex.Message}");
                 }
             }
         }
-        catch { }
-        finally
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error WebSocket: {ex.Message}");
+    }
+    finally
+    {
+        _wsManager.Remover(userId);
+
+        if (socket.State == WebSocketState.Open)
         {
-            _wsManager.Remover(userId);
-            if (socket.State == WebSocketState.Open)
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado", CancellationToken.None);
+            await socket.CloseAsync(
+                WebSocketCloseStatus.NormalClosure,
+                "Desconectado",
+                CancellationToken.None);
         }
     }
+}
 
     private ClaimsPrincipal? ValidarToken(string token)
     {

@@ -1,3 +1,4 @@
+
 import {
   IonButton,
   IonToggle,
@@ -9,7 +10,7 @@ import {
   IonContent
 } from "@ionic/react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
 
 import {
@@ -19,8 +20,7 @@ import {
 } from "../services/alertasService";
 
 import { wsService } from "../services/wsService";
-import { obtenerUbicacion } from "../services/gpsService";
-
+import { obtenerUbicacion, iniciarSeguimientoGPS } from "../services/gpsService";
 import ModalCierre from "../components/ModalCierre";
 import MapaGuardia from "../components/MapaGuardia";
 
@@ -54,6 +54,7 @@ interface GuardiaProps {
   onIrInicio?: () => void;
 }
 
+
 const ALERT_EMOJI: Record<string, string> = {
   'Robo': '🔫',
   'Arma blanca': '🔪',
@@ -78,6 +79,8 @@ const getMiIdActual = (): string => {
 
 const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
+   const [ubicacionesUsuarios, setUbicacionesUsuarios] = useState<Record<string, {latitud: number; longitud: number; alertaId: number}>>({});
+  const [ubicacionesGuardias, setUbicacionesGuardias] = useState<Record<string, {latitud: number; longitud: number; alertaId: number}>>({});
   const [zonas, setZonas] = useState<any[]>([]);
   const [usuario, setUsuario] = useState<TokenData | null>(null);
   const [miId, setMiId] = useState<string>("");
@@ -91,7 +94,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [detalleVisible, setDetalleVisible] = useState(false);
   const [userPosition, setUserPosition] = useState<{ latitud: number; longitud: number } | null>(null);
   const [panelVisible, setPanelVisible] = useState(true);
-
+  const rastreoGuardiaRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     let cancelado = false;
     const init = async () => {
@@ -109,7 +112,13 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
       }
     };
     init();
-    return () => { cancelado = true; };
+    return () => {
+  cancelado = true;
+  if (rastreoGuardiaRef.current) {
+    rastreoGuardiaRef.current();
+    rastreoGuardiaRef.current = null;
+  }
+};
   }, []);
 
   useEffect(() => {
@@ -213,6 +222,27 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
         return [nuevaAlerta, ...prev];
       });
     });
+    wsService.on("ubicacion_usuario", (data) => {
+  setUbicacionesUsuarios(prev => ({
+    ...prev,
+    [String(data.usuarioId)]: {
+      latitud: data.latitud,
+      longitud: data.longitud,
+      alertaId: data.alertaId
+    }
+  }));
+});
+
+wsService.on("ubicacion_guardia", (data) => {
+  setUbicacionesGuardias(prev => ({
+    ...prev,
+    [String(data.guardiaId)]: {
+      latitud: data.latitud,
+      longitud: data.longitud,
+      alertaId: data.alertaId
+    }
+  }));
+});
 
     wsService.on("alerta_asumida", (data) => {
       setAlertas((prev) => prev.map((a) => {
@@ -267,6 +297,17 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
         return;
       }
       await asumirAlerta(alerta.id, decoded.sub || "", decoded.nombre || "");
+      rastreoGuardiaRef.current = iniciarSeguimientoGPS(
+  (pos) => {
+    wsService.send({
+      tipo: "ubicacion_guardia",
+      alertaId: alerta.id,
+      latitud: pos.latitud,
+      longitud: pos.longitud
+    });
+  },
+  (err) => console.warn("GPS guardia error:", err)
+);
     } catch (err: any) {
       console.error(err);
       const status = err?.response?.status;
@@ -275,10 +316,14 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
     }
   };
 
-  const handleCerrar = (alerta: Alerta) => {
-    setAlertaSeleccionada(alerta);
-    setModalVisible(true);
-  };
+ const handleCerrar = (alerta: Alerta) => {
+  if (rastreoGuardiaRef.current) {
+    rastreoGuardiaRef.current();
+    rastreoGuardiaRef.current = null;
+  }
+  setAlertaSeleccionada(alerta);
+  setModalVisible(true);
+};
 
   return (
     <div className="mapa-guardia-full">
@@ -317,14 +362,16 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
         </div>
       </div>
       <div className="mapa-guardia-body" style={{ position: "relative" }}>
-        <MapaGuardia
-          zonas={zonas}
-          alertas={alertas}
-          userPosition={userPosition}
-          focusedAlerta={focusedAlerta}
-          focusKey={focusKey}
-          onAlertaClick={(alerta) => { setFocusedAlerta(alerta); setFocusKey(k => k + 1); }}
-        />
+      <MapaGuardia
+  zonas={zonas}
+  alertas={alertas}
+  userPosition={userPosition}
+  ubicacionesUsuarios={ubicacionesUsuarios}
+  ubicacionesGuardias={ubicacionesGuardias}
+  focusedAlerta={focusedAlerta}
+  focusKey={focusKey}
+  onAlertaClick={(alerta) => { setFocusedAlerta(alerta); setFocusKey(k => k + 1); }}
+/>
         <div className="alertas-floating-wrapper">
           <button className="afp-toggle" onClick={() => setPanelVisible(v => !v)} title={panelVisible ? "Ocultar panel" : "Mostrar panel"}>
             {panelVisible ? '◀' : '▶'}

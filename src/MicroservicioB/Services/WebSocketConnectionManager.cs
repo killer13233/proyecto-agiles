@@ -15,6 +15,8 @@ public interface IWebSocketManager
     void ActualizarDisponibilidad(string guardiaId, bool disponible);
     Task EnviarEstadosAAdmin(string adminId);
     int ConexionesActivas();
+    Task BroadcastUbicacionUsuarioAsync(string payload);
+    Task BroadcastUbicacionGuardiaAsync(string payload);
 }
 
 public class WebSocketConnectionManager : IWebSocketManager
@@ -114,6 +116,38 @@ public class WebSocketConnectionManager : IWebSocketManager
             true,
             CancellationToken.None);
     }
+    // Agregar a la clase WebSocketConnectionManager:
+public async Task BroadcastUbicacionUsuarioAsync(string payload)
+{
+    var bytes = Encoding.UTF8.GetBytes(payload);
+    var segment = new ArraySegment<byte>(bytes);
+
+    // Enviar a guardias Y admins
+    var destinatarios = _conexiones
+        .Where(kv => (kv.Value.Rol == "Guardia" || kv.Value.Rol == "Administrador") &&
+                     kv.Value.Socket.State == WebSocketState.Open)
+        .ToList();
+
+    var tareas = destinatarios.Select(kv =>
+        kv.Value.Socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None));
+    await Task.WhenAll(tareas);
+}
+
+public async Task BroadcastUbicacionGuardiaAsync(string payload)
+{
+    var bytes = Encoding.UTF8.GetBytes(payload);
+    var segment = new ArraySegment<byte>(bytes);
+
+    // Enviar solo a admins
+    var admins = _conexiones
+        .Where(kv => kv.Value.Rol == "Administrador" &&
+                     kv.Value.Socket.State == WebSocketState.Open)
+        .ToList();
+
+    var tareas = admins.Select(kv =>
+        kv.Value.Socket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None));
+    await Task.WhenAll(tareas);
+}
 
     public int ConexionesActivas() => _conexiones.Count;
 }
