@@ -22,7 +22,6 @@ interface MapaGuardiaProps {
   zonas: Zona[];
   alertas: Alerta[];
   userPosition?: { latitud: number; longitud: number } | null;
-  ubicacionesUsuarios?: Record<string, UbicacionEnVivo>;
   ubicacionesGuardias?: Record<string, UbicacionEnVivo>;
   onAlertaClick?: (alerta: Alerta) => void;
   focusedAlerta?: { id: number; latitud: number; longitud: number } | null;
@@ -34,13 +33,6 @@ const ALERT_EMOJI: Record<string, string> = {
   'Acoso': '🙍',
   'Accidente': '💥',
 };
-// Íconos para rastreo en vivo:
-const usuarioVivoIcon = new L.DivIcon({
-  className: '',
-  html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(239,68,68,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);animation:pulse 1s infinite;">🆘</div>`,
-  iconSize: [40, 40], iconAnchor: [20, 20],
-});
-
 const guardiaVivoIcon = new L.DivIcon({
   className: '',
   html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(59,130,246,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🚔</div>`,
@@ -94,7 +86,7 @@ interface Alerta { id: number; nombreUsuario: string; motivo: string; zona: stri
 
 const CAMPUS_CENTER: [number, number] = [-1.269451, -78.623277];
 
-const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicacionesGuardias, onAlertaClick, focusedAlerta, focusKey }: MapaGuardiaProps) => {
+const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesGuardias, onAlertaClick, focusedAlerta, focusKey }: MapaGuardiaProps) => {
   const [camaras, setCamaras] = useState<Camara[]>([]);
 
   useEffect(() => {
@@ -176,13 +168,6 @@ const MapaGuardia = ({ zonas, alertas, userPosition, ubicacionesUsuarios, ubicac
           <p><strong>Estado:</strong> {alerta.estado}</p>
         </div>
       </Popup>
-    </Marker>
-  ))}
-
-  {/* Usuarios en tiempo real */}
-  {Object.entries(ubicacionesUsuarios || {}).map(([userId, pos]) => (
-    <Marker key={`u-live-${userId}`} position={[pos.latitud, pos.longitud]} icon={usuarioVivoIcon}>
-      <Popup><strong>🆘 Usuario en peligro</strong><br/>Alerta #{pos.alertaId}</Popup>
     </Marker>
   ))}
 

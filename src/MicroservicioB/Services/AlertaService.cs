@@ -75,7 +75,8 @@ public class AlertaService : IAlertaService
             latitud       = req.Latitud,
             longitud      = req.Longitud,
             zona,
-            creadaEn      = alerta.CreadaEn
+            creadaEn      = alerta.CreadaEn,
+            camarasCercanas = alerta.CamarasCercanas
         });
 
         return alerta;

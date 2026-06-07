@@ -37,6 +37,8 @@ interface Alerta {
   longitud: number;
   guardiasInvolucrados: string;
   guardiasNombres?: string;
+  creadaEn?: string;
+  camarasCercanas?: string;
   asumidaPorNombre?: string;
   nombreGuardiaAsumio?: string;
   asumidaEn?: string | null;
@@ -80,7 +82,7 @@ const getMiIdActual = (): string => {
 
 const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
-   const [ubicacionesUsuarios, setUbicacionesUsuarios] = useState<Record<string, {latitud: number; longitud: number; alertaId: number}>>({});
+
   const [ubicacionesGuardias, setUbicacionesGuardias] = useState<Record<string, {latitud: number; longitud: number; alertaId: number}>>({});
   const [zonas, setZonas] = useState<any[]>([]);
   const [usuario, setUsuario] = useState<TokenData | null>(null);
@@ -123,14 +125,19 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   }, []);
 
   useEffect(() => {
-    obtenerUbicacion()
-      .then(pos => setUserPosition({ latitud: pos.latitud, longitud: pos.longitud }))
-      .catch(() => {});
-    const interval = setInterval(() => {
-      obtenerUbicacion()
-        .then(pos => setUserPosition({ latitud: pos.latitud, longitud: pos.longitud }))
-        .catch(() => {});
-    }, 10000);
+    const enviarPosicion = async () => {
+      try {
+        const pos = await obtenerUbicacion();
+        setUserPosition({ latitud: pos.latitud, longitud: pos.longitud });
+        wsService.send({
+          tipo: "ubicacion_guardia",
+          latitud: pos.latitud,
+          longitud: pos.longitud
+        });
+      } catch {}
+    };
+    enviarPosicion();
+    const interval = setInterval(enviarPosicion, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -226,19 +233,18 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
           id: data.alertaId, nombreUsuario: data.nombreUsuario, motivo: data.motivo,
           zona: data.zona, estado: "Activa", latitud: data.latitud || -1.269451,
           longitud: data.longitud || -78.623277, guardiasInvolucrados: "[]",
+          creadaEn: data.creadaEn,
+          camarasCercanas: data.camarasCercanas || "[]",
         };
         return [nuevaAlerta, ...prev];
       });
     });
     wsService.on("ubicacion_usuario", (data) => {
-  setUbicacionesUsuarios(prev => ({
-    ...prev,
-    [String(data.usuarioId)]: {
-      latitud: data.latitud,
-      longitud: data.longitud,
-      alertaId: data.alertaId
-    }
-  }));
+  setAlertas((prev) => prev.map((a) =>
+    String(a.id) === String(data.alertaId)
+      ? { ...a, latitud: data.latitud, longitud: data.longitud }
+      : a
+  ));
 });
 
 wsService.on("ubicacion_guardia", (data) => {
@@ -374,7 +380,6 @@ wsService.on("ubicacion_guardia", (data) => {
   zonas={zonas}
   alertas={alertas}
   userPosition={userPosition}
-  ubicacionesUsuarios={ubicacionesUsuarios}
   ubicacionesGuardias={ubicacionesGuardias}
   focusedAlerta={focusedAlerta}
   focusKey={focusKey}
@@ -511,10 +516,22 @@ wsService.on("ubicacion_guardia", (data) => {
                 <span className="da-label">Coordenadas</span>
                 <span className="da-value">{Number(detalleAlerta.latitud).toFixed(4)}, {Number(detalleAlerta.longitud).toFixed(4)}</span>
               </div>
+              <div className="da-row">
+                <span className="da-label">Creada</span>
+                <span className="da-value">{(() => {
+                  const raw = detalleAlerta.creadaEn || detalleAlerta.CreadaEn;
+                  if (!raw) return 'N/A';
+                  const s = raw.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw + 'Z';
+                  return new Date(s).toLocaleString("es-EC", { timeZone: "America/Guayaquil", dateStyle: "short", timeStyle: "short" });
+                })()}</span>
+              </div>
               {detalleAlerta.asumidaEn && (
                 <div className="da-row">
-                  <span className="da-label">Hora</span>
-                  <span className="da-value">{new Date(detalleAlerta.asumidaEn).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" })}</span>
+                  <span className="da-label">Asumida</span>
+                  <span className="da-value">{(() => {
+                    const s = detalleAlerta.asumidaEn!.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(detalleAlerta.asumidaEn!) ? detalleAlerta.asumidaEn! : detalleAlerta.asumidaEn! + 'Z';
+                    return new Date(s).toLocaleString("es-EC", { timeZone: "America/Guayaquil", dateStyle: "short", timeStyle: "short" });
+                  })()}</span>
                 </div>
               )}
               <div className="da-divider" />

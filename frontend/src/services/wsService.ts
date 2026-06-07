@@ -83,6 +83,7 @@ if (handler) handler(data);
   }
 
   send(data: object) {
+    console.log('[WS] Enviando:', data);
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(data));
     } else {
@@ -108,3 +109,4 @@ if (handler) handler(data);
 }
 
 export const wsService = new WsService();
+(window as any).wsService = wsService;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -61,9 +61,10 @@ const MapFocusController = ({ focusedAlerta, focusKey }) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
+  const raw = dateString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateString) ? dateString : dateString + 'Z';
+  const date = new Date(raw);
   if (isNaN(date.getTime())) return 'Fecha inválida';
-  return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString('es-EC', { timeZone: 'America/Guayaquil', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const extraerGuardiasIds = (raw) => {
@@ -97,12 +98,13 @@ const Alertas = () => {
   const [camaras, setCamaras] = useState([]);
   const [guardias, setGuardias] = useState([]);
   const [disponibilidadGuardias, setDisponibilidadGuardias] = useState({});
+  const coordsVivasRef = useRef({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [alertaFocusada, setAlertaFocusada] = useState(null);
   const [focusKey, setFocusKey] = useState(0);
   const [resizeKey, setResizeKey] = useState(0);
-  const [ubicacionesUsuarios, setUbicacionesUsuarios] = useState({});
+
   const [ubicacionesGuardias, setUbicacionesGuardias] = useState({});
 
   const [panelVisible, setPanelVisible] = useState(true);
@@ -122,7 +124,13 @@ const Alertas = () => {
         getGuardias(),
         getCamaras(),
       ]);
-      if (resAlertas.success) setAlertas(Array.isArray(resAlertas.data) ? resAlertas.data : []);
+      if (resAlertas.success) {
+        const data = Array.isArray(resAlertas.data) ? resAlertas.data : [];
+        setAlertas(data.map(a => {
+          const viva = coordsVivasRef.current[Number(a.id)];
+          return viva ? { ...a, latitud: viva.lat, longitud: viva.lng } : a;
+        }));
+      }
       if (resZonas.success) setZonas(Array.isArray(resZonas.data) ? resZonas.data : []);
       if (resGuardias.success) setGuardias(Array.isArray(resGuardias.data) ? resGuardias.data : []);
       if (resCamaras.success) setCamaras(Array.isArray(resCamaras.data) ? resCamaras.data : []);
@@ -158,16 +166,24 @@ const Alertas = () => {
     }));
   });
   adminWsService.on('ubicacion_guardia', (data) => {
-    setUbicacionesGuardias(prev => ({
-      ...prev,
-      [String(data.guardiaId)]: { latitud: data.latitud, longitud: data.longitud, alertaId: data.alertaId }
-    }));
+    console.log('[Admin] Ubicación guardia recibida:', data);
+    try {
+      setUbicacionesGuardias(prev => {
+        const next = { ...prev, [String(data.guardiaId)]: { latitud: data.latitud, longitud: data.longitud, alertaId: data.alertaId } };
+        window.ubicacionesGuardias = next;
+        return next;
+      });
+    } catch (e) {
+      console.error('[Admin] Error en ubicacion_guardia:', e);
+    }
   });
   adminWsService.on('ubicacion_usuario', (data) => {
-    setUbicacionesUsuarios(prev => ({
-      ...prev,
-      [String(data.usuarioId)]: { latitud: data.latitud, longitud: data.longitud, alertaId: data.alertaId }
-    }));
+    coordsVivasRef.current[Number(data.alertaId)] = { lat: data.latitud, lng: data.longitud };
+    setAlertas(prev => prev.map(a =>
+      String(a.id) === String(data.alertaId)
+        ? { ...a, latitud: data.latitud, longitud: data.longitud }
+        : a
+    ));
   });
 }, []);
 
@@ -222,11 +238,6 @@ const Alertas = () => {
     );
   }
 
-  const usuarioVivoIcon = new L.DivIcon({
-    className: '',
-    html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(239,68,68,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);animation:pulse 1s infinite;">🆘</div>`,
-    iconSize: [40, 40], iconAnchor: [20, 20],
-  });
   const guardiaVivoIcon = new L.DivIcon({
     className: '',
     html: `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(59,130,246,0.85);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);">🚔</div>`,
@@ -288,14 +299,9 @@ const Alertas = () => {
               </Popup>
             </Marker>
           ))}
-          {Object.entries(ubicacionesUsuarios).map(([userId, pos]) => (
-            <Marker key={`u-live-${userId}`} position={[pos.latitud, pos.longitud]} icon={usuarioVivoIcon}>
-              <Popup><strong>🆘 Usuario en peligro</strong><br/>Alerta #{pos.alertaId}</Popup>
-            </Marker>
-          ))}
           {Object.entries(ubicacionesGuardias).map(([guardiaId, pos]) => (
             <Marker key={`g-live-${guardiaId}`} position={[pos.latitud, pos.longitud]} icon={guardiaVivoIcon}>
-              <Popup><strong>🚔 Guardia en camino</strong><br/>Alerta #{pos.alertaId}</Popup>
+              <Popup><strong>🚔 Guardia en camino</strong><br/>{pos.alertaId ? `Alerta #${pos.alertaId}` : 'Sin alerta asignada'}</Popup>
             </Marker>
           ))}
         </MapContainer>

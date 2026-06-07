@@ -183,9 +183,9 @@ public class WebSocketController : ControllerBase
                     }
                     else if (tipo == "ubicacion_guardia")
                     {
-                        var alertaId = json.RootElement
-                            .GetProperty("alertaId")
-                            .GetInt32();
+                        int? alertaId = null;
+                        if (json.RootElement.TryGetProperty("alertaId", out var alertaProp))
+                            alertaId = alertaProp.GetInt32();
 
                         var lat = json.RootElement
                             .GetProperty("latitud")
