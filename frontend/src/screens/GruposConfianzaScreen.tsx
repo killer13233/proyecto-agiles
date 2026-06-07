@@ -9,6 +9,10 @@ import {
   agregarMiembro,
   quitarMiembro,
   buscarUsuarios,
+  listarInvitaciones,
+  responderInvitacion,
+  listarMembresias,
+  salirDeGrupo,
 } from "../services/gruposConfianzaService";
 import "./GruposConfianzaScreen.css";
 
@@ -79,7 +83,26 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
   const [resultados, setResultados] = useState<UsuarioBusqueda[]>([]);
   const [buscando, setBuscando] = useState(false);
 
-  // ── Cargar grupos ───────────────────────────────────────────────────────
+  // Membresias e Invitaciones
+  const [invitaciones, setInvitaciones] = useState<any[]>([]);
+  const [membresias, setMembresias] = useState<GrupoResumen[]>([]);
+  const [showSalir, setShowSalir] = useState(false);
+
+  // ── Cargar grupos e invitaciones ────────────────────────────────────────
+  const cargarInvitaciones = useCallback(async () => {
+    const res = await listarInvitaciones();
+    if (res.success) {
+      setInvitaciones(res.data);
+    }
+  }, []);
+
+  const cargarMembresias = useCallback(async () => {
+    const res = await listarMembresias();
+    if (res.success) {
+      setMembresias(res.data);
+    }
+  }, []);
+
   const cargarGrupos = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -94,7 +117,38 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
 
   useEffect(() => {
     cargarGrupos();
-  }, [cargarGrupos]);
+    cargarInvitaciones();
+    cargarMembresias();
+  }, [cargarGrupos, cargarInvitaciones, cargarMembresias]);
+
+  const handleResponderInv = async (grupoId: number, aceptar: boolean) => {
+    const res = await responderInvitacion(grupoId, aceptar);
+    if (res.success) {
+      cargarInvitaciones();
+      if (aceptar) cargarMembresias();
+    } else {
+      setError(res.error || "Error al responder invitación");
+    }
+  };
+
+  const abrirSalir = (grupo: GrupoResumen) => {
+    setGrupoActual(grupo);
+    setShowSalir(true);
+  };
+
+  const handleSalir = async () => {
+    if (!grupoActual) return;
+    setSaving(true);
+    const res = await salirDeGrupo(grupoActual.id);
+    setSaving(false);
+    if (res.success) {
+      setShowSalir(false);
+      setGrupoActual(null);
+      cargarMembresias();
+    } else {
+      setError(res.error || "Error al salir del grupo");
+    }
+  };
 
   // ── Crear ───────────────────────────────────────────────────────────────
   const handleCrear = async () => {
@@ -265,6 +319,25 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
             </div>
           )}
 
+          {/* Invitaciones Pendientes */}
+          {invitaciones.length > 0 && (
+            <div className="grupos-card" style={{ borderLeft: '4px solid var(--ion-color-warning)', padding: '15px', marginBottom: '20px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+              <h4 style={{ fontSize: '0.85rem', color: '#aaa', margin: '0 0 10px 0', fontWeight: '600' }}>INVITACIONES PENDIENTES ({invitaciones.length})</h4>
+              {invitaciones.map((inv) => (
+                <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.05rem', color: '#fff' }}>{inv.nombre}</span>
+                    <span style={{ fontSize: '0.85rem', color: '#aaa' }}>Prop: {inv.propietarioNombre}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleResponderInv(inv.id, true)}>✓</button>
+                    <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleResponderInv(inv.id, false)}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Crear btn */}
           <button
             className="grupos-crear-btn"
@@ -352,6 +425,36 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {/* Lista de grupos a los que pertenece */}
+          {membresias.length > 0 && (
+            <div className="grupos-lista" style={{ marginTop: '20px' }}>
+              <h4 style={{ color: '#aaa', margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: '600' }}>GRUPOS A LOS QUE PERTENECES</h4>
+              {membresias.map((grupo) => (
+                <div key={grupo.id} className="grupo-card">
+                  <div className="grupo-card-header">
+                    <div className="grupo-card-info">
+                      <h3>{grupo.nombre}</h3>
+                      <p className="grupo-card-meta">
+                        Prop: {grupo.propietarioNombre}
+                        {grupo.descripcion && ` · ${grupo.descripcion}`}
+                      </p>
+                    </div>
+                    <div className="grupo-card-actions">
+                      <button
+                        className="grupo-action-btn delete"
+                        onClick={() => abrirSalir(grupo)}
+                        title="Salir del grupo"
+                        style={{ background: 'var(--ion-color-danger)', color: 'white' }}
+                      >
+                        Salir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -520,6 +623,53 @@ const GruposConfianzaScreen: React.FC<Props> = ({ onVolver }) => {
                   disabled={saving}
                 >
                   {saving ? "Eliminando..." : "Eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODAL: Confirmar Salir */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {showSalir && grupoActual && (
+          <div
+            className="grupos-modal-overlay"
+            onClick={() => setShowSalir(false)}
+          >
+            <div
+              className="grupos-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="grupos-modal-header">
+                <h3>Salir del Grupo</h3>
+                <button
+                  className="grupos-modal-close"
+                  onClick={() => setShowSalir(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grupos-modal-body">
+                <div className="grupos-confirm-icon">🚪</div>
+                <p className="grupos-confirm-text">
+                  ¿Estás seguro de salir del grupo{" "}
+                  <strong>{grupoActual.nombre}</strong>?
+                </p>
+              </div>
+              <div className="grupos-modal-footer">
+                <button
+                  className="grupos-btn-secondary"
+                  onClick={() => setShowSalir(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="grupos-btn-danger"
+                  onClick={handleSalir}
+                  disabled={saving}
+                >
+                  {saving ? "Saliendo..." : "Salir"}
                 </button>
               </div>
             </div>

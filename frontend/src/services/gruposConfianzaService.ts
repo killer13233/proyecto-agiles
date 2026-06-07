@@ -31,6 +31,38 @@ export const listarMisGrupos = async () => {
   }
 };
 
+// ── Listar grupos donde soy miembro ────────────────────────────────────
+export const listarMembresias = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/api/gruposconfianza/membresias`, {
+      headers: getHeaders(),
+    });
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error("Error al listar membresias:", error);
+    return {
+      success: false,
+      error: error.response?.data?.mensaje || "Error al cargar membresias",
+    };
+  }
+};
+
+// ── Salir de un grupo ──────────────────────────────────────────────────
+export const salirDeGrupo = async (id: number) => {
+  try {
+    await axios.delete(`${API_BASE}/api/gruposconfianza/${id}/salir`, {
+      headers: getHeaders(),
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error al salir del grupo:", error);
+    return {
+      success: false,
+      error: error.response?.data?.mensaje || "Error al salir del grupo",
+    };
+  }
+};
+
 // ── Obtener detalle de un grupo ────────────────────────────────────────
 export const obtenerGrupo = async (id: number) => {
   try {
