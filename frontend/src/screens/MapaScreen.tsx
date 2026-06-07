@@ -7,6 +7,7 @@ import './MapaScreen.css';
 import { obtenerUbicacion, iniciarSeguimientoGPS, PositionData } from '../services/gpsService';
 import { validarPuntoEnCampus, obtenerZonas, Zona as ZonaBackend } from '../services/zonasService';
 import { enviarAlerta } from '../services/alertService';
+import { wsService } from '../services/wsService';
 import ModalMapaAlerta, { MotivoEmergencia } from '../components/ModalMapaAlerta';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -57,6 +58,8 @@ const MapaScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: 'success' | 'warning' | 'error' } | null>(null);
   const toastTimer = useRef<any>(null);
+  const rastreoRef = useRef<(() => void) | null>(null);
+  const alertaActivaIdRef = useRef<number | null>(null);
 
   const mostrarToast = (mensaje: string, tipo: 'success' | 'warning' | 'error') => {
     setToast({ mensaje, tipo });
@@ -103,7 +106,22 @@ const MapaScreen: React.FC = () => {
   }, [userPosition]);
 
   useEffect(() => {
-    return () => clearTimeout(toastTimer.current);
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const cerradoId = detail.id ?? detail.Id;
+      if (cerradoId === alertaActivaIdRef.current) {
+        if (rastreoRef.current) {
+          rastreoRef.current();
+          rastreoRef.current = null;
+        }
+        alertaActivaIdRef.current = null;
+      }
+    };
+    window.addEventListener('app-alerta-cerrada', handler);
+    return () => {
+      window.removeEventListener('app-alerta-cerrada', handler);
+      clearTimeout(toastTimer.current);
+    };
   }, []);
 
   const handleMapClick = async (lat: number, lng: number) => {
@@ -128,8 +146,24 @@ const MapaScreen: React.FC = () => {
     const motivoFinal = motivo === 'Otro' && descripcion ? descripcion : motivo;
 
     try {
-      await enviarAlerta(touchedPosition.lat, touchedPosition.lng, motivoFinal);
+      const response = await enviarAlerta(touchedPosition.lat, touchedPosition.lng, motivoFinal);
       mostrarToast('✅ Alerta enviada correctamente', 'success');
+
+      const alertaId = response?.id || response?.Id;
+      if (alertaId) {
+        alertaActivaIdRef.current = alertaId;
+        rastreoRef.current = iniciarSeguimientoGPS(
+          (pos) => {
+            wsService.send({
+              tipo: "ubicacion_usuario",
+              alertaId,
+              latitud: pos.latitud,
+              longitud: pos.longitud,
+            });
+          },
+          (err) => console.warn("GPS error en rastreo:", err)
+        );
+      }
     } catch (error) {
       console.error('Error enviando alerta:', error);
       mostrarToast('❌ Error al enviar la alerta', 'error');

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { obtenerUbicacion, iniciarSeguimientoGPS } from "../services/gpsService";
 import { wsService } from "../services/wsService";
 import { enviarAlerta } from "../services/alertService";
@@ -14,6 +14,22 @@ const BotonAlarma: React.FC = () => {
   const intervalRef = useRef<any>(null);
   const rastreoRef = useRef<(() => void) | null>(null);
 const alertaActivaIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const cerradoId = detail.id ?? detail.Id;
+      if (cerradoId === alertaActivaIdRef.current) {
+        if (rastreoRef.current) {
+          rastreoRef.current();
+          rastreoRef.current = null;
+        }
+        alertaActivaIdRef.current = null;
+      }
+    };
+    window.addEventListener('app-alerta-cerrada', handler);
+    return () => window.removeEventListener('app-alerta-cerrada', handler);
+  }, []);
 
   const iniciarPresion = () => {
     if (estado === "bloqueado") return;
@@ -91,16 +107,7 @@ const alertaActivaIdRef = useRef<number | null>(null);
 
     setTimeout(() => {
       setEstado("bloqueado");
-
-      setTimeout(() => {
-        setEstado("normal");
-
-        // Detener rastreo cuando el botón se desbloquea
-        if (rastreoRef.current) {
-          rastreoRef.current();
-          rastreoRef.current = null;
-        }
-      }, 60000);
+      setTimeout(() => setEstado("normal"), 60000);
     }, 1500);
 
   } catch (error) {
