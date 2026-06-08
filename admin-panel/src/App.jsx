@@ -15,10 +15,7 @@ import { adminWsService } from './services/wsService';
 function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userRaw = localStorage.getItem('user');
-    const rol = userRaw ? JSON.parse(userRaw)?.rol : null;
-
-    if (token && rol === 'Administrador') {
+    if (token) {
       adminWsService.connect(token);
     }
 
