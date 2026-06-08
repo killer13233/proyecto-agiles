@@ -24,8 +24,10 @@ const GuardiaInfoScreen: React.FC<Props> = ({
   onCerrarSesion,
 }) => {
   const [user, setUser] = useState<TokenData | null>(null);
-  const [disponible, setDisponible] = useState(true);
-  const [guardando, setGuardando] = useState(false);
+  const [disponible, setDisponible] = useState(() => {
+    const saved = localStorage.getItem('guardia_disponible');
+    return saved !== null ? saved === 'true' : true;
+  });
 
   // Modal de Rondas
   const [showRondaModal, setShowRondaModal] = useState(false);
@@ -81,28 +83,18 @@ const GuardiaInfoScreen: React.FC<Props> = ({
     };
 
     cargarToken();
+
+    // Escuchar cambios de disponibilidad desde GuardiaScreen
+    const handleDispChanged = (e: any) => {
+      setDisponible(e.detail.disponible);
+    };
+    window.addEventListener('app-disponibilidad-changed', handleDispChanged);
+    return () => {
+      window.removeEventListener('app-disponibilidad-changed', handleDispChanged);
+    };
   }, []);
 
-  const handleToggle = async () => {
-    const nuevoEstado = !disponible;
 
-    setGuardando(true);
-
-    try {
-      await wsService.connect();
-
-      wsService.send({
-        tipo: "disponibilidad",
-        disponible: nuevoEstado,
-      });
-
-      setDisponible(nuevoEstado);
-    } catch (err) {
-      console.error("Error actualizando disponibilidad:", err);
-    } finally {
-      setGuardando(false);
-    }
-  };
 
   // Iniciales del nombre
   const obtenerIniciales = () => {
@@ -236,35 +228,6 @@ const GuardiaInfoScreen: React.FC<Props> = ({
               <span>Token expira en</span>
               <strong>24 h</strong>
             </div>
-
-          </div>
-
-          {/* DISPONIBILIDAD */}
-          <div className="gi-disponibilidad-card">
-
-            <div>
-              <p className="gi-disp-title">
-                Disponibilidad
-              </p>
-
-              <p className="gi-disp-sub">
-                {disponible
-                  ? "Recibiendo alertas"
-                  : "Sin recibir alertas"}
-              </p>
-            </div>
-
-            <button
-              className={`gi-toggle ${
-                disponible
-                  ? "toggle-on"
-                  : "toggle-off"
-              }`}
-              onClick={handleToggle}
-              disabled={guardando}
-            >
-              <span className="gi-toggle-thumb" />
-            </button>
 
           </div>
 
