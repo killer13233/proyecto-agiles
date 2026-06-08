@@ -206,6 +206,20 @@ public class WebSocketController : ControllerBase
 
                         await _wsManager.BroadcastUbicacionGuardiaAsync(payload);
                     }
+                    else if (tipo == "nueva_ronda")
+                    {
+                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            tipo = "nueva_ronda",
+                            guardiaId = userId,
+                            guardia = json.RootElement.GetProperty("guardia").GetString(),
+                            zona = json.RootElement.GetProperty("zona").GetString(),
+                            inicio = json.RootElement.GetProperty("inicio").GetString(),
+                            fin = json.RootElement.GetProperty("fin").GetString()
+                        });
+
+                        await _wsManager.EnviarAAdminsAsync(payload);
+                    }
                 }
                 catch (Exception ex)
                 {

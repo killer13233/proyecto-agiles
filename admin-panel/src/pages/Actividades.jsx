@@ -2,13 +2,25 @@ import React, { useState, useEffect } from 'react';
 import './Actividades.css';
 import { getGuardias } from '../services/usuariosService';
 import { getZonas } from '../services/zonasService';
+import { useAuth } from '../context/AuthContext';
+import { adminWsService } from '../services/wsService';
 
 const Actividades = () => {
+  const { user } = useAuth();
+  const isGuard = user?.rol === 'Guardia';
   const [historial, setHistorial] = useState([]);
   const [filtroZona, setFiltroZona] = useState('Todas');
   const [busquedaGuardia, setBusquedaGuardia] = useState('');
   const [zonasOptions, setZonasOptions] = useState(['Todas']);
   const [loading, setLoading] = useState(true);
+
+  // Add round state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRonda, setNewRonda] = useState({ 
+    zona: user?.zonaAsignada || '', 
+    inicio: '', 
+    fin: '' 
+  });
 
   const fechaHoy = new Date().toLocaleDateString('es-EC', {
     day: 'numeric',
@@ -33,39 +45,9 @@ const Actividades = () => {
         const zonasNombres = zonasDb.map(z => z.nombre);
         setZonasOptions(['Todas', ...zonasNombres]);
 
-        // Generate mock history using real guards and zones from the DB
-        if (guardiasDb.length > 0 && zonasDb.length > 0) {
-          const mockHistorial = [];
-          
-          // Generar entre 3 y 8 registros aleatorios
-          const numRegistros = Math.floor(Math.random() * 6) + 3;
-          
-          for (let i = 0; i < numRegistros; i++) {
-            const guardiaRandom = guardiasDb[Math.floor(Math.random() * guardiasDb.length)];
-            const zonaRandom = zonasDb[Math.floor(Math.random() * zonasDb.length)];
-            
-            // Tiempos aleatorios
-            const horaIni = 7 + Math.floor(Math.random() * 10);
-            const duracion = Math.floor(Math.random() * 2) + 1; // 1 o 2 horas
-            const horaFin = horaIni + duracion;
-
-            const formatHora = (h) => `${h.toString().padStart(2, '0')}:00`;
-
-            mockHistorial.push({
-              id: i + 1,
-              zona: zonaRandom.nombre,
-              guardia: guardiaRandom.nombre || 'Guardia Desconocido',
-              inicio: formatHora(horaIni),
-              fin: formatHora(horaFin),
-              duracion: duracion
-            });
-          }
-          
-          setHistorial(mockHistorial.sort((a, b) => a.inicio.localeCompare(b.inicio)));
-        } else {
-          // Fallback if no data
-          setHistorial([]);
-        }
+        // Cargar rondas guardadas localmente (simulando BD)
+        const savedRondas = JSON.parse(localStorage.getItem('rondas_mock_db') || '[]');
+        setHistorial(savedRondas.sort((a, b) => a.inicio.localeCompare(b.inicio)));
       } catch (error) {
         console.error("Error cargando datos para actividades", error);
       } finally {
@@ -74,7 +56,65 @@ const Actividades = () => {
     };
 
     cargarDatos();
+
+    // Listen to real-time rounds
+    const handleNuevaRonda = (data) => {
+      console.log('Nueva ronda recibida via WS:', data);
+      
+      const [hIni] = data.inicio.split(':').map(Number);
+      const [hFin] = data.fin.split(':').map(Number);
+      let duracion = hFin - hIni;
+      if (duracion <= 0) duracion += 24;
+
+      const nuevaRondaObj = {
+        id: Date.now() + Math.random(),
+        zona: data.zona,
+        guardia: data.guardia,
+        inicio: data.inicio,
+        fin: data.fin,
+        duracion: duracion
+      };
+
+      setHistorial(prev => {
+        const next = [...prev, nuevaRondaObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
+        localStorage.setItem('rondas_mock_db', JSON.stringify(next));
+        return next;
+      });
+    };
+
+    adminWsService.on('nueva_ronda', handleNuevaRonda);
+
+    return () => {
+      adminWsService.on('nueva_ronda', null); // cleanup
+    };
   }, []);
+
+  const handleAddRonda = (e) => {
+    e.preventDefault();
+    if (!newRonda.zona || !newRonda.inicio || !newRonda.fin) return;
+
+    const [hIni] = newRonda.inicio.split(':').map(Number);
+    const [hFin] = newRonda.fin.split(':').map(Number);
+    let duracion = hFin - hIni;
+    if (duracion <= 0) duracion += 24;
+
+    const nuevaRondaObj = {
+      id: Date.now(),
+      zona: newRonda.zona,
+      guardia: user?.nombre || 'Guardia',
+      inicio: newRonda.inicio,
+      fin: newRonda.fin,
+      duracion: duracion
+    };
+
+    setHistorial(prev => {
+      const next = [...prev, nuevaRondaObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
+      localStorage.setItem('rondas_mock_db', JSON.stringify(next));
+      return next;
+    });
+    setShowAddModal(false);
+    setNewRonda({ zona: user?.zonaAsignada || '', inicio: '', fin: '' });
+  };
 
   const getZoneClass = (zona) => {
     // Basic dynamic coloring based on zone name
@@ -98,9 +138,16 @@ const Actividades = () => {
 
       {/* Header */}
       <div className="act-header-section">
-        <div>
-          <h1 className="act-title">Registro de Actividades</h1>
-          <p className="act-subtitle">Historial y control de coberturas de rondas por guardia y zona</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 className="act-title">Registro de Actividades</h1>
+            <p className="act-subtitle">Historial y control de coberturas de rondas por guardia y zona</p>
+          </div>
+          {isGuard && (
+            <button className="btn-primary-dark btn-add-ronda" onClick={() => setShowAddModal(true)}>
+              + Añadir Ronda
+            </button>
+          )}
         </div>
       </div>
 
@@ -155,7 +202,7 @@ const Actividades = () => {
         {/* Historial (Vista Ancha) */}
         <div className="act-card-dark full-width">
           <h2 className="act-card-title-dark">
-            <span>Rondas Ejecutadas (Simuladas con BD Real)</span>
+            <span>Rondas Ejecutadas</span>
             <span style={{ fontSize: '0.875rem', fontWeight: 400, color: 'var(--text-secondary)' }}>
               {fechaHoy}
             </span>
@@ -197,6 +244,59 @@ const Actividades = () => {
         </div>
 
       </div>
+
+      {/* Modal for Adding Round */}
+      {showAddModal && (
+        <div className="modal-overlay-dark">
+          <div className="modal-content-dark">
+            <h3 className="modal-title-dark">Añadir Nueva Ronda</h3>
+            <form onSubmit={handleAddRonda}>
+              <div className="modal-form-group">
+                <label className="modal-label">Zona</label>
+                <select 
+                  className="modal-input"
+                  value={newRonda.zona}
+                  onChange={(e) => setNewRonda({...newRonda, zona: e.target.value})}
+                  required
+                >
+                  <option value="">Seleccione una zona</option>
+                  {zonasOptions.filter(z => z !== 'Todas').map(zona => (
+                    <option key={zona} value={zona}>{zona}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-form-group">
+                <label className="modal-label">Hora Inicio</label>
+                <input 
+                  type="time"
+                  className="modal-input"
+                  value={newRonda.inicio}
+                  onChange={(e) => setNewRonda({...newRonda, inicio: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="modal-form-group">
+                <label className="modal-label">Hora Fin</label>
+                <input 
+                  type="time"
+                  className="modal-input"
+                  value={newRonda.fin}
+                  onChange={(e) => setNewRonda({...newRonda, fin: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary-dark" onClick={() => setShowAddModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary-dark">
+                  Guardar Ronda
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -27,6 +27,10 @@ const GuardiaInfoScreen: React.FC<Props> = ({
   const [disponible, setDisponible] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
+  // Modal de Rondas
+  const [showRondaModal, setShowRondaModal] = useState(false);
+  const [rondaData, setRondaData] = useState({ zona: "", inicio: "", fin: "" });
+
   useEffect(() => {
     const cargarToken = async () => {
       try {
@@ -35,6 +39,7 @@ const GuardiaInfoScreen: React.FC<Props> = ({
         if (token) {
           const decoded = jwtDecode<TokenData>(token);
           setUser(decoded);
+          wsService.connect();
         }
       } catch (err) {
         console.error("Error leyendo token:", err);
@@ -223,6 +228,17 @@ const GuardiaInfoScreen: React.FC<Props> = ({
 
           </div>
 
+          {/* BOTÓN REGISTRAR RONDA */}
+          <button
+            className="gi-ronda-btn"
+            onClick={() => {
+              setRondaData({ ...rondaData, zona: user?.zona || "" });
+              setShowRondaModal(true);
+            }}
+          >
+            📍 Registrar nueva ronda
+          </button>
+
           {/* BOTÓN ALERTAS */}
           <button
             className="gi-alertas-btn"
@@ -240,6 +256,82 @@ const GuardiaInfoScreen: React.FC<Props> = ({
           </button>
 
         </div>
+
+        {/* MODAL DE RONDAS */}
+        {showRondaModal && (
+          <div className="gi-modal-overlay">
+            <div className="gi-modal-content">
+              <h3 className="gi-modal-title">Registrar Ronda</h3>
+              
+              <div className="gi-modal-group">
+                <label>Zona</label>
+                <select 
+                  value={rondaData.zona}
+                  onChange={(e) => setRondaData({...rondaData, zona: e.target.value})}
+                  className="gi-modal-input"
+                >
+                  <option value="">Selecciona tu zona</option>
+                  <option value="Zona A">Zona A</option>
+                  <option value="Zona B">Zona B</option>
+                  <option value="Zona C">Zona C</option>
+                  <option value="Zona D">Zona D</option>
+                </select>
+              </div>
+
+              <div className="gi-modal-group">
+                <label>Hora Inicio</label>
+                <input 
+                  type="time"
+                  value={rondaData.inicio}
+                  onChange={(e) => setRondaData({...rondaData, inicio: e.target.value})}
+                  className="gi-modal-input"
+                />
+              </div>
+
+              <div className="gi-modal-group">
+                <label>Hora Fin</label>
+                <input 
+                  type="time"
+                  value={rondaData.fin}
+                  onChange={(e) => setRondaData({...rondaData, fin: e.target.value})}
+                  className="gi-modal-input"
+                />
+              </div>
+
+              <div className="gi-modal-actions">
+                <button 
+                  className="gi-modal-btn-cancel"
+                  onClick={() => setShowRondaModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  className="gi-modal-btn-save"
+                  onClick={() => {
+                    if (!rondaData.zona || !rondaData.inicio || !rondaData.fin) {
+                      alert("Por favor completa todos los campos (Zona, Inicio y Fin).");
+                      return;
+                    }
+
+                    wsService.send({
+                      tipo: "nueva_ronda",
+                      guardia: user?.nombre || "Guardia",
+                      zona: rondaData.zona,
+                      inicio: rondaData.inicio,
+                      fin: rondaData.fin
+                    });
+
+                    alert("Ronda registrada exitosamente");
+                    setShowRondaModal(false);
+                    setRondaData({ zona: "", inicio: "", fin: "" });
+                  }}
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </IonContent>
     </IonPage>
