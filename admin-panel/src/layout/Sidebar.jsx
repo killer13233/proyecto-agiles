@@ -17,6 +17,7 @@ const Sidebar = ({ collapsed: controlledCollapsed, onToggle }) => {
     { name: 'Grupos', path: '/grupos-confianza', icon: '🤝', roles: ['Administrador'] },
     { name: 'Zonas', path: '/zonas', icon: '📍', roles: ['Administrador', 'Guardia'] },
     { name: 'Alertas', path: '/alertas', icon: '🚨', roles: ['Administrador', 'Guardia', 'Estudiante', 'Docente'] },
+    { name: 'Actividades', path: '/actividades', icon: '📋', roles: ['Administrador', 'Guardia'] },
   ];
 
   const filteredMenuItems = menuItems.filter(item => hasRole(item.roles));
