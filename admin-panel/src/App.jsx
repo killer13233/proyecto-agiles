@@ -9,6 +9,7 @@ import Zonas from './pages/Zonas';
 import Alertas from './pages/Alertas';
 import Dashboard from './pages/Dashboard';
 import GruposConfianza from './pages/GruposConfianza';
+import Actividades from './pages/Actividades';
 import { adminWsService } from './services/wsService';
 
 function App() {
@@ -46,6 +47,11 @@ function App() {
             <Route path="grupos-confianza" element={
               <ProtectedRoute requiredRoles={['Administrador']}>
                 <GruposConfianza />
+              </ProtectedRoute>
+            } />
+            <Route path="actividades" element={
+              <ProtectedRoute requiredRoles={['Administrador', 'Guardia']}>
+                <Actividades />
               </ProtectedRoute>
             } />
             <Route path="alertas" element={<Alertas />} />
