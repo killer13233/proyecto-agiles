@@ -76,6 +76,14 @@ const Actividades = () => {
       };
 
       setHistorial(prev => {
+        const yaExiste = prev.some(
+          r => r.zona === nuevaRondaObj.zona &&
+               r.guardia === nuevaRondaObj.guardia &&
+               r.inicio === nuevaRondaObj.inicio &&
+               r.fin === nuevaRondaObj.fin
+        );
+        if (yaExiste) return prev;
+
         const next = [...prev, nuevaRondaObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
         localStorage.setItem('rondas_mock_db', JSON.stringify(next));
         return next;
@@ -83,9 +91,12 @@ const Actividades = () => {
     };
 
     adminWsService.on('nueva_ronda', handleNuevaRonda);
+    const handleNuevaRondaEvent = (e) => handleNuevaRonda(e.detail);
+    window.addEventListener('app-nueva-ronda', handleNuevaRondaEvent);
 
     return () => {
       adminWsService.on('nueva_ronda', null); // cleanup
+      window.removeEventListener('app-nueva-ronda', handleNuevaRondaEvent);
     };
   }, []);
 

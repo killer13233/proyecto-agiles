@@ -39,12 +39,12 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
+        adminWsService.connect(response.data.token);
         if (response.data.rol === 'Administrador') {
-  adminWsService.connect(response.data.token);
-  adminWsService.on('guardia_disponibilidad', (data) => {
-    window.dispatchEvent(new CustomEvent('guardia-disponibilidad', { detail: data }));
-  });
-}
+          adminWsService.on('guardia_disponibilidad', (data) => {
+            window.dispatchEvent(new CustomEvent('guardia-disponibilidad', { detail: data }));
+          });
+        }
 
         return { success: true };
       }
@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    adminWsService.disconnect();
   };
 
   const isAuthenticated = () => {

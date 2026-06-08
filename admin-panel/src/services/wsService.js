@@ -25,12 +25,18 @@ class AdminWsService {
       try {
         const data = JSON.parse(e.data);
         console.log('[Admin WS] Mensaje recibido:', data);
+
         const handler = this.handlers[data.tipo];
         if (handler) handler(data);
-         if (data.tipo === 'ubicacion_usuario')
-      window.dispatchEvent(new CustomEvent('app-ubicacion-usuario', { detail: data }));
-    else if (data.tipo === 'ubicacion_guardia')
-      window.dispatchEvent(new CustomEvent('app-ubicacion-guardia', { detail: data }));
+
+        if (data.tipo === 'ubicacion_usuario') {
+          window.dispatchEvent(new CustomEvent('app-ubicacion-usuario', { detail: data }));
+        } else if (data.tipo === 'ubicacion_guardia') {
+          window.dispatchEvent(new CustomEvent('app-ubicacion-guardia', { detail: data }));
+        } else if (data.tipo === 'nueva_ronda') {
+          console.log('[Admin WS] Dispatching app-nueva-ronda');
+          window.dispatchEvent(new CustomEvent('app-nueva-ronda', { detail: data }));
+        }
       } catch (err) {
         console.error('[Admin WS] Error parse:', err);
       }
@@ -48,7 +54,11 @@ class AdminWsService {
   }
 
   on(evento, handler) {
-    this.handlers[evento] = handler;
+    if (handler == null) {
+      delete this.handlers[evento];
+    } else {
+      this.handlers[evento] = handler;
+    }
   }
 
   disconnect() {
