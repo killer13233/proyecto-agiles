@@ -218,7 +218,7 @@ public class WebSocketController : ControllerBase
                             fin = json.RootElement.GetProperty("fin").GetString()
                         });
 
-                        await _wsManager.EnviarAAdminsAsync(payload);
+                        await _wsManager.BroadcastAAdminsYGuardiasAsync(payload);
                     }
                 }
                 catch (Exception ex)

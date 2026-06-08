@@ -30,6 +30,40 @@ const GuardiaInfoScreen: React.FC<Props> = ({
   // Modal de Rondas
   const [showRondaModal, setShowRondaModal] = useState(false);
   const [rondaData, setRondaData] = useState({ zona: "", inicio: "", fin: "" });
+  const [misRondas, setMisRondas] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Cargar rondas del guardia
+    const saved = JSON.parse(localStorage.getItem('mis_rondas_guardia') || '[]');
+    setMisRondas(saved);
+
+    // Escuchar rondas recibidas por WS (de otros guardias o eco propio)
+    const handleNuevaRondaWS = (e: any) => {
+      const data = e.detail;
+      const nuevaRonda = {
+        zona: data.zona,
+        inicio: data.inicio,
+        fin: data.fin,
+        guardia: data.guardia,
+        fecha: new Date().toLocaleDateString()
+      };
+      setMisRondas(prev => {
+        // Evitar duplicados (si yo mismo la envié ya está)
+        const yaExiste = prev.some(
+          r => r.zona === nuevaRonda.zona && r.inicio === nuevaRonda.inicio && r.fin === nuevaRonda.fin && r.fecha === nuevaRonda.fecha
+        );
+        if (yaExiste) return prev;
+        const updated = [nuevaRonda, ...prev];
+        localStorage.setItem('mis_rondas_guardia', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    window.addEventListener('app-nueva-ronda', handleNuevaRondaWS);
+    return () => {
+      window.removeEventListener('app-nueva-ronda', handleNuevaRondaWS);
+    };
+  }, []);
 
   useEffect(() => {
     const cargarToken = async () => {
@@ -79,6 +113,12 @@ const GuardiaInfoScreen: React.FC<Props> = ({
       .slice(0, 2)
       .map((n) => n.charAt(0).toUpperCase())
       .join("");
+  };
+
+  // Obtener hora actual en formato HH:MM
+  const getHoraActual = (): string => {
+    const now = new Date();
+    return now.toTimeString().slice(0, 5);
   };
 
   return (
@@ -232,7 +272,7 @@ const GuardiaInfoScreen: React.FC<Props> = ({
           <button
             className="gi-ronda-btn"
             onClick={() => {
-              setRondaData({ ...rondaData, zona: user?.zona || "" });
+              setRondaData({ zona: user?.zona || "", inicio: getHoraActual(), fin: "" });
               setShowRondaModal(true);
             }}
           >
@@ -254,6 +294,38 @@ const GuardiaInfoScreen: React.FC<Props> = ({
           >
             Cerrar sesión
           </button>
+
+          {/* HISTORIAL DE RONDAS DEL GUARDIA */}
+          <div className="gi-info-card" style={{ marginTop: '20px' }}>
+            <p className="gi-section-title">MIS RONDAS REGISTRADAS</p>
+            {misRondas.length === 0 ? (
+              <p style={{ color: 'var(--app-text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '10px 0' }}>
+                No tienes rondas registradas.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {misRondas.map((r, i) => (
+                  <div key={i} style={{ 
+                    background: 'var(--app-card-bg)', 
+                    padding: '12px', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--app-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ color: 'var(--app-primary)' }}>{r.zona}</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--app-text-secondary)' }}>{r.fecha}</span>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--app-text)' }}>
+                      <span>Inicio: {r.inicio}</span> | <span>Fin: {r.fin}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
         </div>
 
@@ -283,7 +355,16 @@ const GuardiaInfoScreen: React.FC<Props> = ({
                 <input 
                   type="time"
                   value={rondaData.inicio}
-                  onChange={(e) => setRondaData({...rondaData, inicio: e.target.value})}
+                  min={getHoraActual()}
+                  onChange={(e) => {
+                    const horaActual = getHoraActual();
+                    if (e.target.value < horaActual) {
+                      alert("La hora de inicio no puede ser anterior a la hora actual (" + horaActual + ").");
+                      setRondaData({...rondaData, inicio: horaActual});
+                      return;
+                    }
+                    setRondaData({...rondaData, inicio: e.target.value});
+                  }}
                   className="gi-modal-input"
                 />
               </div>
@@ -313,6 +394,13 @@ const GuardiaInfoScreen: React.FC<Props> = ({
                       return;
                     }
 
+                    // Validar que la hora de inicio no sea anterior a la hora actual
+                    const horaActual = getHoraActual();
+                    if (rondaData.inicio < horaActual) {
+                      alert("La hora de inicio no puede ser anterior a la hora actual (" + horaActual + ").");
+                      return;
+                    }
+
                     wsService.send({
                       tipo: "nueva_ronda",
                       guardia: user?.nombre || "Guardia",
@@ -320,6 +408,17 @@ const GuardiaInfoScreen: React.FC<Props> = ({
                       inicio: rondaData.inicio,
                       fin: rondaData.fin
                     });
+
+                    // Guardar en localStorage
+                    const nuevaRondaGuardada = {
+                      zona: rondaData.zona,
+                      inicio: rondaData.inicio,
+                      fin: rondaData.fin,
+                      fecha: new Date().toLocaleDateString()
+                    };
+                    const actualizadas = [nuevaRondaGuardada, ...misRondas];
+                    setMisRondas(actualizadas);
+                    localStorage.setItem('mis_rondas_guardia', JSON.stringify(actualizadas));
 
                     alert("Ronda registrada exitosamente");
                     setShowRondaModal(false);

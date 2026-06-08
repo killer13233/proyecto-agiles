@@ -93,6 +93,13 @@ const Actividades = () => {
     e.preventDefault();
     if (!newRonda.zona || !newRonda.inicio || !newRonda.fin) return;
 
+    // Validar que la hora de inicio no sea anterior a la hora actual
+    const horaActual = new Date().toTimeString().slice(0, 5);
+    if (newRonda.inicio < horaActual) {
+      alert('La hora de inicio no puede ser anterior a la hora actual (' + horaActual + ').');
+      return;
+    }
+
     const [hIni] = newRonda.inicio.split(':').map(Number);
     const [hFin] = newRonda.fin.split(':').map(Number);
     let duracion = hFin - hIni;
@@ -271,7 +278,16 @@ const Actividades = () => {
                   type="time"
                   className="modal-input"
                   value={newRonda.inicio}
-                  onChange={(e) => setNewRonda({...newRonda, inicio: e.target.value})}
+                  min={new Date().toTimeString().slice(0, 5)}
+                  onChange={(e) => {
+                    const horaActual = new Date().toTimeString().slice(0, 5);
+                    if (e.target.value < horaActual) {
+                      alert('La hora de inicio no puede ser anterior a la hora actual (' + horaActual + ').');
+                      setNewRonda({...newRonda, inicio: horaActual});
+                      return;
+                    }
+                    setNewRonda({...newRonda, inicio: e.target.value});
+                  }}
                   required
                 />
               </div>
