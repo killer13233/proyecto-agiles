@@ -105,8 +105,16 @@ public class WebSocketConnectionManager : IWebSocketManager
 
     public async Task EnviarAUsuarioAsync(string userId, object mensaje)
     {
-        if (!_conexiones.TryGetValue(userId, out var conn)) return;
-        if (conn.Socket.State != WebSocketState.Open) return;
+        if (!_conexiones.TryGetValue(userId, out var conn))
+        {
+            Console.WriteLine($"[WS] EnviarAUsuarioAsync: usuario {userId} NO encontrado en _conexiones. Conexiones activas: {string.Join(", ", _conexiones.Keys)}");
+            return;
+        }
+        if (conn.Socket.State != WebSocketState.Open)
+        {
+            Console.WriteLine($"[WS] EnviarAUsuarioAsync: usuario {userId} encontrado pero socket no está abierto (state={conn.Socket.State})");
+            return;
+        }
 
         var json = JsonSerializer.Serialize(mensaje);
         var bytes = Encoding.UTF8.GetBytes(json);

@@ -50,6 +50,7 @@ const Home: React.FC = () => {
     const handleInvitacion = (e: any) => {
         const data = e.detail;
         setNotificacion({
+            tipo_notificacion: "invitacion",
             title: "NUEVA INVITACIÓN",
             body: `Te invitaron al grupo: <strong>${data.grupoNombre}</strong>`,
             color: "#3b82f6"
@@ -107,10 +108,8 @@ useEffect(() => {
     }
 
     const rol = localStorage.getItem("rol") || "";
-    if (rol.toLowerCase().includes("guardia")) {
-      wsService.reset();
-      wsService.connect();
-    }
+    wsService.reset();
+    wsService.connect();
 
     const last = localStorage.getItem("last_screen");
     if (last) {
@@ -164,6 +163,12 @@ useEffect(() => {
   const irAAlerta = () => {
     if (notificacion?.tipo_notificacion === "confianza") {
       setAlertaConfianzaSeleccionada(notificacion);
+      setNotificacion(null);
+      return;
+    }
+
+    if (notificacion?.tipo_notificacion === "invitacion") {
+      setPantalla("grupos-confianza");
       setNotificacion(null);
       return;
     }

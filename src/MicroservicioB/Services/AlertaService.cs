@@ -98,10 +98,12 @@ public class AlertaService : IAlertaService
             if (res.IsSuccessStatusCode)
             {
                 var contactosIds = await res.Content.ReadFromJsonAsync<List<int>>();
+                Console.WriteLine($"[AlertaService] Contactos de confianza para usuario {usuarioId}: {(contactosIds != null ? string.Join(",", contactosIds) : "null")}");
                 if (contactosIds != null)
                 {
                     foreach (var contactoId in contactosIds)
                     {
+                        Console.WriteLine($"[AlertaService] Enviando alerta_confianza a contacto {contactoId}");
                         await _ws.EnviarAUsuarioAsync(contactoId.ToString(), new
                         {
                             tipo = "alerta_confianza",

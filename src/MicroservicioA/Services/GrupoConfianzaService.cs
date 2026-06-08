@@ -355,16 +355,35 @@ public interface IGrupoConfianzaService
     // ── Obtener Contactos Confianza (Para Emergencias) ──────────────────────
     public async Task<List<int>> ObtenerContactosConfianzaAsync(int userId)
     {
-        // Obtener a todos los miembros de todos los grupos de confianza del usuario (solo Aceptados)
-        var contactosIds = await _db.GruposConfianza
+        // IDs de grupos donde el usuario es miembro aceptado
+        var gruposIds = await _db.MiembrosGrupoConfianza
+            .Where(m => m.UsuarioId == userId && m.Estado == EstadoMiembro.Aceptado)
+            .Select(m => m.GrupoConfianzaId)
+            .ToListAsync();
+
+        // Dueños de esos grupos (excluyendo al usuario)
+        var duenosIds = await _db.GruposConfianza
+            .Where(g => gruposIds.Contains(g.Id) && g.PropietarioId != userId)
+            .Select(g => g.PropietarioId)
+            .ToListAsync();
+
+        // Miembros aceptados de esos grupos (excluyendo al usuario)
+        var miembrosIds = await _db.MiembrosGrupoConfianza
+            .Where(m => gruposIds.Contains(m.GrupoConfianzaId)
+                     && m.UsuarioId != userId
+                     && m.Estado == EstadoMiembro.Aceptado)
+            .Select(m => m.UsuarioId)
+            .ToListAsync();
+
+        // Miembros aceptados de grupos que el usuario es dueño
+        var propiosIds = await _db.GruposConfianza
             .Where(g => g.PropietarioId == userId)
             .SelectMany(g => g.Miembros)
             .Where(m => m.Estado == EstadoMiembro.Aceptado)
             .Select(m => m.UsuarioId)
-            .Distinct()
             .ToListAsync();
 
-        return contactosIds;
+        return duenosIds.Union(miembrosIds).Union(propiosIds).Distinct().ToList();
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
