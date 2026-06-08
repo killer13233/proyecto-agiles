@@ -88,10 +88,7 @@ const GuardiaScreen: React.FC<GuardiaProps> = ({ onIrInicio }) => {
   const [usuario, setUsuario] = useState<TokenData | null>(null);
   const [miId, setMiId] = useState<string>("");
   const [zonaActual, setZonaActual] = useState<string | null>(null);
-  const [disponible, setDisponible] = useState(() => {
-    const saved = localStorage.getItem('guardia_disponible');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [disponible, setDisponible] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [alertaSeleccionada, setAlertaSeleccionada] = useState<Alerta | null>(null);
   const [focusedAlerta, setFocusedAlerta] = useState<Alerta | null>(null);
@@ -370,8 +367,6 @@ wsService.on("ubicacion_guardia", (data) => {
             onIonChange={(e) => {
               const nuevoEstado = e.detail.checked;
               setDisponible(nuevoEstado);
-              localStorage.setItem('guardia_disponible', String(nuevoEstado));
-              window.dispatchEvent(new CustomEvent('app-disponibilidad-changed', { detail: { disponible: nuevoEstado } }));
               wsService.send({ tipo: "disponibilidad", disponible: nuevoEstado });
             }}
           />
