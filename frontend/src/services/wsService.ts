@@ -6,7 +6,8 @@ type WsEvent =
   | "alerta_cerrada"
   | "guardia_disponibilidad"
   | "ubicacion_usuario"
-  | "ubicacion_guardia";
+  | "ubicacion_guardia"
+  | "nueva_ronda";
 type Handler = (data: any) => void;
 
 class WsService {
@@ -63,6 +64,9 @@ else if (data.tipo === 'nueva_invitacion')
 
 else if (data.tipo === 'alerta_confianza')
   window.dispatchEvent(new CustomEvent('app-alerta-confianza', { detail: data }));
+
+else if (data.tipo === 'nueva_ronda')
+  window.dispatchEvent(new CustomEvent('app-nueva-ronda', { detail: data }));
 
 const handler = this.handlers[data.tipo as WsEvent];
 if (handler) handler(data);
