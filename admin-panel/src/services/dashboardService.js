@@ -30,7 +30,45 @@ const utcDaysAgo = (n) => {
   return d;
 };
 
-export const getDashboardData = async () => {
+/**
+ * Check if a date falls within a given range [start, end] inclusive.
+ * If start/end are null, that bound is open.
+ */
+const isInRange = (date, start, end) => {
+  if (!date) return false;
+  if (start && date < start) return false;
+  if (end) {
+    // end is inclusive — set end to end-of-day
+    const endOfDay = new Date(end);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    if (date > endOfDay) return false;
+  }
+  return true;
+};
+
+/**
+ * Generate an array of day labels between two dates.
+ */
+const generateDayLabels = (start, end) => {
+  const days = [];
+  const current = new Date(start);
+  const endDate = new Date(end);
+  endDate.setUTCHours(23, 59, 59, 999);
+
+  while (current <= endDate) {
+    days.push(new Date(current));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return days;
+};
+
+/**
+ * Main dashboard data fetcher.
+ * @param {Object} filtro - Optional date filter
+ * @param {Date|null} filtro.fechaInicio - Start date (inclusive)
+ * @param {Date|null} filtro.fechaFin - End date (inclusive)
+ */
+export const getDashboardData = async (filtro = {}) => {
   try {
     const results = await Promise.allSettled([
       axios.get(`${API_BASE}/api/usuarios?tamaño=1000`, { headers: getHeaders() }),
@@ -47,7 +85,22 @@ export const getDashboardData = async () => {
       ? (resAlertas.data?.alertas || resAlertas.data) : [];
     const zonas    = resZonas.data?.zonas || resZonas.data || [];
 
-    const alertas = alertasRaw;
+    // All alerts (unfiltered) for global counters
+    const todasAlertas = alertasRaw;
+
+    // ── Apply date range filter ─────────────────────────────────────
+    const { fechaInicio, fechaFin } = filtro;
+    const tieneRango = fechaInicio || fechaFin;
+
+    const alertasFiltradas = tieneRango
+      ? todasAlertas.filter(a => {
+          const f = toDate(a.creadaEn || a.CreadaEn);
+          return isInRange(f, fechaInicio, fechaFin);
+        })
+      : todasAlertas;
+
+    // Use filtered alerts for statistics
+    const alertas = alertasFiltradas;
 
     // ── Usuarios por rol ──────────────────────────────────────────
     const usuariosPorRolMap = {};
@@ -70,19 +123,82 @@ export const getDashboardData = async () => {
       alertasPorZonaMap[zona] = (alertasPorZonaMap[zona] || 0) + 1;
     });
 
-    // ── Alertas por día (últimos 7 días) ──────────────────────────
-    const alertasPorDia = [];
-    for (let i = 6; i >= 0; i--) {
-      const fecha = utcDaysAgo(i);
-      const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-      const count = alertas.filter(a => {
-        const f = toDate(a.creadaEn || a.CreadaEn);
-        return f && isSameUTCDay(f, fecha);
-      }).length;
-      alertasPorDia.push({ dia, count });
+    // ── Alertas por día ───────────────────────────────────────────
+    // If there's a date range, show all days in that range.
+    // Otherwise default to the last 7 days.
+    let alertasPorDia = [];
+    if (tieneRango) {
+      const start = fechaInicio || utcDaysAgo(30);
+      const end = fechaFin || utcToday();
+      const dayLabels = generateDayLabels(start, end);
+
+      // If range is too long, group by week/month
+      if (dayLabels.length > 60) {
+        // Group by month
+        const monthMap = {};
+        // Initialize chronologically
+        let currentMonthDate = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+        const endMonthDate = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+        while (currentMonthDate <= endMonthDate) {
+          const key = currentMonthDate.toLocaleDateString('es-EC', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+          monthMap[key] = { dia: key, count: 0 };
+          currentMonthDate.setUTCMonth(currentMonthDate.getUTCMonth() + 1);
+        }
+
+        alertas.forEach(a => {
+          const f = toDate(a.creadaEn || a.CreadaEn);
+          if (f && isInRange(f, start, end)) {
+            const key = f.toLocaleDateString('es-EC', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+            if (monthMap[key]) {
+              monthMap[key].count++;
+            }
+          }
+        });
+        alertasPorDia = Object.values(monthMap);
+      } else if (dayLabels.length > 14) {
+        // Group by week
+        const weekMap = {};
+        dayLabels.forEach((d, i) => {
+          const weekNum = Math.floor(i / 7);
+          const weekLabel = `Sem ${weekNum + 1}`;
+          if (!weekMap[weekLabel]) weekMap[weekLabel] = { dia: weekLabel, count: 0 };
+        });
+        alertas.forEach(a => {
+          const f = toDate(a.creadaEn || a.CreadaEn);
+          if (f && isInRange(f, start, end)) {
+            const daysSinceStart = Math.floor((f - start) / 86400000);
+            const weekNum = Math.floor(daysSinceStart / 7);
+            const weekLabel = `Sem ${weekNum + 1}`;
+            if (!weekMap[weekLabel]) weekMap[weekLabel] = { dia: weekLabel, count: 0 };
+            weekMap[weekLabel].count++;
+          }
+        });
+        alertasPorDia = Object.values(weekMap);
+      } else {
+        // Day by day
+        alertasPorDia = dayLabels.map(fecha => {
+          const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+          const count = alertas.filter(a => {
+            const f = toDate(a.creadaEn || a.CreadaEn);
+            return f && isSameUTCDay(f, fecha);
+          }).length;
+          return { dia, count };
+        });
+      }
+    } else {
+      // Default: last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const fecha = utcDaysAgo(i);
+        const dia = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+        const count = alertas.filter(a => {
+          const f = toDate(a.creadaEn || a.CreadaEn);
+          return f && isSameUTCDay(f, fecha);
+        }).length;
+        alertasPorDia.push({ dia, count });
+      }
     }
 
-    // ── Tiempo promedio de resolución ─────────────────────────────
+    // ── Tiempo promedio de resolución (filtered) ──────────────────
     const alertasResueltas = alertas.filter(a => (a.cerradaEn || a.CerradaEn) && (a.creadaEn || a.CreadaEn));
     let tiempoResolucionMin = null;
     if (alertasResueltas.length > 0) {
@@ -94,17 +210,111 @@ export const getDashboardData = async () => {
       tiempoResolucionMin = Math.round(totalMs / alertasResueltas.length / 60000);
     }
 
-    // ── Alertas nuevas hoy ────────────────────────────────────────
+    // ── Alertas nuevas hoy (always today, unfiltered) ─────────────
     const hoy = utcToday();
-    const nuevasHoy = alertas.filter(a => {
+    const nuevasHoy = todasAlertas.filter(a => {
       const f = toDate(a.creadaEn || a.CreadaEn);
       return f && isSameUTCDay(f, hoy);
     }).length;
 
-    const resueltasHoy = alertas.filter(a => {
+    const resueltasHoy = todasAlertas.filter(a => {
       const f = toDate(a.cerradaEn || a.CerradaEn);
       return f && isSameUTCDay(f, hoy);
     }).length;
+
+    // ── Alertas por estado (filtered) ─────────────────────────────
+    const alertasActivas = alertas.filter(a => a.estado === 'Activa' || a.Estado === 'Activa').length;
+    const alertasAsignadas = alertas.filter(a => a.estado === 'Asumida' || a.Estado === 'Asumida').length;
+    const alertasCerradas = alertas.filter(a => a.estado === 'Cerrada' || a.Estado === 'Cerrada').length;
+    const alertasCriticas = alertas.filter(a => (a.prioridad || a.Prioridad) === 'Crítica').length;
+
+    // ── Rate of change vs previous period ─────────────────────────
+    let tasaCambio = null;
+    if (tieneRango && fechaInicio && fechaFin) {
+      const rangoMs = fechaFin - fechaInicio;
+      const prevInicio = new Date(fechaInicio.getTime() - rangoMs);
+      const prevFin = new Date(fechaInicio.getTime() - 1);
+      const alertasPeriodoAnterior = todasAlertas.filter(a => {
+        const f = toDate(a.creadaEn || a.CreadaEn);
+        return isInRange(f, prevInicio, prevFin);
+      }).length;
+      if (alertasPeriodoAnterior > 0) {
+        tasaCambio = Math.round(((alertas.length - alertasPeriodoAnterior) / alertasPeriodoAnterior) * 100);
+      }
+    }
+
+    // ── Top Usuarios y Guardias ───────────────────────────────────
+    const extraerGuardiasIds = (raw) => {
+      if (!raw) return [];
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return Array.isArray(parsed) ? parsed.filter(id => id && String(id).trim() !== '') : [];
+      } catch { return []; }
+    };
+
+    const usuariosAlertasCount = {};
+    const guardiasAlertasCount = {};
+
+    alertas.forEach(a => {
+      const uName = a.nombreUsuario || a.NombreUsuario || 'Desconocido';
+      usuariosAlertasCount[uName] = (usuariosAlertasCount[uName] || 0) + 1;
+
+      const gIds = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+      gIds.forEach(id => {
+        const u = usuarios.find(usr => String(usr.id) === String(id));
+        const gName = u ? (u.nombre || u.Nombre || `Guardia ${id}`) : `Guardia ID: ${id}`;
+        guardiasAlertasCount[gName] = (guardiasAlertasCount[gName] || 0) + 1;
+      });
+    });
+
+    const topUsuarios = Object.entries(usuariosAlertasCount)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 5);
+
+    const topGuardias = Object.entries(guardiasAlertasCount)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 5);
+
+    // ── Alertas por Hora ──────────────────────────────────────────
+    const alertasPorHora = Array.from({ length: 24 }, (_, i) => ({ hora: `${String(i).padStart(2, '0')}:00`, count: 0 }));
+    
+    // ── Alertas por Día de la Semana ──────────────────────────────
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const alertasPorDiaSemana = diasSemana.map(dia => ({ dia, count: 0 }));
+    
+    // ── Tiempo de Resolución por Guardia ──────────────────────────
+    const tiemposResolucionGuardias = {};
+
+    alertas.forEach(a => {
+      const f = toDate(a.creadaEn || a.CreadaEn);
+      if (f) {
+        alertasPorHora[f.getHours()].count++;
+        alertasPorDiaSemana[f.getDay()].count++;
+      }
+
+      const cierre = toDate(a.cerradaEn || a.CerradaEn);
+      if (f && cierre && (a.estado === 'Cerrada' || a.Estado === 'Cerrada')) {
+        const timeDiffMins = (cierre - f) / 60000;
+        const gIds = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+        gIds.forEach(id => {
+          const u = usuarios.find(usr => String(usr.id) === String(id));
+          const gName = u ? (u.nombre || u.Nombre || `Guardia ${id}`) : `Guardia ID: ${id}`;
+          if (!tiemposResolucionGuardias[gName]) tiemposResolucionGuardias[gName] = { sum: 0, count: 0 };
+          tiemposResolucionGuardias[gName].sum += timeDiffMins;
+          tiemposResolucionGuardias[gName].count++;
+        });
+      }
+    });
+
+    const tiempoResolucionGuardias = Object.entries(tiemposResolucionGuardias)
+      .map(([nombre, stats]) => ({
+        nombre,
+        tiempoPromedio: Math.round(stats.sum / stats.count)
+      }))
+      .sort((a, b) => a.tiempoPromedio - b.tiempoPromedio)
+      .slice(0, 5);
 
     return {
       success: true,
@@ -118,13 +328,15 @@ export const getDashboardData = async () => {
         },
         alertas: {
           total:     alertas.length,
-          activas:   alertas.filter(a => a.estado === 'Activa'   || a.Estado === 'Activa').length,
-          asignadas: alertas.filter(a => a.estado === 'Asumida'  || a.Estado === 'Asumida').length,
-          cerradas:  alertas.filter(a => a.estado === 'Cerrada'  || a.Estado === 'Cerrada').length,
-          criticas:  alertas.filter(a => (a.prioridad || a.Prioridad) === 'Crítica').length,
+          totalGlobal: todasAlertas.length,
+          activas:   alertasActivas,
+          asignadas: alertasAsignadas,
+          cerradas:  alertasCerradas,
+          criticas:  alertasCriticas,
           nuevasHoy,
           resueltasHoy,
-          tiempoResolucionMin
+          tiempoResolucionMin,
+          tasaCambio
         },
         zonas: {
           total:     zonas.length,
@@ -133,6 +345,7 @@ export const getDashboardData = async () => {
           nuevasMes: 0,
           cobertura: 0
         },
+        todasLasAlertas: alertas,
         actividades: alertas
           .sort((a, b) => new Date(b.creadaEn || b.CreadaEn) - new Date(a.creadaEn || a.CreadaEn))
           .slice(0, 5)
@@ -151,7 +364,12 @@ export const getDashboardData = async () => {
             .map(([zona, cantidad]) => ({ zona, cantidad }))
             .sort((a, b) => b.cantidad - a.cantidad)
             .slice(0, 8),
-          usuariosPorRol:  Object.entries(usuariosPorRolMap).map(([rol, cantidad])   => ({ rol, cantidad }))
+          usuariosPorRol:  Object.entries(usuariosPorRolMap).map(([rol, cantidad])   => ({ rol, cantidad })),
+          topUsuarios,
+          topGuardias,
+          alertasPorHora,
+          alertasPorDiaSemana,
+          tiempoResolucionGuardias
         }
       }
     };

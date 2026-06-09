@@ -16,6 +16,22 @@ const TablaAlertas = ({
   const [guardiaSeleccionado, setGuardiaSeleccionado] = useState('');
   const [guardiasDisponibles, setGuardiasDisponibles] = useState([]);
   const [disponibilidadGuardias, setDisponibilidadGuardias] = useState({});
+
+  // ── Filtros ──
+  const [filtroBusqueda, setFiltroBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('Todos');
+  const [filtroTipo, setFiltroTipo] = useState('Todos');
+  const [filtroPrioridad, setFiltroPrioridad] = useState('Todos');
+  const [filtroGuardia, setFiltroGuardia] = useState('Todos');
+  const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
+  const [filtroFechaFin, setFiltroFechaFin] = useState('');
+  
+  // ── Sorter y Paginación ──
+  const [ordenColumna, setOrdenColumna] = useState('fecha');
+  const [ordenDescendente, setOrdenDescendente] = useState(true);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const ELEMENTOS_POR_PAGINA = 15;
+
   useEffect(() => {
     const fetchGuardias = async () => {
       const result = await getGuardias();
@@ -162,13 +178,187 @@ const getTipoBadgeClass = (tipo) => {
     );
   }
 
+  // ── Filtrado Local ──
+  const alertasFiltradasLocales = alertas.filter(a => {
+    const titulo = (a.motivo || a.Motivo || '').toLowerCase();
+    const zona = (a.zona || a.Zona || '').toLowerCase();
+    const usuario = (a.nombreUsuario || '').toLowerCase();
+    const tipo = a.motivo || a.Motivo || a.tipo || 'General';
+    const estado = a.estado || a.Estado || 'Desconocido';
+    const prioridad = a.prioridad || 'Media';
+    
+    if (filtroEstado !== 'Todos' && estado !== filtroEstado) return false;
+    if (filtroTipo !== 'Todos' && tipo !== filtroTipo) return false;
+    if (filtroPrioridad !== 'Todos' && prioridad !== filtroPrioridad) return false;
+    if (filtroGuardia !== 'Todos') {
+      const gIds = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+      const gNombres = idsANombres(gIds);
+      if (!gNombres.includes(filtroGuardia)) return false;
+    }
+    
+    const fecha = new Date(a.creadaEn || a.CreadaEn);
+    if (filtroFechaInicio && fecha < new Date(filtroFechaInicio)) return false;
+    if (filtroFechaFin) {
+      const fin = new Date(filtroFechaFin);
+      fin.setHours(23, 59, 59, 999);
+      if (fecha > fin) return false;
+    }
+
+    if (filtroBusqueda) {
+      const q = filtroBusqueda.toLowerCase();
+      if (!titulo.includes(q) && !zona.includes(q) && !usuario.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const tiposUnicos = ['Todos', ...new Set(alertas.map(a => a.motivo || a.Motivo || a.tipo || 'General'))];
+  const prioridadesUnicas = ['Todos', ...new Set(alertas.map(a => a.prioridad || a.Prioridad || 'Media'))];
+
+  const guardiasIdsTotales = new Set();
+  alertas.forEach(a => {
+    const ids = extraerGuardiasIds(a.guardiasInvolucrados || a.GuardiasInvolucrados);
+    ids.forEach(id => guardiasIdsTotales.add(String(id)));
+  });
+  const guardiasUnicosNombres = ['Todos', ...Array.from(guardiasIdsTotales).map(id => {
+    const g = guardiasDisponibles.find(gd => String(gd.id) === id);
+    return g ? g.nombre : `[ID: ${id}]`;
+  })];
+
+  // ── Ordenamiento ──
+  const alertasOrdenadas = [...alertasFiltradasLocales].sort((a, b) => {
+    let valorA, valorB;
+    switch (ordenColumna) {
+      case 'fecha':
+        valorA = new Date(a.creadaEn || a.CreadaEn).getTime() || 0;
+        valorB = new Date(b.creadaEn || b.CreadaEn).getTime() || 0;
+        break;
+      case 'prioridad':
+        const ordenPri = { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 };
+        valorA = ordenPri[a.prioridad || a.Prioridad || 'Media'] || 0;
+        valorB = ordenPri[b.prioridad || b.Prioridad || 'Media'] || 0;
+        break;
+      case 'estado':
+        valorA = (a.estado || a.Estado || '').toLowerCase();
+        valorB = (b.estado || b.Estado || '').toLowerCase();
+        break;
+      case 'tipo':
+        valorA = (a.motivo || a.Motivo || a.tipo || '').toLowerCase();
+        valorB = (b.motivo || b.Motivo || b.tipo || '').toLowerCase();
+        break;
+      case 'titulo':
+        valorA = (a.motivo || a.Motivo || '').toLowerCase();
+        valorB = (b.motivo || b.Motivo || '').toLowerCase();
+        break;
+      default:
+        valorA = 0;
+        valorB = 0;
+    }
+    if (valorA < valorB) return ordenDescendente ? 1 : -1;
+    if (valorA > valorB) return ordenDescendente ? -1 : 1;
+    return 0;
+  });
+
+  // ── Paginación ──
+  const totalPaginas = Math.ceil(alertasOrdenadas.length / ELEMENTOS_POR_PAGINA);
+  const indiceInicio = (paginaActual - 1) * ELEMENTOS_POR_PAGINA;
+  const alertasPaginadas = alertasOrdenadas.slice(indiceInicio, indiceInicio + ELEMENTOS_POR_PAGINA);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filtroBusqueda, filtroEstado, filtroTipo, filtroPrioridad, filtroGuardia, filtroFechaInicio, filtroFechaFin]);
+
+  const handleOrdenar = (columna) => {
+    if (ordenColumna === columna) {
+      setOrdenDescendente(!ordenDescendente);
+    } else {
+      setOrdenColumna(columna);
+      setOrdenDescendente(columna === 'fecha' || columna === 'prioridad');
+    }
+  };
+
+  const renderSortIcon = (col) => {
+    if (ordenColumna !== col) return <span className="sort-icon">⇅</span>;
+    return ordenDescendente ? <span className="sort-icon active">↓</span> : <span className="sort-icon active">↑</span>;
+  };
+
   return (
     <div className="tabla-container">
       <div className="tabla-header">
-        <h3>Alertas Recientes</h3>
-        <div className="tabla-info">
-          <span className="total-alertas">{alertas.length}</span>
-          <span>alertas registradas</span>
+        <div className="tabla-header-title">
+          <h3>Alertas Recientes</h3>
+          <div className="tabla-info">
+            <span className="total-alertas">{alertasFiltradasLocales.length}</span>
+            <span>de {alertas.length} alertas</span>
+          </div>
+        </div>
+        
+        <div className="tabla-filtros">
+          <div className="filtro-grupo filtro-busqueda">
+            <span className="filtro-icon">🔍</span>
+            <input 
+              type="text" 
+              placeholder="Buscar título, zona o usuario..." 
+              value={filtroBusqueda}
+              onChange={(e) => setFiltroBusqueda(e.target.value)}
+            />
+          </div>
+          <div className="filtro-grupo">
+            <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+              <option value="Todos">Estado: Todos</option>
+              <option value="Activa">Activa</option>
+              <option value="Asumida">Asignada</option>
+              <option value="Cerrada">Cerrada</option>
+            </select>
+          </div>
+          <div className="filtro-grupo">
+            <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+              {tiposUnicos.map(t => (
+                <option key={t} value={t}>{t === 'Todos' ? 'Tipo: Todos' : t}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filtro-grupo">
+            <select value={filtroPrioridad} onChange={(e) => setFiltroPrioridad(e.target.value)}>
+              {prioridadesUnicas.map(p => (
+                <option key={p} value={p}>{p === 'Todos' ? 'Prioridad: Todas' : p}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filtro-grupo">
+            <select value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)}>
+              {guardiasUnicosNombres.map(g => (
+                <option key={g} value={g}>{g === 'Todos' ? 'Guardia: Todos' : g}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filtro-grupo">
+            <input 
+              type="date" 
+              title="Fecha Inicio"
+              value={filtroFechaInicio} 
+              onChange={(e) => setFiltroFechaInicio(e.target.value)} 
+            />
+          </div>
+          <div className="filtro-grupo">
+            <input 
+              type="date" 
+              title="Fecha Fin"
+              value={filtroFechaFin} 
+              onChange={(e) => setFiltroFechaFin(e.target.value)} 
+            />
+          </div>
+          {(filtroBusqueda || filtroEstado !== 'Todos' || filtroTipo !== 'Todos' || filtroPrioridad !== 'Todos' || filtroGuardia !== 'Todos' || filtroFechaInicio || filtroFechaFin) && (
+            <button className="btn-limpiar-filtros" onClick={() => {
+              setFiltroBusqueda('');
+              setFiltroEstado('Todos');
+              setFiltroTipo('Todos');
+              setFiltroPrioridad('Todos');
+              setFiltroGuardia('Todos');
+              setFiltroFechaInicio('');
+              setFiltroFechaFin('');
+            }} title="Limpiar Filtros">✖</button>
+          )}
         </div>
       </div>
 
@@ -176,18 +366,22 @@ const getTipoBadgeClass = (tipo) => {
         <table className="alertas-table">
           <thead>
             <tr>
-              <th>Título</th>
-              <th>Tipo</th>
-              <th>Prioridad</th>
-              <th>Estado</th>
+              <th onClick={() => handleOrdenar('titulo')} className="sortable">Título {renderSortIcon('titulo')}</th>
+              <th onClick={() => handleOrdenar('tipo')} className="sortable">Tipo {renderSortIcon('tipo')}</th>
+              <th onClick={() => handleOrdenar('prioridad')} className="sortable">Prioridad {renderSortIcon('prioridad')}</th>
+              <th onClick={() => handleOrdenar('estado')} className="sortable">Estado {renderSortIcon('estado')}</th>
               <th>Ubicación</th>
               <th>Asignado a</th>
-              <th>Fecha</th>
+              <th onClick={() => handleOrdenar('fecha')} className="sortable">Fecha {renderSortIcon('fecha')}</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {alertas.map(alerta => {
+            {alertasPaginadas.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="tabla-empty">No se encontraron alertas que coincidan con los filtros.</td>
+              </tr>
+            ) : alertasPaginadas.map(alerta => {
               const titulo    = alerta.motivo     || alerta.Motivo    || 'Sin título';
               const estado    = alerta.estado     || alerta.Estado    || 'Desconocido';
               const zona      = alerta.zona       || alerta.Zona      || 'Sin zona';
@@ -251,7 +445,19 @@ const getTipoBadgeClass = (tipo) => {
         </table>
       </div>
 
-      {/* Modal Asignar */}
+      {totalPaginas > 1 && (
+        <div className="tabla-paginacion">
+          <button disabled={paginaActual === 1} onClick={() => setPaginaActual(p => p - 1)}>
+            Anterior
+          </button>
+          <span>Página {paginaActual} de {totalPaginas}</span>
+          <button disabled={paginaActual === totalPaginas} onClick={() => setPaginaActual(p => p + 1)}>
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      {/* Modal Asignación */}
       {mostrarModalAsignar && alertaSeleccionada && (
         <div className="modal-overlay">
           <div className="modal">

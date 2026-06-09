@@ -13,7 +13,18 @@ namespace MicroservicioB.Controllers;
 public class AlertasController : ControllerBase
 {
     private readonly IAlertaService _svc;
-    public AlertasController(IAlertaService svc) => _svc = svc;
+    private readonly IWebSocketManager _ws;
+    public AlertasController(IAlertaService svc, IWebSocketManager ws)
+    {
+        _svc = svc;
+        _ws = ws;
+    }
+
+    [HttpGet("rondas")]
+    public IActionResult ListarRondas()
+    {
+        return Ok(_ws.ObtenerRondas());
+    }
 
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearAlertaRequest req)
@@ -208,7 +219,7 @@ public class WebSocketController : ControllerBase
                     }
                     else if (tipo == "nueva_ronda")
                     {
-                        var payload = System.Text.Json.JsonSerializer.Serialize(new
+                        var ronda = new
                         {
                             tipo = "nueva_ronda",
                             guardiaId = userId,
@@ -216,8 +227,10 @@ public class WebSocketController : ControllerBase
                             zona = json.RootElement.GetProperty("zona").GetString(),
                             inicio = json.RootElement.GetProperty("inicio").GetString(),
                             fin = json.RootElement.GetProperty("fin").GetString()
-                        });
+                        };
+                        var payload = System.Text.Json.JsonSerializer.Serialize(ronda);
 
+                        _wsManager.AgregarRonda(ronda);
                         await _wsManager.BroadcastAAdminsYGuardiasAsync(payload);
                     }
                 }

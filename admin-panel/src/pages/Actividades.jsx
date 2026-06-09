@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Actividades.css';
 import { getGuardias } from '../services/usuariosService';
 import { getZonas } from '../services/zonasService';
 import { useAuth } from '../context/AuthContext';
 import { adminWsService } from '../services/wsService';
+import { API_BASE } from '../services/config';
 
 const Actividades = () => {
   const { user } = useAuth();
@@ -94,9 +95,51 @@ const Actividades = () => {
     const handleNuevaRondaEvent = (e) => handleNuevaRonda(e.detail);
     window.addEventListener('app-nueva-ronda', handleNuevaRondaEvent);
 
+    // Poll REST API as fallback every 10s
+    const fetchRondasRest = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/alertas/rondas`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) return;
+        setHistorial(prev => {
+          let updated = [...prev];
+          for (const r of data) {
+            const yaExiste = updated.some(
+              x => x.zona === r.zona && x.guardia === r.guardia &&
+                   x.inicio === r.inicio && x.fin === r.fin
+            );
+            if (!yaExiste) {
+              const [hIni] = r.inicio.split(':').map(Number);
+              const [hFin] = r.fin.split(':').map(Number);
+              let duracion = hFin - hIni;
+              if (duracion <= 0) duracion += 24;
+              updated.push({
+                id: Date.now() + Math.random(),
+                zona: r.zona, guardia: r.guardia,
+                inicio: r.inicio, fin: r.fin,
+                duracion
+              });
+            }
+          }
+          updated.sort((a, b) => a.inicio.localeCompare(b.inicio));
+          localStorage.setItem('rondas_mock_db', JSON.stringify(updated));
+          return updated;
+        });
+      } catch (err) {
+        console.warn('[Rondas] Error polling REST:', err);
+      }
+    };
+    const interval = setInterval(fetchRondasRest, 10000);
+
     return () => {
       adminWsService.on('nueva_ronda', null); // cleanup
       window.removeEventListener('app-nueva-ronda', handleNuevaRondaEvent);
+      clearInterval(interval);
     };
   }, []);
 

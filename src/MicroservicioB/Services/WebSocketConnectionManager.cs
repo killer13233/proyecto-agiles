@@ -18,6 +18,8 @@ public interface IWebSocketManager
     Task BroadcastUbicacionUsuarioAsync(string payload);
     Task BroadcastUbicacionGuardiaAsync(string payload);
     Task BroadcastAAdminsYGuardiasAsync(string payload);
+    void AgregarRonda(object ronda);
+    IEnumerable<object> ObtenerRondas();
 }
 
 public class WebSocketConnectionManager : IWebSocketManager
@@ -26,6 +28,10 @@ public class WebSocketConnectionManager : IWebSocketManager
         _conexiones = new();
 
     private readonly ConcurrentDictionary<string, bool> _disponibilidades = new();
+    private readonly ConcurrentBag<object> _rondas = new();
+ 
+    public void AgregarRonda(object ronda) => _rondas.Add(ronda);
+    public IEnumerable<object> ObtenerRondas() => _rondas.ToArray();
 
     public void Agregar(string userId, string rol, WebSocket socket)
     {
