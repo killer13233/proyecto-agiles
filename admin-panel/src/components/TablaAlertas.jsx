@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './TablaAlertas.css';
 import { getGuardias } from '../services/usuariosService';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// html2canvas and jsPDF are loaded dynamically in exportarPDF
 
 const TablaAlertas = ({ 
   alertas = [], 
@@ -277,6 +276,8 @@ const getTipoBadgeClass = (tipo) => {
     if (!el) return;
     el.style.display = 'block';
     try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false });
       const imgData = canvas.toDataURL('image/png');
       const doc = new jsPDF('landscape', 'mm', 'a4');

@@ -2,6 +2,7 @@ import { IonContent, IonPage } from "@ionic/react";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { wsService } from "../services/wsService";
+import { getZonas } from "../services/alertasService";
 import "./GuardiaInfoScreen.css";
 
 type Props = {
@@ -19,57 +20,169 @@ type TokenData = {
   sub?: string;
 };
 
-const GuardiaInfoScreen: React.FC<Props> = ({
-  onVerAlertas,
-  onCerrarSesion,
-}) => {
+// ── Categorías de actividades ──────────────────────────────────────────────
+const CATEGORIAS = [
+  {
+    id: "control_acceso",
+    nombre: "Control de acceso",
+    emoji: "🔐",
+    color: "#3b82f6",
+    subtipos: [
+      "Verificar identificaciones de estudiantes/docentes/visitantes",
+      "Registrar entradas y salidas del personal",
+      "Autorizar ingreso de vehículos y asignar estacionamiento",
+      "Controlar acceso a zonas restringidas",
+    ],
+  },
+  {
+    id: "vigilancia_rondas",
+    nombre: "Vigilancia y rondas",
+    emoji: "👁️",
+    color: "#8b5cf6",
+    subtipos: [
+      "Recorrido periódico por instalaciones",
+      "Monitoreo de cámaras de seguridad (CCTV)",
+      "Verificar puertas y ventanas aseguradas",
+      "Vigilar áreas con equipos de valor",
+    ],
+  },
+  {
+    id: "atencion_incidentes",
+    nombre: "Atención a incidentes",
+    emoji: "🚨",
+    color: "#ef4444",
+    subtipos: [
+      "Responder a emergencias (peleas, accidentes, robos)",
+      "Coordinar con Policía Nacional o servicios de emergencia",
+      "Prestar primeros auxilios básicos",
+      "Controlar y reportar situaciones de conflicto",
+    ],
+  },
+  {
+    id: "prevencion",
+    nombre: "Prevención",
+    emoji: "🛡️",
+    color: "#f59e0b",
+    subtipos: [
+      "Detectar comportamientos sospechosos",
+      "Evitar ingreso de personas no autorizadas o bajo efectos de sustancias",
+      "Controlar que no ingresen armas u objetos peligrosos",
+      "Prevenir hurto de equipos o bienes",
+    ],
+  },
+  {
+    id: "apoyo_logistico",
+    nombre: "Apoyo logístico",
+    emoji: "📋",
+    color: "#10b981",
+    subtipos: [
+      "Registrar novedades en libro de control de turno",
+      "Recibir y entregar llaves de aulas o instalaciones",
+      "Orientar a visitantes sobre ubicación de oficinas",
+      "Apoyar en eventos académicos (foros, graduaciones, deportivos)",
+    ],
+  },
+  {
+    id: "gestion_vehiculos",
+    nombre: "Gestión de vehículos",
+    emoji: "🚗",
+    color: "#06b6d4",
+    subtipos: [
+      "Controlar salida de equipos o bienes con autorización",
+      "Registrar placas de vehículos que ingresan",
+      "Reportar vehículos sospechosos o mal estacionados",
+    ],
+  },
+  {
+    id: "comunicacion",
+    nombre: "Comunicación",
+    emoji: "📡",
+    color: "#ec4899",
+    subtipos: [
+      "Mantener comunicación con central de seguridad",
+      "Reportar novedades al jefe de seguridad o rectorado",
+      "Coordinar con otros guardias el relevo de turnos",
+    ],
+  },
+];
+
+interface ActividadData {
+  categoriaId: string;
+  subtipo: string;
+  zona: string;
+  observaciones: string;
+  horaInicio: string;
+  horaFin: string;
+}
+
+interface ActividadGuardada extends ActividadData {
+  guardia: string;
+  fecha: string;
+  fechaISO: string;
+}
+
+const getHoraActual = (): string => {
+  const now = new Date();
+  return now.toTimeString().slice(0, 5);
+};
+
+const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) => {
   const [user, setUser] = useState<TokenData | null>(null);
   const [disponible, setDisponible] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
-  // Modal de Rondas
-  const [showRondaModal, setShowRondaModal] = useState(false);
-  const [rondaData, setRondaData] = useState({ zona: "", inicio: "", fin: "" });
-  const [misRondas, setMisRondas] = useState<any[]>([]);
+  // Modal actividad
+  const [showModal, setShowModal] = useState(false);
+  const [paso, setPaso] = useState<1 | 2>(1);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<(typeof CATEGORIAS)[0] | null>(null);
+  const [actividadData, setActividadData] = useState<ActividadData>({
+    categoriaId: "",
+    subtipo: "",
+    zona: "",
+    observaciones: "",
+    horaInicio: "",
+    horaFin: "",
+  });
+
+  const [misActividades, setMisActividades] = useState<ActividadGuardada[]>([]);
+  const [filtroFechaInicio, setFiltroFechaInicio] = useState("");
+  const [filtroFechaFin, setFiltroFechaFin] = useState("");
+  const [showActividades, setShowActividades] = useState(false);
+  const [zonasDisponibles, setZonasDisponibles] = useState<string[]>([]);
 
   useEffect(() => {
-    // Cargar rondas del guardia
-    const saved = JSON.parse(localStorage.getItem('mis_rondas_guardia') || '[]');
-    setMisRondas(saved);
+    const saved = JSON.parse(localStorage.getItem("mis_actividades_guardia") || "[]");
+    setMisActividades(saved);
+    // Cargar zonas dinámicamente desde la API
+    getZonas()
+      .then((data: any) => {
+        const lista: any[] = Array.isArray(data) ? data : (data?.zonas || []);
+        const nombres = lista.map((z: any) => z.nombre || z.name || String(z)).filter(Boolean);
+        setZonasDisponibles(nombres);
+      })
+      .catch(() => {});
 
-    // Escuchar rondas recibidas por WS (de otros guardias o eco propio)
-    const handleNuevaRondaWS = (e: any) => {
-      const data = e.detail;
-      const nuevaRonda = {
-        zona: data.zona,
-        inicio: data.inicio,
-        fin: data.fin,
-        guardia: data.guardia,
-        fecha: new Date().toLocaleDateString()
-      };
-      setMisRondas(prev => {
-        // Evitar duplicados (si yo mismo la envié ya está)
+    const handleNuevaActividadWS = (e: any) => {
+      const data = e.detail as ActividadGuardada;
+      setMisActividades((prev) => {
         const yaExiste = prev.some(
-          r => r.zona === nuevaRonda.zona && r.inicio === nuevaRonda.inicio && r.fin === nuevaRonda.fin && r.fecha === nuevaRonda.fecha
+          (a) => a.fechaISO === data.fechaISO && a.categoriaId === data.categoriaId && a.subtipo === data.subtipo
         );
         if (yaExiste) return prev;
-        const updated = [nuevaRonda, ...prev];
-        localStorage.setItem('mis_rondas_guardia', JSON.stringify(updated));
+        const updated = [data, ...prev];
+        localStorage.setItem("mis_actividades_guardia", JSON.stringify(updated));
         return updated;
       });
     };
 
-    window.addEventListener('app-nueva-ronda', handleNuevaRondaWS);
-    return () => {
-      window.removeEventListener('app-nueva-ronda', handleNuevaRondaWS);
-    };
+    window.addEventListener("app-nueva-actividad", handleNuevaActividadWS);
+    return () => window.removeEventListener("app-nueva-actividad", handleNuevaActividadWS);
   }, []);
 
   useEffect(() => {
     const cargarToken = async () => {
       try {
         const token = localStorage.getItem("token");
-
         if (token) {
           const decoded = jwtDecode<TokenData>(token);
           setUser(decoded);
@@ -79,23 +192,15 @@ const GuardiaInfoScreen: React.FC<Props> = ({
         console.error("Error leyendo token:", err);
       }
     };
-
     cargarToken();
   }, []);
 
   const handleToggle = async () => {
     const nuevoEstado = !disponible;
-
     setGuardando(true);
-
     try {
       await wsService.connect();
-
-      wsService.send({
-        tipo: "disponibilidad",
-        disponible: nuevoEstado,
-      });
-
+      wsService.send({ tipo: "disponibilidad", disponible: nuevoEstado });
       setDisponible(nuevoEstado);
     } catch (err) {
       console.error("Error actualizando disponibilidad:", err);
@@ -104,10 +209,8 @@ const GuardiaInfoScreen: React.FC<Props> = ({
     }
   };
 
-  // Iniciales del nombre
   const obtenerIniciales = () => {
     if (!user?.nombre) return "GU";
-
     return user.nombre
       .split(" ")
       .slice(0, 2)
@@ -115,176 +218,154 @@ const GuardiaInfoScreen: React.FC<Props> = ({
       .join("");
   };
 
-  // Obtener hora actual en formato HH:MM
-  const getHoraActual = (): string => {
-    const now = new Date();
-    return now.toTimeString().slice(0, 5);
+  const abrirModal = () => {
+    setPaso(1);
+    setCategoriaSeleccionada(null);
+    setActividadData({ categoriaId: "", subtipo: "", zona: user?.zona || "", observaciones: "", horaInicio: getHoraActual(), horaFin: "" });
+    setShowModal(true);
   };
+
+  const elegirCategoria = (cat: (typeof CATEGORIAS)[0]) => {
+    setCategoriaSeleccionada(cat);
+    setActividadData((prev) => ({ ...prev, categoriaId: cat.id, subtipo: "", zona: prev.zona || user?.zona || "" }));
+    setPaso(2);
+  };
+
+  const guardarActividad = () => {
+    if (!categoriaSeleccionada) return;
+    if (!actividadData.subtipo || !actividadData.horaInicio || !actividadData.horaFin) {
+      alert("Por favor completa todos los campos obligatorios (Tipo, Hora inicio y Hora fin).");
+      return;
+    }
+    if (!actividadData.zona) {
+      alert("Por favor indica la zona donde se realizó la actividad.");
+      return;
+    }
+
+    const nueva: ActividadGuardada = {
+      ...actividadData,
+      guardia: user?.nombre || "Guardia",
+      fecha: new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" }),
+      fechaISO: new Date().toISOString(),
+    };
+
+    // Guardar en localStorage
+    const actualizadas = [nueva, ...misActividades];
+    setMisActividades(actualizadas);
+    localStorage.setItem("mis_actividades_guardia", JSON.stringify(actualizadas));
+
+    // Enviar por WebSocket
+    wsService.send({
+      tipo: "nueva_actividad",
+      guardia: nueva.guardia,
+      categoriaId: nueva.categoriaId,
+      categoriaNombre: categoriaSeleccionada.nombre,
+      subtipo: nueva.subtipo,
+      zona: nueva.zona,
+      observaciones: nueva.observaciones,
+      horaInicio: nueva.horaInicio,
+      horaFin: nueva.horaFin,
+      fecha: nueva.fecha,
+      fechaISO: nueva.fechaISO,
+    });
+
+    setShowModal(false);
+    alert("✅ Actividad registrada correctamente.");
+  };
+
+  const getCategoriaById = (id: string) => CATEGORIAS.find((c) => c.id === id);
 
   return (
     <IonPage>
       <IonContent className="gi-bg">
-
         <div className="gi-container">
 
           {/* HEADER AZUL */}
           <div className="gi-top-card">
-
             <div className="gi-top-bar">
-              <button
-                className="gi-back-btn"
-                onClick={onCerrarSesion}
-              >
-                ← Inicio
-              </button>
-
-              <span className="gi-menu">
-                •••
-              </span>
+              <button className="gi-back-btn" onClick={onCerrarSesion}>← Inicio</button>
+              <span className="gi-menu">•••</span>
             </div>
 
-            <h2 className="gi-title">
-              Mi perfil
-            </h2>
+            <h2 className="gi-title">Mi perfil</h2>
 
-            {/* Avatar */}
-            <div className="gi-avatar">
-              {obtenerIniciales()}
-            </div>
-
-            {/* Nombre */}
-            <h3 className="gi-name">
-              {user?.nombre || "Guardia"}
-            </h3>
-
-            {/* Correo */}
-            <p className="gi-email">
-              {user?.email || user?.correo || "correo@uta.edu.ec"}
-            </p>
-
-            {/* Badge */}
-            <div className="gi-role-badge">
-              Guardia de seguridad
-            </div>
-
+            <div className="gi-avatar">{obtenerIniciales()}</div>
+            <h3 className="gi-name">{user?.nombre || "Guardia"}</h3>
+            <p className="gi-email">{user?.email || user?.correo || "correo@uta.edu.ec"}</p>
+            <div className="gi-role-badge">Guardia de seguridad</div>
           </div>
 
           {/* CARD DATOS */}
           <div className="gi-info-card">
-
-            <p className="gi-section-title">
-              DATOS PERSONALES
-            </p>
-
+            <p className="gi-section-title">DATOS PERSONALES</p>
             <div className="gi-row">
               <span>Nombre completo</span>
               <strong>{user?.nombre || "Guardia"}</strong>
             </div>
-
             <div className="gi-row">
               <span>Correo institucional</span>
-              <strong>
-                {user?.email || user?.correo || "correo@uta.edu.ec"}
-              </strong>
+              <strong>{user?.email || user?.correo || "correo@uta.edu.ec"}</strong>
             </div>
-
             <div className="gi-row">
               <span>Rol</span>
               <strong>Guardia</strong>
             </div>
-
             <div className="gi-row">
               <span>Estado</span>
-
-              <strong
-                style={{
-                  color: disponible ? "#10b981" : "#ef4444",
-                }}
-              >
+              <strong style={{ color: disponible ? "#10b981" : "#ef4444" }}>
                 {disponible ? "Activo" : "Inactivo"}
               </strong>
             </div>
-
             <div className="gi-row">
               <span>Zona de cobertura</span>
-
-              <strong>
-                {user?.zona || "Zona no asignada"}
-              </strong>
+              <strong>{user?.zona || "Zona no asignada"}</strong>
             </div>
-
           </div>
 
           {/* CARD SESIÓN */}
           <div className="gi-info-card">
-
-            <p className="gi-section-title">
-              SESIÓN
-            </p>
-
+            <p className="gi-section-title">SESIÓN</p>
             <div className="gi-row">
               <span>Último acceso</span>
-              <strong>
-                {new Date().toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </strong>
+              <strong>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong>
             </div>
-
             <div className="gi-row">
               <span>Token expira en</span>
               <strong>24 h</strong>
             </div>
-
           </div>
 
           {/* DISPONIBILIDAD */}
           <div className="gi-disponibilidad-card">
-
             <div>
-              <p className="gi-disp-title">
-                Disponibilidad
-              </p>
-
-              <p className="gi-disp-sub">
-                {disponible
-                  ? "Recibiendo alertas"
-                  : "Sin recibir alertas"}
-              </p>
+              <p className="gi-disp-title">Disponibilidad</p>
+              <p className="gi-disp-sub">{disponible ? "Recibiendo alertas" : "Sin recibir alertas"}</p>
             </div>
-
             <button
-              className={`gi-toggle ${
-                disponible
-                  ? "toggle-on"
-                  : "toggle-off"
-              }`}
+              className={`gi-toggle ${disponible ? "toggle-on" : "toggle-off"}`}
               onClick={handleToggle}
               disabled={guardando}
             >
               <span className="gi-toggle-thumb" />
             </button>
-
           </div>
 
-          {/* BOTÓN REGISTRAR RONDA */}
-          <button
-            className="gi-ronda-btn"
-            onClick={() => {
-              setRondaData({ zona: user?.zona || "", inicio: getHoraActual(), fin: "" });
-              setShowRondaModal(true);
-            }}
-          >
-            📍 Registrar nueva ronda
+          {/* BOTÓN REGISTRAR ACTIVIDAD */}
+          <button className="gi-actividad-btn" onClick={abrirModal}>
+            📋 Registrar nueva actividad
           </button>
 
           {/* BOTÓN ALERTAS */}
-          <button
-            className="gi-alertas-btn"
-            onClick={onVerAlertas}
-          >
+          <button className="gi-alertas-btn" onClick={onVerAlertas}>
             🚨 Ver alertas activas
+          </button>
+
+          {/* MIS ACTIVIDADES toggle */}
+          <button
+            className="gi-mis-actividades-btn"
+            onClick={() => setShowActividades((v) => !v)}
+          >
+            {showActividades ? "▲ Ocultar actividades" : "📅 Mis actividades"}
           </button>
 
           {/* LOGOUT */}
@@ -295,139 +376,213 @@ const GuardiaInfoScreen: React.FC<Props> = ({
             Cerrar sesión
           </button>
 
-          {/* HISTORIAL DE RONDAS DEL GUARDIA */}
-          <div className="gi-info-card" style={{ marginTop: '20px' }}>
-            <p className="gi-section-title">MIS RONDAS REGISTRADAS</p>
-            {misRondas.length === 0 ? (
-              <p style={{ color: 'var(--app-text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '10px 0' }}>
-                No tienes rondas registradas.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {misRondas.map((r, i) => (
-                  <div key={i} style={{ 
-                    background: 'var(--app-card-bg)', 
-                    padding: '12px', 
-                    borderRadius: '8px',
-                    border: '1px solid var(--app-border)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: 'var(--app-primary)' }}>{r.zona}</strong>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--app-text-secondary)' }}>{r.fecha}</span>
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--app-text)' }}>
-                      <span>Inicio: {r.inicio}</span> | <span>Fin: {r.fin}</span>
-                    </div>
-                  </div>
-                ))}
+          {/* HISTORIAL DE ACTIVIDADES */}
+          {showActividades && <div className="gi-info-card" style={{ marginTop: "20px" }}>
+            <p className="gi-section-title">MIS ACTIVIDADES REGISTRADAS</p>
+
+            {/* Filtros de fecha */}
+            <div className="gi-filtro-fechas">
+              <div className="gi-filtro-campo">
+                <label>Desde</label>
+                <input
+                  type="date"
+                  className="gi-modal-input gi-filtro-input"
+                  value={filtroFechaInicio}
+                  onChange={(e) => setFiltroFechaInicio(e.target.value)}
+                />
               </div>
-            )}
-          </div>
+              <div className="gi-filtro-campo">
+                <label>Hasta</label>
+                <input
+                  type="date"
+                  className="gi-modal-input gi-filtro-input"
+                  value={filtroFechaFin}
+                  onChange={(e) => setFiltroFechaFin(e.target.value)}
+                />
+              </div>
+              {(filtroFechaInicio || filtroFechaFin) && (
+                <button
+                  className="gi-filtro-clear"
+                  onClick={() => { setFiltroFechaInicio(""); setFiltroFechaFin(""); }}
+                  title="Limpiar filtros"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {(() => {
+              const actividadesFiltradas = misActividades.filter((act) => {
+                if (!act.fechaISO) return true;
+                const fechaAct = new Date(act.fechaISO);
+                fechaAct.setHours(0, 0, 0, 0);
+                if (filtroFechaInicio) {
+                  const inicio = new Date(filtroFechaInicio + "T00:00:00");
+                  if (fechaAct < inicio) return false;
+                }
+                if (filtroFechaFin) {
+                  const fin = new Date(filtroFechaFin + "T23:59:59");
+                  if (fechaAct > fin) return false;
+                }
+                return true;
+              });
+
+              if (actividadesFiltradas.length === 0) {
+                return (
+                  <p style={{ color: "var(--app-text-secondary)", fontSize: "0.9rem", textAlign: "center", padding: "10px 0" }}>
+                    {misActividades.length === 0
+                      ? "No tienes actividades registradas."
+                      : "Sin actividades en ese rango de fechas."}
+                  </p>
+                );
+              }
+
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {actividadesFiltradas.map((act, i) => {
+                    const cat = getCategoriaById(act.categoriaId);
+                    return (
+                      <div key={i} className="gi-actividad-card" style={{ borderLeft: `4px solid ${cat?.color || "#6b7280"}` }}>
+                        <div className="gi-actividad-header">
+                          <span className="gi-actividad-cat">
+                            {cat?.emoji} {cat?.nombre || act.categoriaId}
+                          </span>
+                          <span className="gi-actividad-fecha">{act.fecha}</span>
+                        </div>
+                        <div className="gi-actividad-subtipo">{act.subtipo}</div>
+                        {act.zona && (
+                          <div className="gi-actividad-zona">📍 {act.zona}</div>
+                        )}
+                        {act.observaciones && (
+                          <div className="gi-actividad-obs">💬 {act.observaciones}</div>
+                        )}
+                        <div className="gi-actividad-horario">
+                          🕐 {act.horaInicio} → {act.horaFin}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>}
 
         </div>
 
-        {/* MODAL DE RONDAS */}
-        {showRondaModal && (
+        {/* ── MODAL REGISTRAR ACTIVIDAD ── */}
+        {showModal && (
           <div className="gi-modal-overlay">
-            <div className="gi-modal-content">
-              <h3 className="gi-modal-title">Registrar Ronda</h3>
-              
-              <div className="gi-modal-group">
-                <label>Zona</label>
-                <select 
-                  value={rondaData.zona}
-                  onChange={(e) => setRondaData({...rondaData, zona: e.target.value})}
-                  className="gi-modal-input"
-                >
-                  <option value="">Selecciona tu zona</option>
-                  <option value="Zona A">Zona A</option>
-                  <option value="Zona B">Zona B</option>
-                  <option value="Zona C">Zona C</option>
-                  <option value="Zona D">Zona D</option>
-                </select>
+            <div className="gi-modal-content gi-modal-actividad">
+
+              {/* Header del modal */}
+              <div className="gi-modal-header">
+                {paso === 2 && (
+                  <button className="gi-modal-back" onClick={() => setPaso(1)}>← Volver</button>
+                )}
+                <h3 className="gi-modal-title">
+                  {paso === 1 ? "📋 Registrar actividad" : `${categoriaSeleccionada?.emoji} ${categoriaSeleccionada?.nombre}`}
+                </h3>
+                <button className="gi-modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
 
-              <div className="gi-modal-group">
-                <label>Hora Inicio</label>
-                <input 
-                  type="time"
-                  value={rondaData.inicio}
-                  min={getHoraActual()}
-                  onChange={(e) => {
-                    const horaActual = getHoraActual();
-                    if (e.target.value < horaActual) {
-                      alert("La hora de inicio no puede ser anterior a la hora actual (" + horaActual + ").");
-                      setRondaData({...rondaData, inicio: horaActual});
-                      return;
-                    }
-                    setRondaData({...rondaData, inicio: e.target.value});
-                  }}
-                  className="gi-modal-input"
-                />
-              </div>
+              {/* PASO 1 — Elegir categoría */}
+              {paso === 1 && (
+                <div className="gi-categorias-grid">
+                  {CATEGORIAS.map((cat) => (
+                    <button
+                      key={cat.id}
+                      className="gi-categoria-card"
+                      style={{ borderColor: cat.color }}
+                      onClick={() => elegirCategoria(cat)}
+                    >
+                      <span className="gi-cat-emoji">{cat.emoji}</span>
+                      <span className="gi-cat-nombre">{cat.nombre}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <div className="gi-modal-group">
-                <label>Hora Fin</label>
-                <input 
-                  type="time"
-                  value={rondaData.fin}
-                  onChange={(e) => setRondaData({...rondaData, fin: e.target.value})}
-                  className="gi-modal-input"
-                />
-              </div>
+              {/* PASO 2 — Detalles de la actividad */}
+              {paso === 2 && categoriaSeleccionada && (
+                <div className="gi-modal-form">
 
-              <div className="gi-modal-actions">
-                <button 
-                  className="gi-modal-btn-cancel"
-                  onClick={() => setShowRondaModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  className="gi-modal-btn-save"
-                  onClick={() => {
-                    if (!rondaData.zona || !rondaData.inicio || !rondaData.fin) {
-                      alert("Por favor completa todos los campos (Zona, Inicio y Fin).");
-                      return;
-                    }
+                  <div className="gi-modal-group">
+                    <label>Tipo de actividad *</label>
+                    <input
+                      list={`subtipos-${categoriaSeleccionada.id}`}
+                      className="gi-modal-input"
+                      placeholder="Escribe o selecciona un tipo..."
+                      value={actividadData.subtipo}
+                      onChange={(e) => setActividadData({ ...actividadData, subtipo: e.target.value })}
+                    />
+                    <datalist id={`subtipos-${categoriaSeleccionada.id}`}>
+                      {categoriaSeleccionada.subtipos.map((s) => (
+                        <option key={s} value={s} />
+                      ))}
+                    </datalist>
+                  </div>
 
-                    // Validar que la hora de inicio no sea anterior a la hora actual
-                    const horaActual = getHoraActual();
-                    if (rondaData.inicio < horaActual) {
-                      alert("La hora de inicio no puede ser anterior a la hora actual (" + horaActual + ").");
-                      return;
-                    }
+                  <div className="gi-modal-group">
+                    <label>Zona *</label>
+                    <input
+                      list="zonas-disponibles"
+                      className="gi-modal-input"
+                      placeholder="Escribe o selecciona la zona..."
+                      value={actividadData.zona}
+                      onChange={(e) => setActividadData({ ...actividadData, zona: e.target.value })}
+                    />
+                    <datalist id="zonas-disponibles">
+                      {zonasDisponibles.map((z) => (
+                        <option key={z} value={z} />
+                      ))}
+                    </datalist>
+                  </div>
 
-                    wsService.send({
-                      tipo: "nueva_ronda",
-                      guardia: user?.nombre || "Guardia",
-                      zona: rondaData.zona,
-                      inicio: rondaData.inicio,
-                      fin: rondaData.fin
-                    });
+                  <div className="gi-modal-group">
+                    <label>Observaciones</label>
+                    <textarea
+                      className="gi-modal-input gi-modal-textarea"
+                      placeholder="Detalles adicionales (opcional)..."
+                      value={actividadData.observaciones}
+                      onChange={(e) => setActividadData({ ...actividadData, observaciones: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
 
-                    // Guardar en localStorage
-                    const nuevaRondaGuardada = {
-                      zona: rondaData.zona,
-                      inicio: rondaData.inicio,
-                      fin: rondaData.fin,
-                      fecha: new Date().toLocaleDateString()
-                    };
-                    const actualizadas = [nuevaRondaGuardada, ...misRondas];
-                    setMisRondas(actualizadas);
-                    localStorage.setItem('mis_rondas_guardia', JSON.stringify(actualizadas));
+                  <div className="gi-modal-row-2col">
+                    <div className="gi-modal-group">
+                      <label>Hora inicio *</label>
+                      <input
+                        type="time"
+                        className="gi-modal-input"
+                        value={actividadData.horaInicio}
+                        onChange={(e) => setActividadData({ ...actividadData, horaInicio: e.target.value })}
+                      />
+                    </div>
+                    <div className="gi-modal-group">
+                      <label>Hora fin *</label>
+                      <input
+                        type="time"
+                        className="gi-modal-input"
+                        value={actividadData.horaFin}
+                        onChange={(e) => setActividadData({ ...actividadData, horaFin: e.target.value })}
+                      />
+                    </div>
+                  </div>
 
-                    alert("Ronda registrada exitosamente");
-                    setShowRondaModal(false);
-                    setRondaData({ zona: "", inicio: "", fin: "" });
-                  }}
-                >
-                  Guardar
-                </button>
-              </div>
+                  <div className="gi-modal-actions">
+                    <button className="gi-modal-btn-cancel" onClick={() => setShowModal(false)}>
+                      Cancelar
+                    </button>
+                    <button
+                      className="gi-modal-btn-save"
+                      onClick={guardarActividad}
+                    >
+                      Guardar actividad
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

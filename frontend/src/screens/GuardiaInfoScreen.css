@@ -160,13 +160,8 @@
   flex-shrink: 0;
 }
 
-.toggle-on {
-  background: var(--app-primary);
-}
-
-.toggle-off {
-  background: var(--app-elevated);
-}
+.toggle-on  { background: var(--app-primary); }
+.toggle-off { background: var(--app-elevated); }
 
 .gi-toggle-thumb {
   position: absolute;
@@ -179,17 +174,34 @@
   box-shadow: var(--app-shadow-sm);
 }
 
-.toggle-on .gi-toggle-thumb {
-  left: 28px;
+.toggle-on  .gi-toggle-thumb { left: 28px; }
+.toggle-off .gi-toggle-thumb { left: 4px; }
+
+/* ── Botón registrar actividad ── */
+.gi-actividad-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  transition: 0.15s;
+  letter-spacing: 0.3px;
 }
 
-.toggle-off .gi-toggle-thumb {
-  left: 4px;
+.gi-actividad-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .gi-alertas-btn {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 12px;
   padding: 16px;
   border: none;
   border-radius: 18px;
@@ -202,9 +214,7 @@
   transition: 0.15s;
 }
 
-.gi-alertas-btn:active {
-  transform: scale(0.98);
-}
+.gi-alertas-btn:active { transform: scale(0.98); }
 
 .gi-logout-btn {
   width: 100%;
@@ -220,71 +230,259 @@
   transition: 0.15s;
 }
 
-.gi-logout-btn:active {
-  background: var(--app-card-hover);
-}
+.gi-logout-btn:active { background: var(--app-card-hover); }
 
-@media (min-width: 768px) {
-
-  .gi-container {
-    max-width: 430px;
-    margin: auto;
-  }
-
-}
-
-/* Botón y Modal de Rondas */
-.gi-ronda-btn {
+/* ── Botón Mis Actividades ── */
+.gi-mis-actividades-btn {
   width: 100%;
-  margin-top: 18px;
-  padding: 16px;
-  border: none;
+  margin-top: 12px;
+  padding: 15px;
   border-radius: 18px;
-  background: var(--app-primary);
-  color: white;
+  border: 1.5px solid #6366f1;
+  background: transparent;
+  color: #a5b4fc;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--app-shadow);
   transition: 0.15s;
+  letter-spacing: 0.2px;
 }
 
-.gi-ronda-btn:active {
+.gi-mis-actividades-btn:active {
+  background: rgba(99, 102, 241, 0.12);
   transform: scale(0.98);
 }
 
+/* ── Historial de actividades ── */
+.gi-actividad-card {
+  background: var(--app-bg);
+  border-radius: 14px;
+  padding: 14px;
+  border-left: 4px solid var(--app-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: 0.15s;
+}
+
+.gi-actividad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gi-actividad-cat {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.gi-actividad-fecha {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.gi-actividad-subtipo {
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  line-height: 1.4;
+}
+
+.gi-actividad-zona {
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  font-weight: 600;
+}
+
+.gi-actividad-obs {
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  font-style: italic;
+  background: var(--app-card);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.gi-actividad-horario {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  font-weight: 600;
+}
+
+/* ── Filtro de fechas ── */
+.gi-filtro-fechas {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.gi-filtro-campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 120px;
+}
+
+.gi-filtro-campo label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--app-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gi-filtro-input {
+  padding: 9px 10px !important;
+  font-size: 13px !important;
+}
+
+.gi-filtro-clear {
+  background: var(--app-danger);
+  border: none;
+  color: white;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 1px;
+  transition: 0.15s;
+}
+
+.gi-filtro-clear:active {
+  transform: scale(0.93);
+}
+
+/* ── Modal overlay ── */
 .gi-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .gi-modal-content {
   background: var(--app-card);
-  width: 90%;
-  max-width: 360px;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 28px 28px 0 0;
+  padding: 24px 20px 32px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.gi-modal-actividad {
+  gap: 0;
+}
+
+/* Modal header */
+.gi-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 8px;
+}
+
+.gi-modal-back {
+  background: transparent;
+  border: none;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  white-space: nowrap;
 }
 
 .gi-modal-title {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--app-text);
   margin: 0;
   text-align: center;
+  flex: 1;
+}
+
+.gi-modal-close {
+  background: var(--app-bg);
+  border: none;
+  color: var(--app-text-secondary);
+  font-size: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Paso 1: grid de categorías ── */
+.gi-categorias-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gi-categoria-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border-radius: 18px;
+  border: 2px solid transparent;
+  background: var(--app-bg);
+  cursor: pointer;
+  transition: 0.15s;
+  text-align: center;
+  min-height: 90px;
+}
+
+.gi-categoria-card:active {
+  transform: scale(0.96);
+}
+
+.gi-cat-emoji {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.gi-cat-nombre {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-text);
+  line-height: 1.3;
+}
+
+/* ── Paso 2: formulario ── */
+.gi-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .gi-modal-group {
@@ -294,7 +492,7 @@
 }
 
 .gi-modal-group label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--app-text-secondary);
   text-transform: uppercase;
@@ -309,16 +507,30 @@
   border-radius: 12px;
   font-size: 14px;
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .gi-modal-input:focus {
   border-color: var(--app-primary);
 }
 
+.gi-modal-textarea {
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.gi-modal-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .gi-modal-actions {
   display: flex;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .gi-modal-btn-cancel {
@@ -330,10 +542,11 @@
   color: var(--app-text-secondary);
   font-weight: 700;
   font-size: 14px;
+  cursor: pointer;
 }
 
 .gi-modal-btn-save {
-  flex: 1;
+  flex: 2;
   padding: 14px;
   border-radius: 14px;
   border: none;
@@ -341,4 +554,25 @@
   color: white;
   font-weight: 700;
   font-size: 14px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.gi-modal-btn-save:active { transform: scale(0.97); }
+
+@media (min-width: 768px) {
+  .gi-container {
+    max-width: 430px;
+    margin: auto;
+  }
+
+  .gi-modal-overlay {
+    align-items: center;
+  }
+
+  .gi-modal-content {
+    border-radius: 28px;
+    max-width: 400px;
+    padding: 28px 24px 32px;
+  }
 }
