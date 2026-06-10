@@ -6,6 +6,77 @@ import { useAuth } from '../context/AuthContext';
 import { adminWsService } from '../services/wsService';
 import { API_BASE } from '../services/config';
 
+const CATEGORIAS = [
+  {
+    id: 'control_acceso',
+    nombre: 'Control de acceso',
+    subtipos: [
+      'Verificar identificaciones de estudiantes/docentes/visitantes',
+      'Registrar entradas y salidas del personal',
+      'Autorizar ingreso de vehículos y asignar estacionamiento',
+      'Controlar acceso a zonas restringidas',
+    ],
+  },
+  {
+    id: 'vigilancia_rondas',
+    nombre: 'Vigilancia y rondas',
+    subtipos: [
+      'Recorrido periódico por instalaciones',
+      'Monitoreo de cámaras de seguridad (CCTV)',
+      'Verificar puertas y ventanas aseguradas',
+      'Vigilar áreas con equipos de valor',
+    ],
+  },
+  {
+    id: 'atencion_incidentes',
+    nombre: 'Atención a incidentes',
+    subtipos: [
+      'Responder a emergencias (peleas, accidentes, robos)',
+      'Coordinar con Policía Nacional o servicios de emergencia',
+      'Prestar primeros auxilios básicos',
+      'Controlar y reportar situaciones de conflicto',
+    ],
+  },
+  {
+    id: 'prevencion',
+    nombre: 'Prevención',
+    subtipos: [
+      'Detectar comportamientos sospechosos',
+      'Evitar ingreso de personas no autorizadas o bajo efectos de sustancias',
+      'Controlar que no ingresen armas u objetos peligrosos',
+      'Prevenir hurto de equipos o bienes',
+    ],
+  },
+  {
+    id: 'apoyo_logistico',
+    nombre: 'Apoyo logístico',
+    subtipos: [
+      'Registrar novedades en libro de control de turno',
+      'Recibir y entregar llaves de aulas o instalaciones',
+      'Orientar a visitantes sobre ubicación de oficinas',
+      'Apoyar en eventos académicos (foros, graduaciones, deportivos)',
+    ],
+  },
+  {
+    id: 'gestion_vehiculos',
+    nombre: 'Gestión de vehículos',
+    subtipos: [
+      'Controlar salida de equipos o bienes con autorización',
+      'Registrar placas de vehículos que ingresan',
+      'Reportar vehículos sospechosos o mal estacionados',
+    ],
+  },
+  {
+    id: 'comunicacion',
+    nombre: 'Comunicación',
+    subtipos: [
+      'Mantener comunicación con central de seguridad',
+      'Reportar novedades al jefe de seguridad o rectorado',
+      'Coordinar con otros guardias el relevo de turnos',
+    ],
+  },
+];
+
 const Actividades = () => {
   const { user } = useAuth();
   const isGuard = user?.rol === 'Guardia';
@@ -15,12 +86,14 @@ const Actividades = () => {
   const [zonasOptions, setZonasOptions] = useState(['Todas']);
   const [loading, setLoading] = useState(true);
 
-  // Add round state
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newRonda, setNewRonda] = useState({ 
-    zona: user?.zonaAsignada || '', 
-    inicio: '', 
-    fin: '' 
+  const [newActividad, setNewActividad] = useState({
+    categoriaId: '',
+    subtipo: '',
+    zona: user?.zonaAsignada || '',
+    observaciones: '',
+    inicio: '',
+    fin: '',
   });
 
   const fechaHoy = new Date().toLocaleDateString('es-EC', {
@@ -30,25 +103,56 @@ const Actividades = () => {
   });
 
   useEffect(() => {
+    const calcularDuracion = (inicio = '', fin = '') => {
+      if (!inicio || !fin) return 0;
+      const [hIni] = inicio.split(':').map(Number);
+      const [hFin] = fin.split(':').map(Number);
+      let duracion = hFin - hIni;
+      if (duracion <= 0) duracion += 24;
+      return duracion;
+    };
+
+    const parseActividad = (item) => {
+      const inicio = item.horaInicio || item.inicio || '';
+      const fin = item.horaFin || item.fin || '';
+      const categoriaId = item.categoriaId || item.categoria || '';
+      const categoria = item.categoriaNombre || CATEGORIAS.find(c => c.id === categoriaId)?.nombre || categoriaId || item.categoria || 'Ronda';
+      return {
+        id: item.id ?? Date.now() + Math.random(),
+        zona: item.zona || '',
+        guardia: item.guardia || 'Guardia',
+        inicio,
+        fin,
+        duracion: item.duracion ?? calcularDuracion(inicio, fin),
+        categoriaId,
+        categoria,
+        subtipo: item.subtipo || '',
+        observaciones: item.observaciones || '',
+        fecha: item.fecha || '',
+        fechaISO: item.fechaISO || '',
+      };
+    };
+
     const cargarDatos = async () => {
       setLoading(true);
       try {
-        // Fetch real guards and zones from DB
         const [resGuardias, resZonas] = await Promise.all([
           getGuardias(),
           getZonas()
         ]);
 
-        const guardiasDb = resGuardias.success ? resGuardias.data : [];
         const zonasDb = resZonas.success ? resZonas.data : [];
-
-        // Populate zone filters
         const zonasNombres = zonasDb.map(z => z.nombre);
         setZonasOptions(['Todas', ...zonasNombres]);
 
-        // Cargar rondas guardadas localmente (simulando BD)
+        const savedActividades = JSON.parse(localStorage.getItem('mis_actividades_guardia') || '[]');
         const savedRondas = JSON.parse(localStorage.getItem('rondas_mock_db') || '[]');
-        setHistorial(savedRondas.sort((a, b) => a.inicio.localeCompare(b.inicio)));
+        const merged = [...savedActividades, ...savedRondas];
+        const normalized = merged
+          .map(parseActividad)
+          .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+        setHistorial(normalized);
       } catch (error) {
         console.error("Error cargando datos para actividades", error);
       } finally {
@@ -58,45 +162,44 @@ const Actividades = () => {
 
     cargarDatos();
 
-    // Listen to real-time rounds
-    const handleNuevaRonda = (data) => {
-      console.log('Nueva ronda recibida via WS:', data);
-      
-      const [hIni] = data.inicio.split(':').map(Number);
-      const [hFin] = data.fin.split(':').map(Number);
-      let duracion = hFin - hIni;
-      if (duracion <= 0) duracion += 24;
-
-      const nuevaRondaObj = {
+    const handleNuevaActividad = (data) => {
+      console.log('Nueva actividad recibida via WS:', data);
+      const actividad = {
         id: Date.now() + Math.random(),
-        zona: data.zona,
-        guardia: data.guardia,
-        inicio: data.inicio,
-        fin: data.fin,
-        duracion: duracion
+        zona: data.zona || '',
+        guardia: data.guardia || 'Guardia',
+        inicio: data.inicio || data.horaInicio || '',
+        fin: data.fin || data.horaFin || '',
+        duracion: calcularDuracion(data.inicio || data.horaInicio || '', data.fin || data.horaFin || ''),
+        categoriaId: data.categoriaId || data.categoria || '',
+        categoria: data.categoriaNombre || CATEGORIAS.find(c => c.id === (data.categoriaId || data.categoria))?.nombre || (data.categoria || 'Ronda'),
+        subtipo: data.subtipo || '',
+        observaciones: data.observaciones || '',
+        fecha: data.fecha || '',
+        fechaISO: data.fechaISO || new Date().toISOString(),
       };
 
       setHistorial(prev => {
         const yaExiste = prev.some(
-          r => r.zona === nuevaRondaObj.zona &&
-               r.guardia === nuevaRondaObj.guardia &&
-               r.inicio === nuevaRondaObj.inicio &&
-               r.fin === nuevaRondaObj.fin
+          r => r.zona === actividad.zona &&
+               r.guardia === actividad.guardia &&
+               r.inicio === actividad.inicio &&
+               r.fin === actividad.fin
         );
         if (yaExiste) return prev;
 
-        const next = [...prev, nuevaRondaObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
-        localStorage.setItem('rondas_mock_db', JSON.stringify(next));
+        const next = [...prev, actividad].sort((a, b) => a.inicio.localeCompare(b.inicio));
+        localStorage.setItem('mis_actividades_guardia', JSON.stringify(next));
         return next;
       });
     };
 
-    adminWsService.on('nueva_ronda', handleNuevaRonda);
-    const handleNuevaRondaEvent = (e) => handleNuevaRonda(e.detail);
-    window.addEventListener('app-nueva-ronda', handleNuevaRondaEvent);
+    adminWsService.on('nueva_ronda', handleNuevaActividad);
+    const handleNuevaActividadEvent = (e) => handleNuevaActividad(e.detail);
+    window.addEventListener('app-nueva-ronda', handleNuevaActividadEvent);
+    window.addEventListener('app-nueva-actividad', handleNuevaActividadEvent);
 
-    // Poll REST API as fallback every 10s
-    const fetchRondasRest = async () => {
+    const fetchActividadesRest = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -106,39 +209,33 @@ const Actividades = () => {
         if (!res.ok) return;
         const data = await res.json();
         if (!Array.isArray(data) || data.length === 0) return;
+
         setHistorial(prev => {
           let updated = [...prev];
           for (const r of data) {
             const yaExiste = updated.some(
               x => x.zona === r.zona && x.guardia === r.guardia &&
-                   x.inicio === r.inicio && x.fin === r.fin
+                   x.inicio === (r.inicio || r.horaInicio) && x.fin === (r.fin || r.horaFin)
             );
             if (!yaExiste) {
-              const [hIni] = r.inicio.split(':').map(Number);
-              const [hFin] = r.fin.split(':').map(Number);
-              let duracion = hFin - hIni;
-              if (duracion <= 0) duracion += 24;
-              updated.push({
-                id: Date.now() + Math.random(),
-                zona: r.zona, guardia: r.guardia,
-                inicio: r.inicio, fin: r.fin,
-                duracion
-              });
+              const actividad = parseActividad(r);
+              updated.push(actividad);
             }
           }
           updated.sort((a, b) => a.inicio.localeCompare(b.inicio));
-          localStorage.setItem('rondas_mock_db', JSON.stringify(updated));
+          localStorage.setItem('mis_actividades_guardia', JSON.stringify(updated));
           return updated;
         });
       } catch (err) {
-        console.warn('[Rondas] Error polling REST:', err);
+        console.warn('[Actividades] Error polling REST:', err);
       }
     };
-    const interval = setInterval(fetchRondasRest, 10000);
+    const interval = setInterval(fetchActividadesRest, 10000);
 
     return () => {
-      adminWsService.on('nueva_ronda', null); // cleanup
-      window.removeEventListener('app-nueva-ronda', handleNuevaRondaEvent);
+      adminWsService.on('nueva_ronda', null);
+      window.removeEventListener('app-nueva-ronda', handleNuevaActividadEvent);
+      window.removeEventListener('app-nueva-actividad', handleNuevaActividadEvent);
       clearInterval(interval);
     };
   }, []);

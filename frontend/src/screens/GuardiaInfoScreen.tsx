@@ -524,18 +524,20 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
 
                   <div className="gi-modal-group">
                     <label>Zona *</label>
-                    <input
-                      list="zonas-disponibles"
+                    <select
                       className="gi-modal-input"
-                      placeholder="Escribe o selecciona la zona..."
                       value={actividadData.zona}
                       onChange={(e) => setActividadData({ ...actividadData, zona: e.target.value })}
-                    />
-                    <datalist id="zonas-disponibles">
+                    >
+                      <option value="" disabled>
+                        {zonasDisponibles.length > 0 ? "Selecciona una zona..." : "Cargando zonas..."}
+                      </option>
                       {zonasDisponibles.map((z) => (
-                        <option key={z} value={z} />
+                        <option key={z} value={z}>
+                          {z}
+                        </option>
                       ))}
-                    </datalist>
+                    </select>
                   </div>
 
                   <div className="gi-modal-group">
