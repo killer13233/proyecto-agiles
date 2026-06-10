@@ -233,6 +233,28 @@ public class WebSocketController : ControllerBase
                         _wsManager.AgregarRonda(ronda);
                         await _wsManager.BroadcastAAdminsYGuardiasAsync(payload);
                     }
+                    else if (tipo == "nueva_actividad")
+                    {
+                        var actividad = new
+                        {
+                            tipo = "nueva_actividad",
+                            guardiaId = userId,
+                            guardia = json.RootElement.GetProperty("guardia").GetString(),
+                            categoriaId = json.RootElement.GetProperty("categoriaId").GetString(),
+                            categoriaNombre = json.RootElement.GetProperty("categoriaNombre").GetString(),
+                            subtipo = json.RootElement.GetProperty("subtipo").GetString(),
+                            zona = json.RootElement.GetProperty("zona").GetString(),
+                            observaciones = json.RootElement.GetProperty("observaciones").GetString(),
+                            horaInicio = json.RootElement.GetProperty("horaInicio").GetString(),
+                            horaFin = json.RootElement.GetProperty("horaFin").GetString(),
+                            fecha = json.RootElement.GetProperty("fecha").GetString(),
+                            fechaISO = json.RootElement.GetProperty("fechaISO").GetString()
+                        };
+                        var payload = System.Text.Json.JsonSerializer.Serialize(actividad);
+
+                        _wsManager.AgregarRonda(actividad);
+                        await _wsManager.BroadcastAAdminsYGuardiasAsync(payload);
+                    }
                 }
                 catch (Exception ex)
                 {
