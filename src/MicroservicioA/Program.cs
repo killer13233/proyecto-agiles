@@ -131,19 +131,15 @@ app.UseSwaggerUI(c =>
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
-    try
-    {
-        // Forzar una consulta para verificar que las columnas nuevas existen
-        db.Database.ExecuteSqlRaw("SELECT Estado FROM MiembrosGrupoConfianza");
-    }
-    catch
-    {
-        Console.WriteLine("[DB] Esquema desactualizado detectado. Recreando la base de datos...");
-        db.Database.EnsureDeleted();
-    }
-
     db.Database.EnsureCreated();
+
+    // Agregar columna MotivoDesactivacion si no existe (migración manual sin delete)
+    try { db.Database.ExecuteSqlRaw("SELECT MotivoDesactivacion FROM Usuarios"); }
+    catch { db.Database.ExecuteSqlRaw("ALTER TABLE Usuarios ADD MotivoDesactivacion nvarchar(max) NULL"); }
+
+    try { db.Database.ExecuteSqlRaw("SELECT Estado FROM MiembrosGrupoConfianza"); }
+    catch { Console.WriteLine("[DB] Se requiere recrear la base de datos. Ejecuta: docker compose down -v && docker compose up -d"); }
+
     await DbSeeder.SeedAsync(db);
 }
 

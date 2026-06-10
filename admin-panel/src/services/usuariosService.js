@@ -31,13 +31,13 @@ const getHeaders = () => {
   };
 };
 
-export const getUsuarios = async (pagina = 1, tamaño = 10) => {
+export const getUsuarios = async (pagina = 1, tamaño = 10, busqueda = '') => {
   try {
-    // Llamar al backend real con los nombres de parámetros correctos
-    const response = await axios.get(
-      `${API_BASE}/api/usuarios?pagina=${pagina}&tamaño=${tamaño}`,
-      { headers: getHeaders() }
-    );
+    let url = `${API_BASE}/api/usuarios?pagina=${pagina}&tamaño=${tamaño}`;
+    if (busqueda.trim()) {
+      url += `&busqueda=${encodeURIComponent(busqueda.trim())}`;
+    }
+    const response = await axios.get(url, { headers: getHeaders() });
     
     return {
       success: true,
@@ -79,19 +79,20 @@ export const cambiarRolUsuario = async (id, nuevoRol) => {
 };
 
 // Cambiar estado de usuario
-export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
+export const cambiarEstadoUsuario = async (id, nuevoEstado, motivoDesactivacion = null) => {
   try {
     // Mapear el nombre del estado de la UI al valor del Enum del backend
-    // Usamos trim() para evitar espacios accidentales
     const estadoLimpio = nuevoEstado.trim();
     const estadoBackend = mapaEstados[estadoLimpio] || estadoLimpio;
     
-    console.log(`Enviando cambio de estado para usuario ${id}: ${estadoBackend}`);
+    const body = { nuevoEstado: estadoBackend };
+    if (motivoDesactivacion) {
+      body.motivoDesactivacion = motivoDesactivacion;
+    }
     
-    // Llamar al backend real
     const response = await axios.patch(
       `${API_BASE}/api/usuarios/${id}/estado`,
-      { nuevoEstado: estadoBackend },
+      body,
       { headers: getHeaders() }
     );
     
@@ -101,9 +102,10 @@ export const cambiarEstadoUsuario = async (id, nuevoEstado) => {
     };
   } catch (error) {
     console.error('Error al cambiar estado de usuario:', error);
+    const serverMsg = error.response?.data?.mensaje;
     return {
       success: false,
-      error: 'Error al cambiar estado de usuario del servidor'
+      error: serverMsg || 'Error al cambiar estado de usuario del servidor'
     };
   }
 };

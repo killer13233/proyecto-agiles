@@ -22,12 +22,13 @@ public class UsuariosController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromQuery] int pagina = 1,
         [FromQuery] int tamaño = 10,
-        [FromQuery] string? rol = null)
+        [FromQuery] string? rol = null,
+        [FromQuery] string? busqueda = null)
     {
         if (pagina < 1) pagina = 1;
-        if (tamaño < 1 || tamaño > 100) tamaño = 10;
+        if (tamaño < 1 || tamaño > 1000) tamaño = 10;
 
-        var resultado = await _svc.ListarAsync(pagina, tamaño, rol);
+        var resultado = await _svc.ListarAsync(pagina, tamaño, rol, busqueda);
         return Ok(resultado);
     }
 
@@ -52,7 +53,7 @@ public class UsuariosController : ControllerBase
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoRequest request)
     {
-        var (ok, error) = await _svc.CambiarEstadoAsync(id, request.NuevoEstado);
+        var (ok, error) = await _svc.CambiarEstadoAsync(id, request.NuevoEstado, request.MotivoDesactivacion);
         if (!ok) return BadRequest(new ErrorResponse(error!));
         return NoContent();
     }

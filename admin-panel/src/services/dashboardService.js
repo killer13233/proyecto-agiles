@@ -322,7 +322,8 @@ export const getDashboardData = async (filtro = {}) => {
         usuarios: {
           total: usuarios.length,
           activos:   usuarios.filter(u => u.estado === 'Activo'   || u.Estado === 'Activo').length,
-          inactivos: usuarios.filter(u => u.estado !== 'Activo'   && u.Estado !== 'Activo').length,
+          inactivos: usuarios.filter(u => (u.estado === 'Inactivo' || u.Estado === 'Inactivo')).length,
+          bloqueados: usuarios.filter(u => (u.estado === 'Bloqueado' || u.Estado === 'Bloqueado')).length,
           nuevosMes: 0,
           crecimiento: 0
         },
