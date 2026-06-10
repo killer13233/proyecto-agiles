@@ -775,3 +775,60 @@
 .tipo-emergencia { background: rgba(255, 71, 87, 0.2); color: #db2777; }
 .tipo-otro       { background: rgba(107, 107, 138, 0.2); color: var(--text-muted); }
 .tipo-general    { background: rgba(107, 107, 138, 0.15); color: var(--text-secondary); }
+
+.pdf-export-table {
+  display: none;
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 1200px;
+  background: #fff;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  z-index: -1;
+}
+
+.pdf-export-table .alertas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.pdf-export-table .alertas-table th {
+  background: #2c3e50;
+  color: #fff;
+  padding: 6px 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 10px;
+}
+
+.pdf-export-table .alertas-table td {
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  font-size: 10px;
+}
+
+.pdf-export-table .alertas-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.btn-exportar-pdf {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-exportar-pdf:hover {
+  background: #c0392b;
+}

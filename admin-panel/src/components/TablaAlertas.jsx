@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './TablaAlertas.css';
 import { getGuardias } from '../services/usuariosService';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const TablaAlertas = ({ 
   alertas = [], 
@@ -31,6 +33,7 @@ const TablaAlertas = ({
   const [ordenDescendente, setOrdenDescendente] = useState(true);
   const [paginaActual, setPaginaActual] = useState(1);
   const ELEMENTOS_POR_PAGINA = 15;
+  const pdfRef = useRef(null);
 
   useEffect(() => {
     const fetchGuardias = async () => {
@@ -268,6 +271,36 @@ const getTipoBadgeClass = (tipo) => {
     setPaginaActual(1);
   }, [filtroBusqueda, filtroEstado, filtroTipo, filtroPrioridad, filtroGuardia, filtroFechaInicio, filtroFechaFin]);
 
+  const exportarPDF = async () => {
+    if (alertasOrdenadas.length === 0) return;
+    const el = pdfRef.current;
+    if (!el) return;
+    el.style.display = 'block';
+    try {
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      const pw = doc.internal.pageSize.getWidth();
+      const ph = doc.internal.pageSize.getHeight();
+      const m = 10;
+      const iw = pw - m * 2;
+      const ih = (canvas.height * iw) / canvas.width;
+      let hl = ih;
+      let pos = m;
+      doc.addImage(imgData, 'PNG', m, pos, iw, ih);
+      hl -= ph - m * 2;
+      while (hl > 0) {
+        pos = hl - ih + m;
+        doc.addPage();
+        doc.addImage(imgData, 'PNG', m, pos, iw, ih);
+        hl -= ph - m * 2;
+      }
+      doc.save('reporte-alertas.pdf');
+    } finally {
+      el.style.display = 'none';
+    }
+  };
+
   const handleOrdenar = (columna) => {
     if (ordenColumna === columna) {
       setOrdenDescendente(!ordenDescendente);
@@ -291,6 +324,9 @@ const getTipoBadgeClass = (tipo) => {
             <span className="total-alertas">{alertasFiltradasLocales.length}</span>
             <span>de {alertas.length} alertas</span>
           </div>
+          <button className="btn-exportar-pdf" onClick={exportarPDF} title="Exportar a PDF">
+            📄 Exportar PDF
+          </button>
         </div>
         
         <div className="tabla-filtros">
@@ -456,6 +492,49 @@ const getTipoBadgeClass = (tipo) => {
           </button>
         </div>
       )}
+
+      <div ref={pdfRef} className="pdf-export-table">
+        <h2 style={{textAlign:'center',margin:'0 0 5px'}}>Reporte de Alertas</h2>
+        <p style={{textAlign:'center',color:'#666',fontSize:'12px',margin:'0 0 20px'}}>
+          Generado: {new Date().toLocaleDateString('es-EC',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})} | Total: {alertasOrdenadas.length} alertas
+        </p>
+        <table className="alertas-table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Ubicación</th>
+              <th>Asignado a</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {alertasOrdenadas.map(alerta => {
+              const titulo = alerta.motivo || alerta.Motivo || 'Sin título';
+              const estado = alerta.estado || alerta.Estado || 'Desconocido';
+              const zona = alerta.zona || alerta.Zona || 'Sin zona';
+              const fecha = alerta.creadaEn || alerta.CreadaEn;
+              const tipo = alerta.motivo || alerta.Motivo || alerta.tipo || 'General';
+              const prioridad = alerta.prioridad || 'Media';
+              const gIds = extraerGuardiasIds(alerta.guardiasInvolucrados || alerta.GuardiasInvolucrados);
+              const gNombres = idsANombres(gIds);
+              return (
+                <tr key={alerta.id}>
+                  <td>{titulo}</td>
+                  <td><span className={`tipo-badge ${getTipoBadgeClass(tipo)}`}>{tipo}</span></td>
+                  <td><span className={`badge ${getPrioridadBadgeClass(prioridad)}`}>{prioridad}</span></td>
+                  <td><span className={`badge ${getEstadoBadgeClass(estado)}`}>{estado}</span></td>
+                  <td>{zona}</td>
+                  <td>{gNombres.length > 0 ? gNombres.join(', ') : 'Sin asignar'}</td>
+                  <td>{formatDate(fecha)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {/* Modal Asignación */}
       {mostrarModalAsignar && alertaSeleccionada && (
