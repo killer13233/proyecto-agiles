@@ -8,71 +8,85 @@ import { API_BASE } from '../services/config';
 
 const CATEGORIAS = [
   {
-    id: 'control_acceso',
-    nombre: 'Control de acceso',
+    id: "control_acceso",
+    nombre: "Control de acceso",
+    emoji: "🔐",
+    color: "#3b82f6",
     subtipos: [
-      'Verificar identificaciones de estudiantes/docentes/visitantes',
-      'Registrar entradas y salidas del personal',
-      'Autorizar ingreso de vehículos y asignar estacionamiento',
-      'Controlar acceso a zonas restringidas',
+      "Verificar identificaciones de estudiantes/docentes/visitantes",
+      "Registrar entradas y salidas del personal",
+      "Autorizar ingreso de vehículos y asignar estacionamiento",
+      "Controlar acceso a zonas restringidas",
     ],
   },
   {
-    id: 'vigilancia_rondas',
-    nombre: 'Vigilancia y rondas',
+    id: "vigilancia_rondas",
+    nombre: "Vigilancia y rondas",
+    emoji: "👁️",
+    color: "#8b5cf6",
     subtipos: [
-      'Recorrido periódico por instalaciones',
-      'Monitoreo de cámaras de seguridad (CCTV)',
-      'Verificar puertas y ventanas aseguradas',
-      'Vigilar áreas con equipos de valor',
+      "Recorrido periódico por instalaciones",
+      "Monitoreo de cámaras de seguridad (CCTV)",
+      "Verificar puertas y ventanas aseguradas",
+      "Vigilar áreas con equipos de valor",
     ],
   },
   {
-    id: 'atencion_incidentes',
-    nombre: 'Atención a incidentes',
+    id: "atencion_incidentes",
+    nombre: "Atención a incidentes",
+    emoji: "🚨",
+    color: "#ef4444",
     subtipos: [
-      'Responder a emergencias (peleas, accidentes, robos)',
-      'Coordinar con Policía Nacional o servicios de emergencia',
-      'Prestar primeros auxilios básicos',
-      'Controlar y reportar situaciones de conflicto',
+      "Responder a emergencias (peleas, accidentes, robos)",
+      "Coordinar con Policía Nacional o servicios de emergencia",
+      "Prestar primeros auxilios básicos",
+      "Controlar y reportar situaciones de conflicto",
     ],
   },
   {
-    id: 'prevencion',
-    nombre: 'Prevención',
+    id: "prevencion",
+    nombre: "Prevención",
+    emoji: "🛡️",
+    color: "#f59e0b",
     subtipos: [
-      'Detectar comportamientos sospechosos',
-      'Evitar ingreso de personas no autorizadas o bajo efectos de sustancias',
-      'Controlar que no ingresen armas u objetos peligrosos',
-      'Prevenir hurto de equipos o bienes',
+      "Detectar comportamientos sospechosos",
+      "Evitar ingreso de personas no autorizadas o bajo efectos de sustancias",
+      "Controlar que no ingresen armas u objetos peligrosos",
+      "Prevenir hurto de equipos o bienes",
     ],
   },
   {
-    id: 'apoyo_logistico',
-    nombre: 'Apoyo logístico',
+    id: "apoyo_logistico",
+    nombre: "Apoyo logístico",
+    emoji: "📋",
+    color: "#10b981",
     subtipos: [
-      'Registrar novedades en libro de control de turno',
-      'Recibir y entregar llaves de aulas o instalaciones',
-      'Orientar a visitantes sobre ubicación de oficinas',
-      'Apoyar en eventos académicos (foros, graduaciones, deportivos)',
+      "Registrar novedades en libro de control de turno",
+      "Recibir y entregar llaves de aulas o instalaciones",
+      "Orientar a visitantes sobre ubicación de oficinas",
+      "Apoyar en eventos académicos (foros, graduaciones, deportivos)",
     ],
   },
   {
-    id: 'gestion_vehiculos',
-    nombre: 'Gestión de vehículos',
+    id: "gestion_vehiculos",
+    nombre: "Gestión de vehículos",
+    emoji: "🚗",
+    color: "#06b6d4",
     subtipos: [
-      'Controlar salida de equipos o bienes con autorización',
-      'Registrar placas de vehículos que ingresan',
-      'Reportar vehículos sospechosos o mal estacionados',
+      "Controlar salida de equipos o bienes con autorización",
+      "Registrar placas de vehículos que ingresan",
+      "Reportar vehículos sospechosos o mal estacionados",
     ],
   },
   {
-    id: 'comunicacion',
-    nombre: 'Comunicación',
+    id: "comunicacion",
+    nombre: "Comunicación",
+    emoji: "📡",
+    color: "#ec4899",
     subtipos: [
-      'Mantener comunicación con central de seguridad',
-      'Reportar novedades al jefe de seguridad o rectorado',
-      'Coordinar con otros guardias el relevo de turnos',
+      "Mantener comunicación con central de seguridad",
+      "Reportar novedades al jefe de seguridad o rectorado",
+      "Coordinar con otros guardias el relevo de turnos",
     ],
   },
 ];
@@ -83,6 +97,11 @@ const Actividades = () => {
   const [historial, setHistorial] = useState([]);
   const [filtroZona, setFiltroZona] = useState('Todas');
   const [busquedaGuardia, setBusquedaGuardia] = useState('');
+  const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
+  const [filtroFechaFin, setFiltroFechaFin] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('Todas');
+  const [filtroHoraInicio, setFiltroHoraInicio] = useState('');
+  const [filtroHoraFin, setFiltroHoraFin] = useState('');
   const [zonasOptions, setZonasOptions] = useState(['Todas']);
   const [loading, setLoading] = useState(true);
 
@@ -128,8 +147,8 @@ const Actividades = () => {
         categoria,
         subtipo: item.subtipo || '',
         observaciones: item.observaciones || '',
-        fecha: item.fecha || '',
-        fechaISO: item.fechaISO || '',
+        fecha: item.fecha || new Date().toLocaleDateString('es-EC'),
+        fechaISO: item.fechaISO || new Date().toISOString(),
       };
     };
 
@@ -145,14 +164,12 @@ const Actividades = () => {
         const zonasNombres = zonasDb.map(z => z.nombre);
         setZonasOptions(['Todas', ...zonasNombres]);
 
-        const savedActividades = JSON.parse(localStorage.getItem('mis_actividades_guardia') || '[]');
-        const savedRondas = JSON.parse(localStorage.getItem('rondas_mock_db') || '[]');
-        const merged = [...savedActividades, ...savedRondas];
-        const normalized = merged
-          .map(parseActividad)
-          .sort((a, b) => a.inicio.localeCompare(b.inicio));
+        // Limpiar datos legacy/mock del localStorage
+        localStorage.removeItem('mis_actividades_guardia');
+        localStorage.removeItem('rondas_mock_db');
 
-        setHistorial(normalized);
+        // Empezar con historial vacío — solo se llenan via WebSocket
+        setHistorial([]);
       } catch (error) {
         console.error("Error cargando datos para actividades", error);
       } finally {
@@ -162,6 +179,7 @@ const Actividades = () => {
 
     cargarDatos();
 
+    // Solo escuchar actividades que llegan en tiempo real desde el frontend
     const handleNuevaActividad = (data) => {
       console.log('Nueva actividad recibida via WS:', data);
       const actividad = {
@@ -172,7 +190,7 @@ const Actividades = () => {
         fin: data.fin || data.horaFin || '',
         duracion: calcularDuracion(data.inicio || data.horaInicio || '', data.fin || data.horaFin || ''),
         categoriaId: data.categoriaId || data.categoria || '',
-        categoria: data.categoriaNombre || CATEGORIAS.find(c => c.id === (data.categoriaId || data.categoria))?.nombre || (data.categoria || 'Ronda'),
+        categoria: data.categoriaNombre || CATEGORIAS.find(c => c.id === (data.categoriaId || data.categoria))?.nombre || (data.categoria || 'Actividad'),
         subtipo: data.subtipo || '',
         observaciones: data.observaciones || '',
         fecha: data.fecha || '',
@@ -188,90 +206,62 @@ const Actividades = () => {
         );
         if (yaExiste) return prev;
 
-        const next = [...prev, actividad].sort((a, b) => a.inicio.localeCompare(b.inicio));
-        localStorage.setItem('mis_actividades_guardia', JSON.stringify(next));
-        return next;
+        return [...prev, actividad].sort((a, b) => a.inicio.localeCompare(b.inicio));
       });
     };
 
     adminWsService.on('nueva_ronda', handleNuevaActividad);
+    adminWsService.on('nueva_actividad', handleNuevaActividad);
     const handleNuevaActividadEvent = (e) => handleNuevaActividad(e.detail);
     window.addEventListener('app-nueva-ronda', handleNuevaActividadEvent);
     window.addEventListener('app-nueva-actividad', handleNuevaActividadEvent);
 
-    const fetchActividadesRest = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch(`${API_BASE}/api/alertas/rondas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) return;
-
-        setHistorial(prev => {
-          let updated = [...prev];
-          for (const r of data) {
-            const yaExiste = updated.some(
-              x => x.zona === r.zona && x.guardia === r.guardia &&
-                   x.inicio === (r.inicio || r.horaInicio) && x.fin === (r.fin || r.horaFin)
-            );
-            if (!yaExiste) {
-              const actividad = parseActividad(r);
-              updated.push(actividad);
-            }
-          }
-          updated.sort((a, b) => a.inicio.localeCompare(b.inicio));
-          localStorage.setItem('mis_actividades_guardia', JSON.stringify(updated));
-          return updated;
-        });
-      } catch (err) {
-        console.warn('[Actividades] Error polling REST:', err);
-      }
-    };
-    const interval = setInterval(fetchActividadesRest, 10000);
-
     return () => {
       adminWsService.on('nueva_ronda', null);
+      adminWsService.on('nueva_actividad', null);
       window.removeEventListener('app-nueva-ronda', handleNuevaActividadEvent);
       window.removeEventListener('app-nueva-actividad', handleNuevaActividadEvent);
-      clearInterval(interval);
     };
   }, []);
 
-  const handleAddRonda = (e) => {
+  const handleAddActividad = (e) => {
     e.preventDefault();
-    if (!newRonda.zona || !newRonda.inicio || !newRonda.fin) return;
+    if (!newActividad.zona || !newActividad.inicio || !newActividad.fin || !newActividad.categoriaId || !newActividad.subtipo) return;
 
     // Validar que la hora de inicio no sea anterior a la hora actual
     const horaActual = new Date().toTimeString().slice(0, 5);
-    if (newRonda.inicio < horaActual) {
+    if (newActividad.inicio < horaActual) {
       alert('La hora de inicio no puede ser anterior a la hora actual (' + horaActual + ').');
       return;
     }
 
-    const [hIni] = newRonda.inicio.split(':').map(Number);
-    const [hFin] = newRonda.fin.split(':').map(Number);
+    const [hIni] = newActividad.inicio.split(':').map(Number);
+    const [hFin] = newActividad.fin.split(':').map(Number);
     let duracion = hFin - hIni;
     if (duracion <= 0) duracion += 24;
 
-    const nuevaRondaObj = {
+    const cat = CATEGORIAS.find(c => c.id === newActividad.categoriaId);
+
+    const nuevaActividadObj = {
       id: Date.now(),
-      zona: newRonda.zona,
+      zona: newActividad.zona,
       guardia: user?.nombre || 'Guardia',
-      inicio: newRonda.inicio,
-      fin: newRonda.fin,
-      duracion: duracion
+      inicio: newActividad.inicio,
+      fin: newActividad.fin,
+      duracion: duracion,
+      categoriaId: newActividad.categoriaId,
+      categoria: cat?.nombre || 'Actividad',
+      subtipo: newActividad.subtipo,
+      observaciones: newActividad.observaciones
     };
 
     setHistorial(prev => {
-      const next = [...prev, nuevaRondaObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
-      localStorage.setItem('rondas_mock_db', JSON.stringify(next));
+      const next = [...prev, nuevaActividadObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
+      localStorage.setItem('mis_actividades_guardia', JSON.stringify(next));
       return next;
     });
     setShowAddModal(false);
-    setNewRonda({ zona: user?.zonaAsignada || '', inicio: '', fin: '' });
+    setNewActividad({ categoriaId: '', subtipo: '', zona: user?.zonaAsignada || '', observaciones: '', inicio: '', fin: '' });
   };
 
   const getZoneClass = (zona) => {
@@ -283,9 +273,49 @@ const Actividades = () => {
 
   // Filtrado de historial
   const historialFiltrado = historial.filter(item => {
-    const coincideZona = filtroZona === 'Todas' || item.zona === filtroZona;
-    const coincideGuardia = item.guardia.toLowerCase().includes(busquedaGuardia.toLowerCase());
-    return coincideZona && coincideGuardia;
+    // Protección contra undefined/null
+    if (!item) return false;
+
+    // 1. Zona
+    const fZona = String(filtroZona || '').trim();
+    const iZona = String(item.zona || '').trim();
+    const coincideZona = fZona === 'Todas' || iZona === fZona;
+
+    // 2. Guardia
+    const fGuardia = String(busquedaGuardia || '').trim().toLowerCase();
+    const iGuardia = String(item.guardia || '').trim().toLowerCase();
+    const coincideGuardia = iGuardia.includes(fGuardia);
+
+    // 3. Categoría
+    const fCat = String(filtroCategoria || '').trim();
+    const iCatId = String(item.categoriaId || '').trim();
+    const iCat = String(item.categoria || '').trim();
+    const coincideCategoria = fCat === 'Todas' || iCatId === fCat || iCat === fCat;
+    
+    // 4. Fechas
+    let coincideFecha = true;
+    if (filtroFechaInicio || filtroFechaFin) {
+      const fInicio = filtroFechaInicio ? String(filtroFechaInicio) : '';
+      const fFin = filtroFechaFin ? String(filtroFechaFin) : '';
+      const itemDateStr = item.fechaISO ? String(item.fechaISO).split('T')[0] : '';
+      
+      if (itemDateStr) {
+        if (fInicio && itemDateStr < fInicio) coincideFecha = false;
+        if (fFin && itemDateStr > fFin) coincideFecha = false;
+      }
+    }
+
+    // 5. Horas
+    let coincideHora = true;
+    const fHoraIni = String(filtroHoraInicio || '').trim();
+    const fHoraFin = String(filtroHoraFin || '').trim();
+    const iInicio = String(item.inicio || '').trim();
+    const iFin = String(item.fin || '').trim();
+
+    if (fHoraIni && iInicio && iInicio < fHoraIni) coincideHora = false;
+    if (fHoraFin && iFin && iFin > fHoraFin) coincideHora = false;
+
+    return coincideZona && coincideGuardia && coincideCategoria && coincideFecha && coincideHora;
   });
 
   const totalHoras = historialFiltrado.reduce((sum, item) => sum + item.duracion, 0);
@@ -299,11 +329,11 @@ const Actividades = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1 className="act-title">Registro de Actividades</h1>
-            <p className="act-subtitle">Historial y control de coberturas de rondas por guardia y zona</p>
+            <p className="act-subtitle">Historial y control de actividades por guardia y zona</p>
           </div>
           {isGuard && (
             <button className="btn-primary-dark btn-add-ronda" onClick={() => setShowAddModal(true)}>
-              + Añadir Ronda
+              + Añadir Actividad
             </button>
           )}
         </div>
@@ -312,15 +342,15 @@ const Actividades = () => {
       {/* Summary Cards */}
       <div className="summary-cards-dark">
         <div className="summary-card-dark">
-          <span className="summary-label-dark">Horas Filtradas</span>
+          <span className="summary-label-dark">Horas Registradas</span>
           <div className="summary-value-dark">
             {totalHoras} <span className="summary-value-sub">horas</span>
           </div>
         </div>
         <div className="summary-card-dark blocks">
-          <span className="summary-label-dark">Rondas Encontradas</span>
+          <span className="summary-label-dark">Actividades Encontradas</span>
           <div className="summary-value-dark">
-            {totalBloques} <span className="summary-value-sub">rondas</span>
+            {totalBloques} <span className="summary-value-sub">actividades</span>
           </div>
         </div>
       </div>
@@ -329,30 +359,59 @@ const Actividades = () => {
       <div className="act-registry-container">
         
         {/* Barra de Filtros */}
-        <div className="filters-bar-dark">
-          <div className="filter-group">
-            <label className="filter-label">Buscar Guardia</label>
-            <input 
-              type="text" 
-              className="filter-input"
-              placeholder="Ej. Rodríguez..."
-              value={busquedaGuardia}
-              onChange={(e) => setBusquedaGuardia(e.target.value)}
-            />
+        <div className="filters-bar-dark" style={{gap: '1.5rem'}}>
+          <div style={{display: 'flex', gap: '1.5rem', width: '100%', flexWrap: 'wrap'}}>
+            <div className="filter-group" style={{minWidth: '200px'}}>
+              <label className="filter-label">Buscar Guardia</label>
+              <input 
+                type="text" 
+                className="filter-input"
+                placeholder="Ej. Rodríguez..."
+                value={busquedaGuardia}
+                onChange={(e) => setBusquedaGuardia(e.target.value)}
+              />
+            </div>
+            
+            <div className="filter-group" style={{minWidth: '200px', flex: 1}}>
+              <label className="filter-label">Filtrar por Zona</label>
+              <div className="zone-filters">
+                {zonasOptions.map(zona => (
+                  <button
+                    key={zona}
+                    className={`zone-filter-btn ${filtroZona === zona ? 'active' : ''}`}
+                    onClick={() => setFiltroZona(zona)}
+                  >
+                    {zona}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group" style={{minWidth: '200px'}}>
+              <label className="filter-label">Tipo de Actividad</label>
+              <select className="filter-input" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
+                <option value="Todas">Todas las actividades</option>
+                {CATEGORIAS.map(cat => <option key={cat.id} value={cat.id}>{cat.emoji} {cat.nombre}</option>)}
+              </select>
+            </div>
           </div>
-          
-          <div className="filter-group">
-            <label className="filter-label">Filtrar por Zona</label>
-            <div className="zone-filters">
-              {zonasOptions.map(zona => (
-                <button
-                  key={zona}
-                  className={`zone-filter-btn ${filtroZona === zona ? 'active' : ''}`}
-                  onClick={() => setFiltroZona(zona)}
-                >
-                  {zona}
-                </button>
-              ))}
+
+          <div style={{display: 'flex', gap: '1.5rem', width: '100%', flexWrap: 'wrap'}}>
+            <div className="filter-group" style={{minWidth: '150px', flex: 1}}>
+              <label className="filter-label">Fecha Inicio</label>
+              <input type="date" className="filter-input" value={filtroFechaInicio} onChange={(e) => setFiltroFechaInicio(e.target.value)} />
+            </div>
+            <div className="filter-group" style={{minWidth: '150px', flex: 1}}>
+              <label className="filter-label">Fecha Fin</label>
+              <input type="date" className="filter-input" value={filtroFechaFin} onChange={(e) => setFiltroFechaFin(e.target.value)} />
+            </div>
+            <div className="filter-group" style={{minWidth: '150px', flex: 1}}>
+              <label className="filter-label">Hora Mínima (Inicio)</label>
+              <input type="time" className="filter-input" value={filtroHoraInicio} onChange={(e) => setFiltroHoraInicio(e.target.value)} />
+            </div>
+            <div className="filter-group" style={{minWidth: '150px', flex: 1}}>
+              <label className="filter-label">Hora Máxima (Fin)</label>
+              <input type="time" className="filter-input" value={filtroHoraFin} onChange={(e) => setFiltroHoraFin(e.target.value)} />
             </div>
           </div>
         </div>
@@ -360,7 +419,7 @@ const Actividades = () => {
         {/* Historial (Vista Ancha) */}
         <div className="act-card-dark full-width">
           <h2 className="act-card-title-dark">
-            <span>Rondas Ejecutadas</span>
+            <span>Actividades Registradas</span>
             <span style={{ fontSize: '0.875rem', fontWeight: 400, color: 'var(--text-secondary)' }}>
               {fechaHoy}
             </span>
@@ -373,7 +432,7 @@ const Actividades = () => {
               </p>
             ) : historialFiltrado.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '3rem 0', gridColumn: '1 / -1' }}>
-                No se encontraron rondas. Asegúrate de tener guardias y zonas en la base de datos.
+                No se encontraron actividades. Asegúrate de tener guardias y zonas en la base de datos.
               </p>
             ) : (
               historialFiltrado.map(item => (
@@ -390,6 +449,18 @@ const Actividades = () => {
                       <span className="history-guard-label">Guardia responsable</span>
                       <span className="history-guard-name">{item.guardia}</span>
                     </div>
+                    
+                    <div className="history-activity-dark" style={{marginTop: '10px'}}>
+                      <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)'}}>
+                        {CATEGORIAS.find(c => c.id === item.categoriaId)?.emoji || "📝"} {item.categoria}
+                      </div>
+                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px'}}>{item.subtipo}</div>
+                      {item.observaciones && (
+                        <div style={{fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginTop: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '4px'}}>
+                          💬 {item.observaciones}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="history-card-footer">
@@ -403,18 +474,47 @@ const Actividades = () => {
 
       </div>
 
-      {/* Modal for Adding Round */}
+      {/* Modal for Adding Actividad */}
       {showAddModal && (
         <div className="modal-overlay-dark">
           <div className="modal-content-dark">
-            <h3 className="modal-title-dark">Añadir Nueva Ronda</h3>
-            <form onSubmit={handleAddRonda}>
+            <h3 className="modal-title-dark">Añadir Nueva Actividad</h3>
+            <form onSubmit={handleAddActividad}>
+              <div className="modal-form-group">
+                <label className="modal-label">Categoría</label>
+                <select 
+                  className="modal-input"
+                  value={newActividad.categoriaId}
+                  onChange={(e) => setNewActividad({...newActividad, categoriaId: e.target.value, subtipo: ''})}
+                  required
+                >
+                  <option value="">Seleccione una categoría</option>
+                  {CATEGORIAS.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.emoji} {cat.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-form-group">
+                <label className="modal-label">Tipo de Actividad</label>
+                <select 
+                  className="modal-input"
+                  value={newActividad.subtipo}
+                  onChange={(e) => setNewActividad({...newActividad, subtipo: e.target.value})}
+                  required
+                  disabled={!newActividad.categoriaId}
+                >
+                  <option value="">Seleccione un tipo</option>
+                  {newActividad.categoriaId && CATEGORIAS.find(c => c.id === newActividad.categoriaId)?.subtipos.map(sub => (
+                    <option key={sub} value={sub}>{sub}</option>
+                  ))}
+                </select>
+              </div>
               <div className="modal-form-group">
                 <label className="modal-label">Zona</label>
                 <select 
                   className="modal-input"
-                  value={newRonda.zona}
-                  onChange={(e) => setNewRonda({...newRonda, zona: e.target.value})}
+                  value={newActividad.zona}
+                  onChange={(e) => setNewActividad({...newActividad, zona: e.target.value})}
                   required
                 >
                   <option value="">Seleccione una zona</option>
@@ -424,40 +524,44 @@ const Actividades = () => {
                 </select>
               </div>
               <div className="modal-form-group">
-                <label className="modal-label">Hora Inicio</label>
-                <input 
-                  type="time"
+                <label className="modal-label">Observaciones</label>
+                <textarea 
                   className="modal-input"
-                  value={newRonda.inicio}
-                  min={new Date().toTimeString().slice(0, 5)}
-                  onChange={(e) => {
-                    const horaActual = new Date().toTimeString().slice(0, 5);
-                    if (e.target.value < horaActual) {
-                      alert('La hora de inicio no puede ser anterior a la hora actual (' + horaActual + ').');
-                      setNewRonda({...newRonda, inicio: horaActual});
-                      return;
-                    }
-                    setNewRonda({...newRonda, inicio: e.target.value});
-                  }}
-                  required
+                  value={newActividad.observaciones}
+                  onChange={(e) => setNewActividad({...newActividad, observaciones: e.target.value})}
+                  rows="2"
+                  placeholder="Detalles (opcional)..."
+                  style={{resize: 'none', fontFamily: 'inherit'}}
                 />
               </div>
-              <div className="modal-form-group">
-                <label className="modal-label">Hora Fin</label>
-                <input 
-                  type="time"
-                  className="modal-input"
-                  value={newRonda.fin}
-                  onChange={(e) => setNewRonda({...newRonda, fin: e.target.value})}
-                  required
-                />
+              <div style={{display: 'flex', gap: '10px'}}>
+                <div className="modal-form-group" style={{flex: 1}}>
+                  <label className="modal-label">Hora Inicio</label>
+                  <input 
+                    type="time"
+                    className="modal-input"
+                    value={newActividad.inicio}
+                    onChange={(e) => setNewActividad({...newActividad, inicio: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="modal-form-group" style={{flex: 1}}>
+                  <label className="modal-label">Hora Fin</label>
+                  <input 
+                    type="time"
+                    className="modal-input"
+                    value={newActividad.fin}
+                    onChange={(e) => setNewActividad({...newActividad, fin: e.target.value})}
+                    required
+                  />
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary-dark" onClick={() => setShowAddModal(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary-dark">
-                  Guardar Ronda
+                  Guardar Actividad
                 </button>
               </div>
             </form>

@@ -36,6 +36,9 @@ class AdminWsService {
         } else if (data.tipo === 'nueva_ronda') {
           console.log('[Admin WS] Dispatching app-nueva-ronda');
           window.dispatchEvent(new CustomEvent('app-nueva-ronda', { detail: data }));
+        } else if (data.tipo === 'nueva_actividad') {
+          console.log('[Admin WS] Dispatching app-nueva-actividad');
+          window.dispatchEvent(new CustomEvent('app-nueva-actividad', { detail: data }));
         }
       } catch (err) {
         console.error('[Admin WS] Error parse:', err);

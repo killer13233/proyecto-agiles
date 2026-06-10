@@ -147,12 +147,15 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
   const [misActividades, setMisActividades] = useState<ActividadGuardada[]>([]);
   const [filtroFechaInicio, setFiltroFechaInicio] = useState("");
   const [filtroFechaFin, setFiltroFechaFin] = useState("");
+  const [filtroHoraInicio, setFiltroHoraInicio] = useState("");
+  const [filtroHoraFin, setFiltroHoraFin] = useState("");
   const [showActividades, setShowActividades] = useState(false);
   const [zonasDisponibles, setZonasDisponibles] = useState<string[]>([]);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("mis_actividades_guardia") || "[]");
-    setMisActividades(saved);
+    // Limpiar actividades legacy del localStorage — solo se llenan via WS
+    localStorage.removeItem("mis_actividades_guardia");
+    setMisActividades([]);
     // Cargar zonas dinámicamente desde la API
     getZonas()
       .then((data: any) => {
@@ -400,10 +403,30 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
                   onChange={(e) => setFiltroFechaFin(e.target.value)}
                 />
               </div>
-              {(filtroFechaInicio || filtroFechaFin) && (
+            </div>
+            <div className="gi-filtro-fechas" style={{ marginTop: "8px" }}>
+              <div className="gi-filtro-campo">
+                <label>Hora inicio</label>
+                <input
+                  type="time"
+                  className="gi-modal-input gi-filtro-input"
+                  value={filtroHoraInicio}
+                  onChange={(e) => setFiltroHoraInicio(e.target.value)}
+                />
+              </div>
+              <div className="gi-filtro-campo">
+                <label>Hora fin</label>
+                <input
+                  type="time"
+                  className="gi-modal-input gi-filtro-input"
+                  value={filtroHoraFin}
+                  onChange={(e) => setFiltroHoraFin(e.target.value)}
+                />
+              </div>
+              {(filtroFechaInicio || filtroFechaFin || filtroHoraInicio || filtroHoraFin) && (
                 <button
                   className="gi-filtro-clear"
-                  onClick={() => { setFiltroFechaInicio(""); setFiltroFechaFin(""); }}
+                  onClick={() => { setFiltroFechaInicio(""); setFiltroFechaFin(""); setFiltroHoraInicio(""); setFiltroHoraFin(""); }}
                   title="Limpiar filtros"
                 >
                   ✕
@@ -413,17 +436,25 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
 
             {(() => {
               const actividadesFiltradas = misActividades.filter((act) => {
-                if (!act.fechaISO) return true;
-                const fechaAct = new Date(act.fechaISO);
-                fechaAct.setHours(0, 0, 0, 0);
-                if (filtroFechaInicio) {
-                  const inicio = new Date(filtroFechaInicio + "T00:00:00");
-                  if (fechaAct < inicio) return false;
+                // Filtro por fecha
+                if (filtroFechaInicio || filtroFechaFin) {
+                  if (!act.fechaISO) return true;
+                  const fechaAct = new Date(act.fechaISO);
+                  fechaAct.setHours(0, 0, 0, 0);
+                  if (filtroFechaInicio) {
+                    const inicio = new Date(filtroFechaInicio + "T00:00:00");
+                    if (fechaAct < inicio) return false;
+                  }
+                  if (filtroFechaFin) {
+                    const fin = new Date(filtroFechaFin + "T23:59:59");
+                    if (fechaAct > fin) return false;
+                  }
                 }
-                if (filtroFechaFin) {
-                  const fin = new Date(filtroFechaFin + "T23:59:59");
-                  if (fechaAct > fin) return false;
-                }
+                // Filtro por hora
+                const horaIni = String(act.horaInicio || "").trim();
+                const horaFn = String(act.horaFin || "").trim();
+                if (filtroHoraInicio && horaIni && horaIni < filtroHoraInicio) return false;
+                if (filtroHoraFin && horaFn && horaFn > filtroHoraFin) return false;
                 return true;
               });
 
@@ -432,7 +463,7 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
                   <p style={{ color: "var(--app-text-secondary)", fontSize: "0.9rem", textAlign: "center", padding: "10px 0" }}>
                     {misActividades.length === 0
                       ? "No tienes actividades registradas."
-                      : "Sin actividades en ese rango de fechas."}
+                      : "Sin actividades en ese rango de fechas/horas."}
                   </p>
                 );
               }
