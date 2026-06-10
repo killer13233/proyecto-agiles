@@ -426,6 +426,7 @@ const Dashboard = () => {
             </div>
             <div className="kpi-detail">
               <span className="kpi-tag kpi-tag-danger">{formatNumber(alertas.activas || 0)} activas</span>
+              <span className="kpi-tag kpi-tag-warning">{formatNumber(alertas.asignadas || 0)} asignadas</span>
               <span className="kpi-tag kpi-tag-success">{formatNumber(alertas.cerradas || 0)} cerradas</span>
             </div>
           </div>
