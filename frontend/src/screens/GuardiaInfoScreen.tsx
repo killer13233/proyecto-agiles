@@ -104,6 +104,13 @@ const CATEGORIAS = [
       "Coordinar con otros guardias el relevo de turnos",
     ],
   },
+  {
+    id: "personalizada",
+    nombre: "Actividad personalizada",
+    emoji: "✍️",
+    color: "#64748b",
+    subtipos: [],
+  },
 ];
 
 interface ActividadData {
@@ -131,7 +138,6 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
   const [disponible, setDisponible] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
-  // Modal actividad
   const [showModal, setShowModal] = useState(false);
   const [paso, setPaso] = useState<1 | 2>(1);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<(typeof CATEGORIAS)[0] | null>(null);
@@ -144,6 +150,10 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
     horaFin: "",
   });
 
+  const [actividadEnCurso, setActividadEnCurso] = useState<ActividadData | null>(null);
+  const [showModalTerminar, setShowModalTerminar] = useState(false);
+  const [observacionesTerminar, setObservacionesTerminar] = useState("");
+
   const [misActividades, setMisActividades] = useState<ActividadGuardada[]>([]);
   const [filtroFechaInicio, setFiltroFechaInicio] = useState("");
   const [filtroFechaFin, setFiltroFechaFin] = useState("");
@@ -153,9 +163,25 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
   const [zonasDisponibles, setZonasDisponibles] = useState<string[]>([]);
 
   useEffect(() => {
-    // Limpiar actividades legacy del localStorage — solo se llenan via WS
-    localStorage.removeItem("mis_actividades_guardia");
-    setMisActividades([]);
+    // Restaurar actividades guardadas en localStorage
+    try {
+      const saved = localStorage.getItem("mis_actividades_guardia");
+      if (saved) {
+        const parsed = JSON.parse(saved) as ActividadGuardada[];
+        if (Array.isArray(parsed)) {
+          setMisActividades(parsed);
+        }
+      }
+      
+      const enCurso = localStorage.getItem("actividad_en_curso");
+      if (enCurso) {
+        setActividadEnCurso(JSON.parse(enCurso));
+      }
+    } catch {
+      // Si el JSON es inválido, limpiar
+      localStorage.removeItem("mis_actividades_guardia");
+      localStorage.removeItem("actividad_en_curso");
+    }
     // Cargar zonas dinámicamente desde la API
     getZonas()
       .then((data: any) => {
@@ -234,19 +260,36 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
     setPaso(2);
   };
 
-  const guardarActividad = () => {
+  const iniciarActividad = () => {
     if (!categoriaSeleccionada) return;
-    if (!actividadData.subtipo || !actividadData.horaInicio || !actividadData.horaFin) {
-      alert("Por favor completa todos los campos obligatorios (Tipo, Hora inicio y Hora fin).");
+    if (!actividadData.subtipo || !actividadData.horaInicio) {
+      alert("Por favor completa el tipo de actividad y la hora de inicio.");
       return;
     }
     if (!actividadData.zona) {
-      alert("Por favor indica la zona donde se realizó la actividad.");
+      alert("Por favor indica la zona donde se realizará la actividad.");
       return;
     }
 
-    const nueva: ActividadGuardada = {
+    const nuevaEnCurso: ActividadData = {
       ...actividadData,
+      horaFin: ""
+    };
+
+    setActividadEnCurso(nuevaEnCurso);
+    localStorage.setItem("actividad_en_curso", JSON.stringify(nuevaEnCurso));
+    setShowModal(false);
+  };
+
+  const terminarActividad = () => {
+    if (!actividadEnCurso) return;
+
+    const cat = getCategoriaById(actividadEnCurso.categoriaId);
+
+    const nueva: ActividadGuardada = {
+      ...actividadEnCurso,
+      observaciones: observacionesTerminar,
+      horaFin: getHoraActual(),
       guardia: user?.nombre || "Guardia",
       fecha: new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" }),
       fechaISO: new Date().toISOString(),
@@ -257,12 +300,18 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
     setMisActividades(actualizadas);
     localStorage.setItem("mis_actividades_guardia", JSON.stringify(actualizadas));
 
+    // Limpiar en curso
+    setActividadEnCurso(null);
+    localStorage.removeItem("actividad_en_curso");
+    setObservacionesTerminar("");
+    setShowModalTerminar(false);
+
     // Enviar por WebSocket
     wsService.send({
       tipo: "nueva_actividad",
       guardia: nueva.guardia,
       categoriaId: nueva.categoriaId,
-      categoriaNombre: categoriaSeleccionada.nombre,
+      categoriaNombre: cat?.nombre || "Actividad",
       subtipo: nueva.subtipo,
       zona: nueva.zona,
       observaciones: nueva.observaciones,
@@ -272,8 +321,7 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
       fechaISO: nueva.fechaISO,
     });
 
-    setShowModal(false);
-    alert("✅ Actividad registrada correctamente.");
+    alert("✅ Actividad finalizada y registrada correctamente.");
   };
 
   const getCategoriaById = (id: string) => CATEGORIAS.find((c) => c.id === id);
@@ -353,10 +401,29 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
             </button>
           </div>
 
-          {/* BOTÓN REGISTRAR ACTIVIDAD */}
-          <button className="gi-actividad-btn" onClick={abrirModal}>
-            📋 Registrar nueva actividad
-          </button>
+          {/* BOTÓN REGISTRAR O ACTIVIDAD EN CURSO */}
+          {!actividadEnCurso ? (
+            <button className="gi-actividad-btn" onClick={abrirModal}>
+              📋 Registrar nueva actividad
+            </button>
+          ) : (
+            <div className="gi-info-card" style={{ borderColor: "#3b82f6", borderWidth: 2, borderStyle: "solid" }}>
+              <p className="gi-section-title" style={{ color: "#3b82f6" }}>ACTIVIDAD EN CURSO</p>
+              <div style={{ marginBottom: "15px", fontSize: "0.95rem" }}>
+                <strong>{getCategoriaById(actividadEnCurso.categoriaId)?.nombre}</strong>
+                <div style={{ color: "var(--app-text-secondary)", marginTop: "4px" }}>{actividadEnCurso.subtipo}</div>
+                <div style={{ marginTop: "6px" }}>📍 {actividadEnCurso.zona}</div>
+                <div style={{ marginTop: "4px" }}>🕐 Iniciada a las: {actividadEnCurso.horaInicio}</div>
+              </div>
+              <button 
+                className="gi-actividad-btn" 
+                style={{ backgroundColor: "#ef4444", marginTop: 0 }}
+                onClick={() => setShowModalTerminar(true)}
+              >
+                ⏹️ Terminar actividad
+              </button>
+            </div>
+          )}
 
           {/* BOTÓN ALERTAS */}
           <button className="gi-alertas-btn" onClick={onVerAlertas}>
@@ -572,35 +639,13 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
                   </div>
 
                   <div className="gi-modal-group">
-                    <label>Observaciones</label>
-                    <textarea
-                      className="gi-modal-input gi-modal-textarea"
-                      placeholder="Detalles adicionales (opcional)..."
-                      value={actividadData.observaciones}
-                      onChange={(e) => setActividadData({ ...actividadData, observaciones: e.target.value })}
-                      rows={3}
+                    <label>Hora inicio *</label>
+                    <input
+                      type="time"
+                      className="gi-modal-input"
+                      value={actividadData.horaInicio}
+                      onChange={(e) => setActividadData({ ...actividadData, horaInicio: e.target.value })}
                     />
-                  </div>
-
-                  <div className="gi-modal-row-2col">
-                    <div className="gi-modal-group">
-                      <label>Hora inicio *</label>
-                      <input
-                        type="time"
-                        className="gi-modal-input"
-                        value={actividadData.horaInicio}
-                        onChange={(e) => setActividadData({ ...actividadData, horaInicio: e.target.value })}
-                      />
-                    </div>
-                    <div className="gi-modal-group">
-                      <label>Hora fin *</label>
-                      <input
-                        type="time"
-                        className="gi-modal-input"
-                        value={actividadData.horaFin}
-                        onChange={(e) => setActividadData({ ...actividadData, horaFin: e.target.value })}
-                      />
-                    </div>
                   </div>
 
                   <div className="gi-modal-actions">
@@ -609,13 +654,48 @@ const GuardiaInfoScreen: React.FC<Props> = ({ onVerAlertas, onCerrarSesion }) =>
                     </button>
                     <button
                       className="gi-modal-btn-save"
-                      onClick={guardarActividad}
+                      onClick={iniciarActividad}
                     >
-                      Guardar actividad
+                      Iniciar actividad
                     </button>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL TERMINAR ACTIVIDAD ── */}
+        {showModalTerminar && (
+          <div className="gi-modal-overlay">
+            <div className="gi-modal-content gi-modal-actividad">
+              <div className="gi-modal-header">
+                <h3 className="gi-modal-title">⏹️ Terminar actividad</h3>
+                <button className="gi-modal-close" onClick={() => setShowModalTerminar(false)}>✕</button>
+              </div>
+              <div className="gi-modal-form">
+                <div className="gi-modal-group">
+                  <label>Novedades / Observaciones</label>
+                  <textarea
+                    className="gi-modal-input gi-modal-textarea"
+                    placeholder="Escribe las novedades ocurridas durante la actividad..."
+                    value={observacionesTerminar}
+                    onChange={(e) => setObservacionesTerminar(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+                <div className="gi-modal-actions">
+                  <button className="gi-modal-btn-cancel" onClick={() => setShowModalTerminar(false)}>
+                    Cancelar
+                  </button>
+                  <button
+                    className="gi-modal-btn-save"
+                    onClick={terminarActividad}
+                  >
+                    Finalizar y guardar
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
