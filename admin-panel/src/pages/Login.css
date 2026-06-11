@@ -123,8 +123,9 @@
   border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+  white-space: pre-line;
 }
 
 .error-icon {

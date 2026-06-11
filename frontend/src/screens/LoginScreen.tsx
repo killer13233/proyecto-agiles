@@ -58,7 +58,7 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
     const rolNormalizado = rol.toLowerCase();
 
-    if (rolNormalizado.includes("administrador") || rolNormalizado.includes("admin")) {
+    if (rolNormalizado === "administrador" || rolNormalizado === "admin") {
       setError(true);
       setMensaje("Usuario administrador no puede iniciar sesión desde la vista celular.");
       localStorage.removeItem("token");
@@ -73,45 +73,53 @@ const LoginScreen: React.FC<Props> = ({ onLoginSuccess }) => {
 
     onLoginSuccess(rol);
 
-  }  catch (err: any) {
-  const mensajeBackend =
-    err?.response?.data?.message ||
-    err?.response?.data?.mensaje ||
-    err?.response?.data ||
-    "";
+  } catch (err: any) {
+    const mensajeBackend =
+      err?.response?.data?.message ||
+      err?.response?.data?.mensaje ||
+      err?.response?.data ||
+      "";
 
-  const textoError = String(mensajeBackend).toLowerCase();
+    const textoError = String(mensajeBackend).toLowerCase();
 
-  if (
-    textoError.includes("no encontrado") ||
-    textoError.includes("no existe") ||
-    textoError.includes("usuario")
-  ) {
+    // ── Cuenta desactivada / inactiva ──
+    if (textoError.includes("desactivada") || textoError.includes("inactiva")) {
+      setError(true);
+      setMensaje(typeof mensajeBackend === 'string' ? mensajeBackend : "Cuenta desactivada.");
+      return;
+    }
+
+    // ── Cuenta bloqueada por el servidor ──
+    if (textoError.includes("bloqueada")) {
+      setError(true);
+      setBloqueadoPorUsuario({ ...bloqueadoPorUsuario, [correoActual]: true });
+      setMensaje(typeof mensajeBackend === 'string' ? mensajeBackend : "Cuenta bloqueada.");
+      return;
+    }
+
+    // ── Usuario no encontrado ──
+    if (
+      textoError.includes("no encontrado") ||
+      textoError.includes("no existe") ||
+      textoError.includes("usuario")
+    ) {
+      setError(true);
+      setMensaje("Usuario no encontrado.");
+      return;
+    }
+
+    // ── Credenciales incorrectas ──
+    const nuevosIntentos = intentosActuales - 1;
+    setIntentosPorUsuario({ ...intentosPorUsuario, [correoActual]: nuevosIntentos });
     setError(true);
-    setMensaje("Usuario no encontrado.");
-    return;
+
+    if (nuevosIntentos <= 0) {
+      setBloqueadoPorUsuario({ ...bloqueadoPorUsuario, [correoActual]: true });
+      setMensaje("Cuenta bloqueada. Contacte al administrador.");
+    } else {
+      setMensaje(`Credenciales incorrectas. Te quedan ${nuevosIntentos} intento(s).`);
+    }
   }
-
-  const nuevosIntentos = intentosActuales - 1;
-
-  setIntentosPorUsuario({
-    ...intentosPorUsuario,
-    [correoActual]: nuevosIntentos,
-  });
-
-  setError(true);
-
-  if (nuevosIntentos <= 0) {
-    setBloqueadoPorUsuario({
-      ...bloqueadoPorUsuario,
-      [correoActual]: true,
-    });
-
-    setMensaje("Cuenta bloqueada. Contacte al administrador.");
-  } else {
-    setMensaje(`Credenciales incorrectas. Te quedan ${nuevosIntentos} intento(s).`);
-  }
-}
 };
 
   return (

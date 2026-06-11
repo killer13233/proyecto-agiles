@@ -49,11 +49,18 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
     } catch (error) {
-      console.error('Login error:', error);
-      return { 
-        success: false, 
-        error: 'Error de conexión con el servidor. Verifica que el backend esté corriendo.' 
-      };
+      console.error('[Auth] Error completo:', error);
+      console.log('[Auth] Response data:', error.response?.data);
+      console.log('[Auth] Status:', error.response?.status);
+      const serverMsg = error.response?.data?.mensaje;
+      if (serverMsg) {
+        console.log('[Auth] Mensaje del servidor:', serverMsg);
+        return { success: false, error: serverMsg };
+      }
+      if (error.code === 'ERR_NETWORK' || !error.response) {
+        return { success: false, error: 'Error de conexión con el servidor. Verifica que el backend esté corriendo.' };
+      }
+      return { success: false, error: 'Error al iniciar sesión. Intenta nuevamente.' };
     }
   };
 

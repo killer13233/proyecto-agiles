@@ -13,6 +13,52 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+const MapEventsInner = ({ modoCreacion, modoCamara, onMapClick, onCameraClick }) => {
+  const [tempVertices, setTempVertices] = useState([]);
+
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      if (modoCamara && onCameraClick) { onCameraClick(lat, lng); return; }
+      if (modoCreacion) {
+        setTempVertices(prev => {
+          const newVertices = [...prev, [lng, lat]];
+          if (prev.length >= 3) {
+            const firstPoint = prev[0];
+            const dist = Math.sqrt(Math.pow(lng - firstPoint[0], 2) + Math.pow(lat - firstPoint[1], 2));
+            if (dist < 0.001) {
+              const finalPolygon = [...newVertices, firstPoint];
+              setTimeout(() => onMapClick?.(finalPolygon), 0);
+              return [];
+            }
+          }
+          return newVertices;
+        });
+      }
+    },
+  });
+
+  return (
+    <>
+      {tempVertices.length > 0 && (
+        <Polyline positions={tempVertices.map(v => [v[1], v[0]])} color="blue" dashArray="5, 10" />
+      )}
+      {tempVertices.map((v, i) => (
+        <Marker key={i} position={[v[1], v[0]]} />
+      ))}
+    </>
+  );
+};
+
+const CameraPaneInner = () => {
+  const map = useMap();
+  useEffect(() => {
+    const pane = map.createPane('cameraPane');
+    pane.style.zIndex = '650';
+  }, [map]);
+  return null;
+};
+
 const MapaZonas = ({ 
    zonas = [], 
    zonaSeleccionada = null, 
@@ -46,59 +92,6 @@ const MapaZonas = ({
     fetchCamaras();
   }, [camaraRefreshKey]);
 
-  // Componente interno para manejar eventos del mapa
-  const MapEvents = () => {
-    const [tempVertices, setTempVertices] = useState([]);
-
-    useMapEvents({
-      click (e) {
-        const { lat, lng } = e.latlng;
-
-        if (modoCamara && onCameraClick) {
-          onCameraClick(lat, lng);
-          return;
-        }
-
-        if (modoCreacion) {
-          setTempVertices(prev => {
-            const newVertices = [...prev, [lng, lat]];
-            
-            // Si tenemos al menos 3 puntos y el usuario hace click cerca del primero, cerramos el polígono
-            if (prev.length >= 3) {
-              const firstPoint = prev[0];
-              const dist = Math.sqrt(Math.pow(lng - firstPoint[0], 2) + Math.pow(lat - firstPoint[1], 2));
-              
-              if (dist < 0.001) { // Umbral de cercanía para cerrar
-                const finalPolygon = [...newVertices, firstPoint];
-                if (onMapClick) {
-                  onMapClick(finalPolygon);
-                }
-                setTempVertices([]);
-                return [];
-              }
-            }
-            return newVertices;
-          });
-        }
-      },
-    });
-
-    return (
-      <>
-        {tempVertices.length > 0 && (
-          <Polyline 
-            positions={tempVertices.map(v => [v[1], v[0]])} 
-            color="blue" 
-            dashArray="5, 10" 
-          />
-        )}
-        {tempVertices.map((v, i) => (
-          <Marker key={i} position={[v[1], v[0]]} />
-        ))}
-      </>
-    );
-  };
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setMapReady(true);
@@ -106,15 +99,6 @@ const MapaZonas = ({
 
     return () => clearTimeout(timer);
   }, []);
-
-  const CameraPane = () => {
-    const map = useMap();
-    useEffect(() => {
-      const pane = map.createPane('cameraPane');
-      pane.style.zIndex = '650';
-    }, [map]);
-    return null;
-  };
 
   const handlePolygonClick = (zona) => {
     if (onZonaClick) {
@@ -160,8 +144,8 @@ const MapaZonas = ({
           ref={mapRef}
         >
 
-         <CameraPane />
-         <MapEvents />
+         <CameraPaneInner />
+         <MapEventsInner modoCreacion={modoCreacion} modoCamara={modoCamara} onMapClick={onMapClick} onCameraClick={onCameraClick} />
          <TileLayer
 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

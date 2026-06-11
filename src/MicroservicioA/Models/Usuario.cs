@@ -35,4 +35,7 @@ public class Usuario
     public int IntentosFallidos { get; set; } = 0;
     public DateTime? UltimoAcceso { get; set; }
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
+
+    // Motivo de desactivación (null si la cuenta está activa)
+    public string? MotivoDesactivacion { get; set; }
 }

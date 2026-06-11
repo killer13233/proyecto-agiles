@@ -233,6 +233,7 @@ const Dashboard = () => {
   const usuariosEstado = [
     { name: 'Activos', value: usuarios.activos || 0 },
     { name: 'Inactivos', value: usuarios.inactivos || 0 },
+    { name: 'Bloqueados', value: usuarios.bloqueados || 0 },
   ];
 
   const tendenciaAcumulada = alertasPorDia.reduce((acc, d, i) => {
@@ -697,7 +698,7 @@ const Dashboard = () => {
                 <PieChart>
                   <Pie data={usuariosEstado} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} cornerRadius={4}>
                     {usuariosEstado.map((_, i) => (
-                      <Cell key={i} fill={[COLORS.success, COLORS.warning][i]} />
+                      <Cell key={i} fill={[COLORS.success, COLORS.danger, '#6c5ce7'][i]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -705,8 +706,8 @@ const Dashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="donut-center-label">
-                <span className="donut-center-value">{tieneUsuarios ? Math.round(((usuarios.activos || 0) / usuarios.total) * 100) : 0}%</span>
-                <span className="donut-center-text">Activos</span>
+                <span className="donut-center-value">{usuarios.total || 0}</span>
+                <span className="donut-center-text">Usuarios</span>
               </div>
             </div>
           )}

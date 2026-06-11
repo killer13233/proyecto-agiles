@@ -73,13 +73,10 @@ const Login = () => {
       const result = await login({ correo, password });
       
       if (!result.success) {
-        // Mensajes específicos según el error
-        if (result.error?.includes('incorrectas')) {
-          setError('Credenciales incorrectas. Verifica tu correo y contraseña.');
-        } else if (result.error?.includes('conexión')) {
+        if (result.error?.includes('conexión') || !result.error) {
           setError('Error de conexión con el servidor. Intenta nuevamente más tarde.');
         } else {
-          setError(result.error || 'Error al iniciar sesión. Intenta nuevamente.');
+          setError(result.error);
         }
       }
     } catch (err) {

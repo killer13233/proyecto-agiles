@@ -20,11 +20,12 @@ public record UsuarioDto(
     string Rol,
     string Estado,
     string? ZonaAsignada,
-    DateTime? UltimoAcceso
+    DateTime? UltimoAcceso,
+    string? MotivoDesactivacion
 );
 
 public record CambiarRolRequest(string NuevoRol);
-public record CambiarEstadoRequest(string NuevoEstado);
+public record CambiarEstadoRequest(string NuevoEstado, string? MotivoDesactivacion = null);
 
 // ── Paginación ─────────────────────────────────────────────────────────────
 public record PaginadoResponse<T>(

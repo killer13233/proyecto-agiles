@@ -6,9 +6,9 @@ namespace MicroservicioA.Services;
 
 public interface IUsuarioService
 {
-    Task<PaginadoResponse<UsuarioDto>> ListarAsync(int pagina, int tamaño, string? rolFiltro);
+    Task<PaginadoResponse<UsuarioDto>> ListarAsync(int pagina, int tamaño, string? rolFiltro, string? busqueda = null);
     Task<(bool ok, string? error)> CambiarRolAsync(int id, string nuevoRol);
-    Task<(bool ok, string? error)> CambiarEstadoAsync(int id, string nuevoEstado);
+    Task<(bool ok, string? error)> CambiarEstadoAsync(int id, string nuevoEstado, string? motivoDesactivacion = null);
 }
 
 public class UsuarioService : IUsuarioService
@@ -20,7 +20,7 @@ public class UsuarioService : IUsuarioService
     public UsuarioService(AppDbContext db) => _db = db;
 
     public async Task<PaginadoResponse<UsuarioDto>> ListarAsync(
-        int pagina, int tamaño, string? rolFiltro)
+        int pagina, int tamaño, string? rolFiltro, string? busqueda = null)
     {
         var query = _db.Usuarios.AsQueryable();
 
@@ -28,6 +28,12 @@ public class UsuarioService : IUsuarioService
             Enum.TryParse<Rol>(rolFiltro, ignoreCase: true, out var rol))
         {
             query = query.Where(u => u.Rol == rol);
+        }
+
+        if (!string.IsNullOrWhiteSpace(busqueda))
+        {
+            var q = busqueda.ToLower();
+            query = query.Where(u => u.Nombre.ToLower().Contains(q) || u.Correo.ToLower().Contains(q));
         }
 
         var total = await query.CountAsync();
@@ -39,7 +45,7 @@ public class UsuarioService : IUsuarioService
             .Select(u => new UsuarioDto(
                 u.Id, u.Nombre, u.Correo,
                 u.Rol.ToString(), u.Estado.ToString(),
-                u.ZonaAsignada, u.UltimoAcceso))
+                u.ZonaAsignada, u.UltimoAcceso, u.MotivoDesactivacion))
             .ToListAsync();
 
         return new PaginadoResponse<UsuarioDto>(items, total, pagina, tamaño);
@@ -58,7 +64,7 @@ public class UsuarioService : IUsuarioService
         return (true, null);
     }
 
-    public async Task<(bool ok, string? error)> CambiarEstadoAsync(int id, string nuevoEstado)
+    public async Task<(bool ok, string? error)> CambiarEstadoAsync(int id, string nuevoEstado, string? motivoDesactivacion = null)
     {
         if (!Enum.TryParse<EstadoUsuario>(nuevoEstado, ignoreCase: true, out var estado))
             return (false, $"Estado inválido. Estados válidos: {string.Join(", ", Enum.GetNames<EstadoUsuario>())}");
@@ -66,9 +72,17 @@ public class UsuarioService : IUsuarioService
         var usuario = await _db.Usuarios.FindAsync(id);
         if (usuario is null) return (false, "Usuario no encontrado.");
 
-        // Si se reactiva una cuenta bloqueada, resetear intentos
         if (estado == EstadoUsuario.Activo)
+        {
+            // Reactivando — resetear intentos y limpiar motivo
             usuario.IntentosFallidos = 0;
+            usuario.MotivoDesactivacion = null;
+        }
+        else if (estado == EstadoUsuario.Inactivo)
+        {
+            // Desactivando — guardar el motivo
+            usuario.MotivoDesactivacion = motivoDesactivacion;
+        }
 
         usuario.Estado = estado;
         await _db.SaveChangesAsync();

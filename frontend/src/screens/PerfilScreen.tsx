@@ -33,7 +33,7 @@ const PerfilScreen: React.FC<Props> = ({
   user?.rol ||
   (user as any)?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
   "Sin rol";
-  const mostrarAlarma = rolUsuario.toLowerCase() === "estudiante" || rolUsuario.toLowerCase() === "docente";
+  const mostrarAlarma = rolUsuario.toLowerCase() === "estudiante" || rolUsuario.toLowerCase() === "docente" || rolUsuario.toLowerCase() === "personaladministrativo";
 
   useEffect(() => {
     const cargarToken = () => {

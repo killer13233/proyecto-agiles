@@ -40,7 +40,13 @@ public class AuthService : IAuthService
 
         // Cuenta inactiva
         if (usuario.Estado == EstadoUsuario.Inactivo)
-            return (null, "Cuenta inactiva. Contacte al administrador.");
+        {
+            var msg = "Tu cuenta ha sido desactivada.";
+            if (!string.IsNullOrWhiteSpace(usuario.MotivoDesactivacion))
+                msg += $"\n\nMotivo: {usuario.MotivoDesactivacion}.";
+            msg += "\n\nContacta al administrador para más información.";
+            return (null, msg);
+        }
 
         // Verificar contraseña
         var passwordValida = BCrypt.Net.BCrypt.Verify(request.Password, usuario.PasswordHash);
@@ -52,9 +58,9 @@ public class AuthService : IAuthService
             if (usuario.IntentosFallidos >= MaxIntentos)
             {
                 usuario.Estado = EstadoUsuario.Bloqueado;
+                usuario.MotivoDesactivacion = $"Cuenta bloqueada por {MaxIntentos} intentos fallidos de inicio de sesión.";
                 await _db.SaveChangesAsync();
 
-                // TODO Sprint 2: enviar correo real. Por ahora solo log.
                 Console.WriteLine($"[Auth] ALERTA: cuenta {usuario.Correo} bloqueada tras {MaxIntentos} intentos fallidos.");
 
                 return (null, $"Cuenta bloqueada tras {MaxIntentos} intentos fallidos. Contacte al administrador.");

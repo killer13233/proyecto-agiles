@@ -159,6 +159,11 @@
   color: white;
 }
 
+.badge-bloqueado {
+  background: #6c5ce7;
+  color: white;
+}
+
 .badge-default {
   background: var(--text-muted);
   color: white;
@@ -520,4 +525,118 @@
     width: auto;
     flex: 1;
   }
+}
+
+/* ── Estado info row ── */
+.estado-info {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.estado-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.estado-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Motivo de desactivación ── */
+.motivo-container {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(255, 165, 2, 0.06);
+  border: 1px solid rgba(255, 165, 2, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.motivo-label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.motivo-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.motivo-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+}
+
+.motivo-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.motivo-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  font-style: italic;
+}
+
+.motivo-actual {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 71, 87, 0.06);
+  border: 1px solid rgba(255, 71, 87, 0.15);
+  border-radius: var(--radius-sm);
+}
+
+.motivo-actual-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.motivo-actual-texto {
+  margin: 0.35rem 0 0 !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* ── Estado cell with motivo tooltip ── */
+.estado-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.motivo-tooltip {
+  cursor: help;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.motivo-tooltip:hover {
+  opacity: 1;
 }

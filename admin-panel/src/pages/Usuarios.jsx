@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getUsuarios, cambiarRolUsuario, cambiarEstadoUsuario, getRolesValidos } from '../services/usuariosService';
 import './Usuarios.css';
 
@@ -8,11 +8,12 @@ const Usuarios = () => {
   const [error, setError] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [busquedaInput, setBusquedaInput] = useState('');
   const [busqueda, setBusqueda] = useState('');
-  const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [mostrarModalRol, setMostrarModalRol] = useState(false);
   const [mostrarModalEstado, setMostrarModalEstado] = useState(false);
+  const [motivoDesactivacion, setMotivoDesactivacion] = useState('');
   const [accionCargando, setAccionCargando] = useState(false);
 
   const tamañoPagina = 10;
@@ -20,23 +21,38 @@ const Usuarios = () => {
 
   useEffect(() => {
     cargarUsuarios();
-  }, [paginaActual]);
+  }, [paginaActual, busqueda]);
 
+  // Debounce: esperar 300ms después de escribir para buscar
+  const debounceRef = useRef(null);
   useEffect(() => {
-    const filtrados = usuarios.filter(usuario =>
-      usuario.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      usuario.correo.toLowerCase().includes(busqueda.toLowerCase()) ||
-      usuario.rol.toLowerCase().includes(busqueda.toLowerCase())
-    );
-    setUsuariosFiltrados(filtrados);
-  }, [busqueda, usuarios]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setBusqueda(busquedaInput);
+      setPaginaActual(1);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [busquedaInput]);
+
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    const interval = setInterval(async () => {
+      if (!isMounted.current) return;
+      const resultado = await getUsuarios(paginaActual, tamañoPagina, busqueda);
+      if (isMounted.current && resultado.success) {
+        setUsuarios(resultado.data.items);
+      }
+    }, 10000);
+    return () => { isMounted.current = false; clearInterval(interval); };
+  }, [paginaActual, busqueda]);
 
   const cargarUsuarios = async () => {
     setLoading(true);
     setError('');
     
     try {
-      const resultado = await getUsuarios(paginaActual, tamañoPagina);
+      const resultado = await getUsuarios(paginaActual, tamañoPagina, busqueda);
       
       if (resultado.success) {
         setUsuarios(resultado.data.items);
@@ -76,17 +92,18 @@ const Usuarios = () => {
 
   const handleCambiarEstado = async (usuario, nuevoEstado) => {
     setAccionCargando(true);
+    const motivo = nuevoEstado === 'Inactivo' ? motivoDesactivacion : null;
     
     try {
-      const resultado = await cambiarEstadoUsuario(usuario.id, nuevoEstado);
+      const resultado = await cambiarEstadoUsuario(usuario.id, nuevoEstado, motivo);
       
       if (resultado.success) {
-        // Actualizar usuario en la lista
         setUsuarios(prev => prev.map(u => 
-          u.id === usuario.id ? { ...u, estado: nuevoEstado } : u
+          u.id === usuario.id ? { ...u, estado: nuevoEstado, motivoDesactivacion: motivo } : u
         ));
         setMostrarModalEstado(false);
         setUsuarioSeleccionado(null);
+        setMotivoDesactivacion('');
       } else {
         setError(resultado.error);
       }
@@ -109,7 +126,9 @@ const Usuarios = () => {
   };
 
   const getEstadoBadgeClass = (estado) => {
-    return estado === 'Activo' ? 'badge-activo' : 'badge-inactivo';
+    if (estado === 'Activo') return 'badge-activo';
+    if (estado === 'Bloqueado') return 'badge-bloqueado';
+    return 'badge-inactivo';
   };
 
   const cambiarPagina = (nuevaPagina) => {
@@ -134,9 +153,9 @@ const Usuarios = () => {
         <div className="usuarios-controls">
           <input
             type="text"
-            placeholder="Buscar usuarios..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar usuarios por nombre o correo..."
+            value={busquedaInput}
+            onChange={(e) => setBusquedaInput(e.target.value)}
             className="search-input"
           />
         </div>
@@ -157,12 +176,11 @@ const Usuarios = () => {
               <th>Correo</th>
               <th>Rol</th>
               <th>Estado</th>
-              <th>Zona</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {usuariosFiltrados.map(usuario => (
+            {usuarios.map(usuario => (
               <tr key={usuario.id}>
                 <td>{usuario.nombre}</td>
                 <td>{usuario.correo}</td>
@@ -172,11 +190,17 @@ const Usuarios = () => {
                   </span>
                 </td>
                 <td>
-                  <span className={`badge ${getEstadoBadgeClass(usuario.estado)}`}>
-                    {usuario.estado}
-                  </span>
+                  <div className="estado-cell">
+                    <span className={`badge ${getEstadoBadgeClass(usuario.estado)}`}>
+                      {usuario.estado}
+                    </span>
+                    {usuario.estado !== 'Activo' && (
+                      <span className="motivo-tooltip" title={usuario.motivoDesactivacion || (usuario.estado === 'Bloqueado' ? 'Cuenta bloqueada por 3 intentos fallidos de inicio de sesión.' : '')}>
+                        ℹ️
+                      </span>
+                    )}
+                  </div>
                 </td>
-                <td>{usuario.zona}</td>
                 <td>
                   <div className="action-buttons">
                     <button
@@ -192,6 +216,7 @@ const Usuarios = () => {
                       className={`btn ${usuario.estado === 'Activo' ? 'btn-desactivar' : 'btn-activar'}`}
                       onClick={() => {
                         setUsuarioSeleccionado(usuario);
+                        setMotivoDesactivacion(usuario.motivoDesactivacion || '');
                         setMostrarModalEstado(true);
                       }}
                     >
@@ -285,7 +310,7 @@ const Usuarios = () => {
               </h3>
               <button
                 className="modal-close"
-                onClick={() => setMostrarModalEstado(false)}
+                onClick={() => { setMostrarModalEstado(false); setMotivoDesactivacion(''); }}
               >
                 ×
               </button>
@@ -295,28 +320,63 @@ const Usuarios = () => {
                 ¿{usuarioSeleccionado.estado === 'Activo' ? 'Desactivar' : 'Activar'} al usuario{' '}
                 <strong>{usuarioSeleccionado.nombre}</strong>?
               </p>
-              <p>
-                Estado actual: <span className={`badge ${getEstadoBadgeClass(usuarioSeleccionado.estado)}`}>
-                  {usuarioSeleccionado.estado}
-                </span>
-              </p>
-              <p>
-                Nuevo estado: <span className={`badge ${getEstadoBadgeClass(usuarioSeleccionado.estado === 'Activo' ? 'Inactivo' : 'Activo')}`}>
-                  {usuarioSeleccionado.estado === 'Activo' ? 'Inactivo' : 'Activo'}
-                </span>
-              </p>
+              <div className="estado-info">
+                <div className="estado-item">
+                  <span className="estado-label">Estado actual:</span>
+                  <span className={`badge ${getEstadoBadgeClass(usuarioSeleccionado.estado)}`}>
+                    {usuarioSeleccionado.estado}
+                  </span>
+                </div>
+                <div className="estado-item">
+                  <span className="estado-label">Nuevo estado:</span>
+                  <span className={`badge ${getEstadoBadgeClass(usuarioSeleccionado.estado === 'Activo' ? 'Inactivo' : 'Activo')}`}>
+                    {usuarioSeleccionado.estado === 'Activo' ? 'Inactivo' : 'Activo'}
+                  </span>
+                </div>
+              </div>
+
+              {usuarioSeleccionado.estado === 'Activo' && (
+                <div className="motivo-container">
+                  <label htmlFor="motivo" className="motivo-label">
+                    Motivo de desactivación
+                  </label>
+                  <textarea
+                    id="motivo"
+                    className="motivo-textarea"
+                    placeholder="Explica por qué se desactiva esta cuenta..."
+                    value={motivoDesactivacion}
+                    onChange={(e) => setMotivoDesactivacion(e.target.value)}
+                    rows={3}
+                  />
+                  <span className="motivo-hint">
+                    Este mensaje se mostrará al usuario cuando intente iniciar sesión.
+                  </span>
+                </div>
+              )}
+
+              {usuarioSeleccionado.estado !== 'Activo' && (
+                <div className="motivo-actual">
+                  <span className="motivo-actual-label">Motivo:</span>
+                  <p className="motivo-actual-texto">
+                    {usuarioSeleccionado.motivoDesactivacion || 
+                     (usuarioSeleccionado.estado === 'Bloqueado' 
+                       ? 'Cuenta bloqueada por 3 intentos fallidos de inicio de sesión.' 
+                       : 'Sin motivo registrado.')}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button
                 className="btn btn-cancelar"
-                onClick={() => setMostrarModalEstado(false)}
+                onClick={() => { setMostrarModalEstado(false); setMotivoDesactivacion(''); }}
               >
                 Cancelar
               </button>
               <button
                 className="btn btn-confirmar"
                 onClick={() => handleCambiarEstado(usuarioSeleccionado, usuarioSeleccionado.estado === 'Activo' ? 'Inactivo' : 'Activo')}
-                disabled={accionCargando}
+                disabled={accionCargando || (usuarioSeleccionado.estado === 'Activo' && !motivoDesactivacion.trim())}
               >
                 {accionCargando ? 'Procesando...' : 'Confirmar'}
               </button>
