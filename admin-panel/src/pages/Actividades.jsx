@@ -89,6 +89,13 @@ const CATEGORIAS = [
       "Coordinar con otros guardias el relevo de turnos",
     ],
   },
+  {
+    id: "personalizada",
+    nombre: "Actividad personalizada",
+    emoji: "✍️",
+    color: "#64748b",
+    subtipos: [],
+  },
 ];
 
 const Actividades = () => {
@@ -114,6 +121,10 @@ const Actividades = () => {
     inicio: '',
     fin: '',
   });
+  
+  const [actividadEnCurso, setActividadEnCurso] = useState(null);
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [observacionesTerminar, setObservacionesTerminar] = useState('');
 
   const fechaHoy = new Date().toLocaleDateString('es-EC', {
     day: 'numeric',
@@ -124,11 +135,11 @@ const Actividades = () => {
   useEffect(() => {
     const calcularDuracion = (inicio = '', fin = '') => {
       if (!inicio || !fin) return 0;
-      const [hIni] = inicio.split(':').map(Number);
-      const [hFin] = fin.split(':').map(Number);
-      let duracion = hFin - hIni;
-      if (duracion <= 0) duracion += 24;
-      return duracion;
+      const [hIni, mIni] = inicio.split(':').map(Number);
+      const [hFin, mFin] = fin.split(':').map(Number);
+      let duracion = (hFin + (mFin || 0) / 60) - (hIni + (mIni || 0) / 60);
+      if (duracion < 0) duracion += 24;
+      return Math.round(duracion * 10) / 10;
     };
 
     const parseActividad = (item) => {
@@ -164,12 +175,21 @@ const Actividades = () => {
         const zonasNombres = zonasDb.map(z => z.nombre);
         setZonasOptions(['Todas', ...zonasNombres]);
 
-        // Limpiar datos legacy/mock del localStorage
-        localStorage.removeItem('mis_actividades_guardia');
-        localStorage.removeItem('rondas_mock_db');
-
-        // Empezar con historial vacío — solo se llenan via WebSocket
-        setHistorial([]);
+        // Restaurar actividades guardadas en localStorage
+        try {
+          const saved = localStorage.getItem('mis_actividades_guardia');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              setHistorial(parsed);
+            }
+          }
+          const enCurso = localStorage.getItem('actividad_en_curso_admin');
+          if (enCurso) setActividadEnCurso(JSON.parse(enCurso));
+        } catch (e) {
+          localStorage.removeItem('mis_actividades_guardia');
+          localStorage.removeItem('actividad_en_curso_admin');
+        }
       } catch (error) {
         console.error("Error cargando datos para actividades", error);
       } finally {
@@ -206,7 +226,9 @@ const Actividades = () => {
         );
         if (yaExiste) return prev;
 
-        return [...prev, actividad].sort((a, b) => a.inicio.localeCompare(b.inicio));
+        const next = [...prev, actividad].sort((a, b) => a.inicio.localeCompare(b.inicio));
+        localStorage.setItem('mis_actividades_guardia', JSON.stringify(next));
+        return next;
       });
     };
 
@@ -224,9 +246,9 @@ const Actividades = () => {
     };
   }, []);
 
-  const handleAddActividad = (e) => {
+  const handleStartActividad = (e) => {
     e.preventDefault();
-    if (!newActividad.zona || !newActividad.inicio || !newActividad.fin || !newActividad.categoriaId || !newActividad.subtipo) return;
+    if (!newActividad.zona || !newActividad.inicio || !newActividad.categoriaId || !newActividad.subtipo) return;
 
     // Validar que la hora de inicio no sea anterior a la hora actual
     const horaActual = new Date().toTimeString().slice(0, 5);
@@ -235,33 +257,82 @@ const Actividades = () => {
       return;
     }
 
-    const [hIni] = newActividad.inicio.split(':').map(Number);
-    const [hFin] = newActividad.fin.split(':').map(Number);
-    let duracion = hFin - hIni;
-    if (duracion <= 0) duracion += 24;
-
     const cat = CATEGORIAS.find(c => c.id === newActividad.categoriaId);
 
     const nuevaActividadObj = {
-      id: Date.now(),
       zona: newActividad.zona,
       guardia: user?.nombre || 'Guardia',
       inicio: newActividad.inicio,
-      fin: newActividad.fin,
-      duracion: duracion,
+      fin: '',
       categoriaId: newActividad.categoriaId,
-      categoria: cat?.nombre || 'Actividad',
+      categoriaNombre: cat?.nombre || 'Actividad',
       subtipo: newActividad.subtipo,
-      observaciones: newActividad.observaciones
+      observaciones: ''
+    };
+
+    setActividadEnCurso(nuevaActividadObj);
+    localStorage.setItem('actividad_en_curso_admin', JSON.stringify(nuevaActividadObj));
+
+    setShowAddModal(false);
+    setNewActividad({ categoriaId: '', subtipo: '', zona: user?.zonaAsignada || '', observaciones: '', inicio: '', fin: '' });
+  };
+
+  const handleFinishActividad = (e) => {
+    e.preventDefault();
+    if (!actividadEnCurso) return;
+
+    let horaActualStr = new Date().toTimeString().slice(0, 5);
+    if (horaActualStr < actividadEnCurso.inicio) {
+      horaActualStr = actividadEnCurso.inicio;
+    }
+
+    const [hIni, mIni] = actividadEnCurso.inicio.split(':').map(Number);
+    const [hFin, mFin] = horaActualStr.split(':').map(Number);
+    let duracion = (hFin + (mFin || 0) / 60) - (hIni + (mIni || 0) / 60);
+    if (duracion < 0) duracion += 24;
+    duracion = Math.round(duracion * 10) / 10;
+
+    const nueva = {
+      id: Date.now(),
+      zona: actividadEnCurso.zona,
+      guardia: actividadEnCurso.guardia,
+      inicio: actividadEnCurso.inicio,
+      fin: horaActualStr,
+      duracion: duracion,
+      categoriaId: actividadEnCurso.categoriaId,
+      categoria: actividadEnCurso.categoriaNombre,
+      subtipo: actividadEnCurso.subtipo,
+      observaciones: observacionesTerminar,
+      fecha: new Date().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }),
+      fechaISO: new Date().toISOString()
     };
 
     setHistorial(prev => {
-      const next = [...prev, nuevaActividadObj].sort((a, b) => a.inicio.localeCompare(b.inicio));
+      const next = [...prev, nueva].sort((a, b) => a.inicio.localeCompare(b.inicio));
       localStorage.setItem('mis_actividades_guardia', JSON.stringify(next));
       return next;
     });
-    setShowAddModal(false);
-    setNewActividad({ categoriaId: '', subtipo: '', zona: user?.zonaAsignada || '', observaciones: '', inicio: '', fin: '' });
+
+    // Enviar por WebSocket
+    adminWsService.send({
+      tipo: "nueva_actividad",
+      guardia: nueva.guardia,
+      categoriaId: nueva.categoriaId,
+      categoriaNombre: nueva.categoria,
+      subtipo: nueva.subtipo,
+      zona: nueva.zona,
+      observaciones: nueva.observaciones,
+      horaInicio: nueva.inicio,
+      horaFin: nueva.fin,
+      fecha: nueva.fecha,
+      fechaISO: nueva.fechaISO,
+    });
+
+    setActividadEnCurso(null);
+    localStorage.removeItem('actividad_en_curso_admin');
+    setObservacionesTerminar('');
+    setShowFinishModal(false);
+    alert('✅ Actividad finalizada y registrada correctamente.');
   };
 
   const getZoneClass = (zona) => {
@@ -332,9 +403,22 @@ const Actividades = () => {
             <p className="act-subtitle">Historial y control de actividades por guardia y zona</p>
           </div>
           {isGuard && (
-            <button className="btn-primary-dark btn-add-ronda" onClick={() => setShowAddModal(true)}>
-              + Añadir Actividad
-            </button>
+            !actividadEnCurso ? (
+              <button className="btn-primary-dark btn-add-ronda" onClick={() => {
+                const horaActual = new Date().toTimeString().slice(0, 5);
+                setNewActividad(prev => ({ ...prev, inicio: horaActual }));
+                setShowAddModal(true);
+              }}>
+                + Añadir Actividad
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', padding: '8px 16px', borderRadius: '8px' }}>
+                <span style={{ color: '#3b82f6', fontWeight: 600 }}>En curso: {actividadEnCurso.subtipo}</span>
+                <button className="btn-primary-dark" style={{ backgroundColor: '#ef4444', padding: '8px 12px' }} onClick={() => setShowFinishModal(true)}>
+                  ⏹️ Terminar Actividad
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -476,10 +560,10 @@ const Actividades = () => {
 
       {/* Modal for Adding Actividad */}
       {showAddModal && (
-        <div className="modal-overlay-dark">
-          <div className="modal-content-dark">
-            <h3 className="modal-title-dark">Añadir Nueva Actividad</h3>
-            <form onSubmit={handleAddActividad}>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">Añadir Nueva Actividad</h2>
+            <form onSubmit={handleStartActividad}>
               <div className="modal-form-group">
                 <label className="modal-label">Categoría</label>
                 <select 
@@ -496,18 +580,20 @@ const Actividades = () => {
               </div>
               <div className="modal-form-group">
                 <label className="modal-label">Tipo de Actividad</label>
-                <select 
+                <input 
+                  list={`subtipos-${newActividad.categoriaId}`}
                   className="modal-input"
+                  placeholder="Escribe o selecciona un tipo..."
                   value={newActividad.subtipo}
                   onChange={(e) => setNewActividad({...newActividad, subtipo: e.target.value})}
                   required
                   disabled={!newActividad.categoriaId}
-                >
-                  <option value="">Seleccione un tipo</option>
+                />
+                <datalist id={`subtipos-${newActividad.categoriaId}`}>
                   {newActividad.categoriaId && CATEGORIAS.find(c => c.id === newActividad.categoriaId)?.subtipos.map(sub => (
-                    <option key={sub} value={sub}>{sub}</option>
+                    <option key={sub} value={sub} />
                   ))}
-                </select>
+                </datalist>
               </div>
               <div className="modal-form-group">
                 <label className="modal-label">Zona</label>
@@ -523,17 +609,6 @@ const Actividades = () => {
                   ))}
                 </select>
               </div>
-              <div className="modal-form-group">
-                <label className="modal-label">Observaciones</label>
-                <textarea 
-                  className="modal-input"
-                  value={newActividad.observaciones}
-                  onChange={(e) => setNewActividad({...newActividad, observaciones: e.target.value})}
-                  rows="2"
-                  placeholder="Detalles (opcional)..."
-                  style={{resize: 'none', fontFamily: 'inherit'}}
-                />
-              </div>
               <div style={{display: 'flex', gap: '10px'}}>
                 <div className="modal-form-group" style={{flex: 1}}>
                   <label className="modal-label">Hora Inicio</label>
@@ -545,23 +620,43 @@ const Actividades = () => {
                     required
                   />
                 </div>
-                <div className="modal-form-group" style={{flex: 1}}>
-                  <label className="modal-label">Hora Fin</label>
-                  <input 
-                    type="time"
-                    className="modal-input"
-                    value={newActividad.fin}
-                    onChange={(e) => setNewActividad({...newActividad, fin: e.target.value})}
-                    required
-                  />
-                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary-dark" onClick={() => setShowAddModal(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary-dark">
-                  Guardar Actividad
+                  Iniciar Actividad
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Terminar Actividad */}
+      {showFinishModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">⏹️ Terminar Actividad</h2>
+            <form onSubmit={handleFinishActividad}>
+              <div className="modal-form-group">
+                <label className="modal-label">Novedades / Observaciones</label>
+                <textarea 
+                  className="modal-input"
+                  value={observacionesTerminar}
+                  onChange={(e) => setObservacionesTerminar(e.target.value)}
+                  rows="4"
+                  placeholder="Escribe las novedades ocurridas durante la actividad..."
+                  style={{resize: 'none', fontFamily: 'inherit'}}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary-dark" onClick={() => setShowFinishModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary-dark" style={{ backgroundColor: '#ef4444' }}>
+                  Finalizar y Guardar
                 </button>
               </div>
             </form>

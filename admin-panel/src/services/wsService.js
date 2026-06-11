@@ -5,12 +5,14 @@ class AdminWsService {
     this.socket = null;
     this.handlers = {};
     this.connecting = false;
+    this.pendientes = [];
   }
 
   connect(token) {
     if (!WS_BASE || !token) return;
     if (this.connecting || this.socket?.readyState === WebSocket.OPEN) return;
 
+    this.destroyed = false;
     this.connecting = true;
     const url = `${WS_BASE}/ws?token=${token}`;
     console.log('[Admin WS] Conectando a:', url);
@@ -19,6 +21,10 @@ class AdminWsService {
     this.socket.onopen = () => {
       this.connecting = false;
       console.log('[Admin WS] Conectado ✅');
+      while (this.pendientes.length > 0) {
+        const msg = this.pendientes.shift();
+        this.socket.send(JSON.stringify(msg));
+      }
     };
 
     this.socket.onmessage = (e) => {
@@ -52,8 +58,18 @@ class AdminWsService {
 
     this.socket.onclose = () => {
       this.connecting = false;
+      this.socket = null;
       console.log('[Admin WS] Cerrado');
+      this.scheduleReconnect(token);
     };
+  }
+
+  scheduleReconnect(token) {
+    if (this.destroyed) return;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = setTimeout(() => {
+      this.connect(token);
+    }, 3000);
   }
 
   on(evento, handler) {
@@ -64,13 +80,27 @@ class AdminWsService {
     }
   }
 
+  send(data) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(data));
+    } else {
+      this.pendientes.push(data);
+    }
+  }
+
   disconnect() {
+    this.destroyed = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
     this.connecting = false;
     this.handlers = {};
+    this.pendientes = [];
   }
 }
 
