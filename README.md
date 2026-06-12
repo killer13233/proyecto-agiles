@@ -101,10 +101,10 @@ asunciones y cierres en tiempo real.
 ```
 uta-seguridad/
 ├── src/
-│   ├── MicroservicioA/     ← Usuarios, Roles, Auth JWT (Martin)
+│   ├──MicroservicioA/     ← Usuarios, Roles, Auth JWT (Autor Principal)
 │   ├── MicroservicioB/     ← Alertas, WebSocket broadcast (Juan Pablo)
 │   ├── MicroservicioC/     ← Zonas GeoJSON, Geolocalización (David)
-│   └── ApiGateway/         ← YARP Reverse Proxy (Martin)
+│   └── ApiGateway/         ← YARP Reverse Proxy (Autor Principal)
 ├── frontend/               ← App React Native (Abel)
 ├── admin-panel/            ← Panel React web (Sheyla)
 ├── docs/
@@ -131,3 +131,22 @@ git checkout -b feature/admin-panel-sheyla
 - **JWT compartido**: los 3 microservicios validan el mismo token, emitido por Microservicio A
 - **Migraciones automáticas**: cada microservicio crea y migra su BD al arrancar
 - **GPS recomendado**: usar `expo-location` en React Native (más simple, sin SDKs pesados)
+## Autoría y Colaboración
+
+### Autor Principal
+
+* Martin Sebastian Palacios Vaca
+
+### Colaboradores
+
+* Sheyla Pacha — Panel Administrativo (React Web)
+* Juan Paredes — Microservicio de Alertas y WebSockets
+* David Pérez — Microservicio de Zonas y Geolocalización
+* Abel Chiriboga — Aplicación Móvil (React Native)
+
+## Licencia
+
+Este proyecto es propiedad de Martin Sebastian Palacios Vaca.
+
+Todos los derechos reservados. Consulte el archivo `LICENSE` para más información.
+
